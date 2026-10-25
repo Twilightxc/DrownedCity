@@ -55,7 +55,13 @@ jobs:
         run: ~/godot/godot --headless --path . --import
 
       - name: Run tests (GUT)
-        run: ~/godot/godot --headless --path . -s addons/gut/gut_cmdln.gd -gconfig=.gutconfig.json
+        run: |
+          mkdir -p build && touch build/.gdignore
+          ~/godot/godot --headless --path . -s addons/gut/gut_cmdln.gd -gconfig=.gutconfig.json \
+            -gjunit_xml_file=build/test-results.xml
+          # GUT exits 0 on startup failures without running anything; require a real report.
+          test -s build/test-results.xml || { echo "::error::GUT produced no report (tests did not run)"; exit 1; }
+          grep -qE '<testsuites [^>]*tests="[1-9]' build/test-results.xml || { echo "::error::GUT ran 0 tests"; exit 1; }
 
       - name: Write build info
         run: |
