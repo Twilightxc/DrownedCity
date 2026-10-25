@@ -1,0 +1,92 @@
+name: Web build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read pinned Godot version
+        id: godot
+        run: |
+          version="$(tr -d '[:space:]' < .godot-version)"   # e.g. 4.7.2-stable
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "templates_dir=${version/-/.}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Godot + web templates
+        id: cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ steps.godot.outputs.version }}-web-nothreads
+
+      - name: Download Godot + web templates
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          VERSION: ${{ steps.godot.outputs.version }}
+          TEMPLATES_DIR: ${{ steps.godot.outputs.templates_dir }}
+        run: |
+          base="https://github.com/godotengine/godot/releases/download/$VERSION"
+          mkdir -p ~/godot
+          curl -fsSL -o /tmp/godot.zip "$base/Godot_v${VERSION}_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${VERSION}_linux.x86_64 ~/godot/godot
+          # The full .tpz is >1 GB; keep only the single-threaded web templates.
+          curl -fsSL -o /tmp/templates.tpz "$base/Godot_v${VERSION}_export_templates.tpz"
+          unzip -q /tmp/templates.tpz "templates/web_nothreads_*" "templates/version.txt" -d /tmp/tpl
+          mkdir -p ~/.local/share/godot/export_templates/$TEMPLATES_DIR
+          mv /tmp/tpl/templates/* ~/.local/share/godot/export_templates/$TEMPLATES_DIR/
+          rm /tmp/templates.tpz /tmp/godot.zip
+
+      - name: Import project
+        run: ~/godot/godot --headless --path . --import
+
+      - name: Run tests (GUT)
+        run: ~/godot/godot --headless --path . -s addons/gut/gut_cmdln.gd -gconfig=.gutconfig.json
+
+      - name: Write build info
+        run: |
+          printf '{"commit":"%s","date":"%s","run_number":"%s"}\n' \
+            "${GITHUB_SHA::7}" "$(date -u +%F)" "${{ github.run_number }}" > platform/build_info.json
+          cat platform/build_info.json
+
+      - name: Export Web
+        run: |
+          mkdir -p build/web
+          touch build/.gdignore   # keep Godot from importing previous output
+          ~/godot/godot --headless --path . --export-release "Web" build/web/index.html
+          test -f build/web/index.wasm
+          du -sh build/web
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/web
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -2,6 +2,10 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-25 | Pin Godot 4.7.2-stable (`.godot-version`, read by CI) | Latest stable at Phase 0 setup |
+| 2026-10-25 | Test framework: GUT 9.7.1, vendored in `addons/gut`, excluded from export | Pure GDScript, one-line headless CLI with non-zero exit on failure; vendoring pins the version for CI |
+| 2026-10-25 | Build number = CI-written `platform/build_info.json` (short SHA, UTC date, run #); local runs show `dev` | Web build cannot call git; every bug report maps to a commit |
+| 2026-10-25 | Debug toggles (F3) bind by keycode, not physical key; gamepad Back also toggles | F-keys are layout-independent; overlay must work on gamepad |
 | 2026-10-25 | Keep original platform plan: free web demo → Steam EA → 1.0 (same codebase) | Full game is not limited by browser; demo still gives feedback + Steam wishlists |
 | 2026-10-25 | GDScript only (no C#) | Godot cannot export C# to web as of Apr 2026 |
 | 2026-10-25 | Day length 20–25 real min, not half day/half night | Day = decisions (long), night = horde burst or skip |

@@ -4,17 +4,17 @@ Goal: prove the four riskiest technical bets **before** building real systems. S
 away; what we keep is the project skeleton, CI, and measured numbers in `docs/PHASE0_RESULTS.md`.
 
 ## 0.1 Project skeleton
-- [ ] Godot 4.x project (latest stable at setup; write it to `.godot-version`), Compatibility renderer.
-- [ ] Folder layout from `CLAUDE.md` (`sim/ data/ game/ combat/ ui/ platform/ tests/ tools/`).
-- [ ] Test framework chosen (GUT or gdUnit4) with one passing SimCore test.
-- [ ] Build number autoload (git short SHA + date) shown bottom-right; F3 debug overlay with FPS, draw
+- [x] Godot 4.x project (latest stable at setup; write it to `.godot-version`) → **4.7.2-stable**, Compatibility renderer.
+- [x] Folder layout from `CLAUDE.md` (`sim/ data/ game/ combat/ ui/ platform/ tests/ tools/`).
+- [x] Test framework chosen (GUT or gdUnit4) → **GUT 9.7.1**, vendored in `addons/gut` with one passing SimCore test.
+- [x] Build number autoload (git short SHA + date) shown bottom-right; F3 debug overlay with FPS, draw
       calls, object count, zombie count.
 
 ## 0.2 CI → GitHub Pages
-- [ ] GitHub Actions: download pinned Godot + export templates, headless export preset "Web"
+- [x] GitHub Actions: download pinned Godot + export templates, headless export preset "Web"
       (thread support OFF), run tests, deploy `build/web` to Pages on push to `main`.
-- [ ] Export preset committed; `.gitignore` excludes `.godot/` and build output.
-- **Pass:** pushing a commit updates the live URL within ~10 min, build number matches the commit.
+- [x] Export preset committed; `.gitignore` excludes `.godot/` and build output.
+- **Pass (pending first push to GitHub):** pushing a commit updates the live URL within ~10 min, build number matches the commit.
 
 ## 0.3 Spike A — Horde on web (biggest risk)
 - [ ] Flat rooftop + surrounding water test scene, iso ortho camera.
