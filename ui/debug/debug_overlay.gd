@@ -1,11 +1,15 @@
 extends CanvasLayer
 ## Always-on build label (bottom-right) + F3 / gamepad Back debug overlay.
 ## Other systems publish extra counters with DebugOverlay.set_stat("zombies", n).
+## Desktop capture for art comparisons: `-- --capture=out.png [--capture-frames=300] [--hide-ui]`
+## saves one frame and quits.
 
 const REFRESH_SEC: float = 0.25
 
 var _stats: Dictionary[String, String] = {}
 var _refresh_left: float = 0.0
+var _capture_path: String = ""
+var _capture_frames: int = 300
 
 @onready var _build_label: Label = %BuildLabel
 @onready var _panel: PanelContainer = %Panel
@@ -16,6 +20,25 @@ func _ready() -> void:
 	_build_label.text = BuildInfo.label()
 	_panel.visible = false
 	set_stat("zombies", "0")
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--capture="):
+			_capture_path = arg.trim_prefix("--capture=")
+		elif arg.begins_with("--capture-frames="):
+			_capture_frames = int(arg.trim_prefix("--capture-frames="))
+		elif arg == "--hide-ui":
+			visible = false
+
+
+func _physics_process(_delta: float) -> void:
+	if _capture_path.is_empty() or Engine.get_process_frames() < _capture_frames:
+		return
+	var image: Image = get_viewport().get_texture().get_image()
+	image.save_png(_capture_path)
+	print("captured %s  fps=%d draws=%d prims=%d" % [_capture_path, Engine.get_frames_per_second(),
+		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)])
+	_capture_path = ""
+	get_tree().quit()
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Drowned City"
 config/version="0.0.1"
-run/main_scene="res://game/spikes/horde_spike.tscn"
+run/main_scene="res://game/spikes/spike_launcher.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [autoload]
@@ -98,3 +98,10 @@ toggle_debug_overlay={
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+
+[shader_globals]
+
+water_level={
+"type": "float",
+"value": -8.6
+}

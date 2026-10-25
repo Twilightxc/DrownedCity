@@ -20,8 +20,23 @@ Notes for turning these into game assets:
 - Materials here are Cycles node trees for mockups. For the game, export geometry as .glb and recreate the
   look with Godot shaders (see `CLAUDE.md` → Art direction). The waterline stain is just
   `mix(base, wet, smoothstep(2.4, 0.3, world_y - water_level))`.
-- Next step: split scripts into a reusable kit (`kit_building.py`, `kit_props.py`, `kit_characters.py`) with
-  one function per asset and a CLI that exports each to `assets/models/*.glb`.
+
+### Game-asset kits (source of truth for `assets/models/*.glb`)
+
+```bash
+blender -b --factory-startup --python tools/blender/kit_building.py -- assets/models [name ...]
+blender -b --factory-startup --python tools/blender/kit_props.py -- assets/models
+```
+
+| Script | Output |
+| --- | --- |
+| `kit_common.py` | palette, `MeshBuilder` (boxes/cylinders with per-corner colour + material slot), Cycles AO → vertex alpha, glTF export |
+| `kit_building.py` | `building_base_3f` (playable roof 25×21 inside the parapet), `building_brick_2f`, `building_concrete_5f`; origin = water surface |
+| `kit_props.py` | `prop_water_tower`, `prop_ac_unit`, `prop_sandbag_wall`; origin = roof surface |
+
+Vertex RGB = palette colour (linear), vertex alpha = baked AO; material slot `surface` / `emissive` is swapped
+for the Style 1.5 shaders at runtime (`game/level/style15_level.gd`). Tested with Blender 4.4.3.
+Never edit the .glb files — change the script and re-run.
 
 ## mockup/ — HUD overlays (Pillow) used on the mockup renders
 `python3 tools/mockup/hud_v15.py in.png out.png`

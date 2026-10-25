@@ -2,12 +2,15 @@ extends Node3D
 ## Spike A (Phase 0.3): can the web build hold 200+ zombies at 50+ FPS on an Intel Arc iGPU?
 ## Flat rooftop over flood water, MultiMesh horde on a shared flow field, hitscan rifle.
 ## Spawn count: slider, [ / ] keys, or D-pad left/right.
+## With `level_scene` set (Spike B), that scene supplies the art and its "nav_obstacle" nodes
+## replace `obstacles`; otherwise placeholder boxes are built from `obstacles`.
 
 const GROUND_Y: float = 0.0
 const BUILDING_DEPTH: float = 6.0
 const WATER_Y: float = -4.0
 
 @export var horde_config: HordeConfig
+@export var level_scene: PackedScene
 @export var roof_size: Vector2i = Vector2i(40, 40)
 ## Obstacles in roof cells: stair house, AC units, water tanks, low walls.
 @export var obstacles: Array[Rect2i] = [
@@ -47,9 +50,15 @@ var _count_label: Label
 func _ready() -> void:
 	_rng.randomize()
 	_grid = NavGrid.new(roof_size.x, roof_size.y, 1.0, -Vector2(roof_size) * 0.5)
-	for rect: Rect2i in obstacles:
+	var rects: Array[Rect2i] = obstacles
+	if level_scene != null:
+		var level: Node = level_scene.instantiate()
+		add_child(level)
+		rects = (level as Style15Level).nav_obstacle_rects(_grid) if level is Style15Level else []
+	for rect: Rect2i in rects:
 		_grid.set_blocked_rect(rect)
 	_collect_perimeter()
+	assert(not _perimeter.is_empty(), "no walkable roof edge to spawn from")
 
 	var capacity: int = 0
 	for n: int in horde_config.spawn_counts:
@@ -57,7 +66,8 @@ func _ready() -> void:
 	_horde = Horde.new(horde_config, _grid, capacity, _rng.randi())
 	_renderer.setup(capacity)
 
-	_build_level_meshes()
+	if level_scene == null:
+		_build_level_meshes()
 	_player.setup(_grid, _horde, _camera, GROUND_Y)
 	_player.position = Vector3(0.5, GROUND_Y, 2.5)
 	_player.fired.connect(_tracers.add)

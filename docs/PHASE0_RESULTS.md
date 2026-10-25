@@ -47,9 +47,28 @@ Findings so far:
 - Worst case is CPU, not GPU: separation cost grows when the whole horde piles on the player.
   If Arc misses the target, first lever = cap separation neighbours per agent; fallback per plan = cap 100.
 
-## 0.4 Spike B — "Style 1.5" look
+## 0.4 Spike B — "Style 1.5" look — built, awaiting J's verdict
 
-_Not started._
+Comparison: `docs/art/05_spike_b_vs_ref.png` (left: reference render, right: Godot capture).
+Live: default URL (`?spike=style`); Spike A stays at `?spike=horde`.
+
+| Item | How | Result |
+| --- | --- | --- |
+| Assets | `tools/blender/kit_building.py`, `kit_props.py` → `assets/models/*.glb` | base building 11.9k tris, 2 backdrop variants 4.4k / 7.1k, water tower / AC / sandbags < 250 tris each |
+| One draw call per building | palette colour in vertex RGB, baked AO in vertex alpha, one shared shader; lit windows = 2nd surface | 2 surfaces per building |
+| Wall shader | `game/shaders/style15_surface.gdshader`: wet tint + algae band from world Y vs global `water_level` | works; water level is one global uniform |
+| Water | `game/shaders/water.gdshader`: 2 scrolling normal maps, shallow tint + foam ring from footprint SDF (≤ 16 boxes) | no depth-buffer pass needed |
+| Light | 1 shadowed sun (PSSM 2 splits, 80 m), procedural sky ambient, ACES, glow on emissive windows, depth fog | all render in Compatibility (desktop GL + WebGL2), no console errors |
+| Baked lighting | docs: Compatibility *renders* LightmapGI, but baking needs RenderingDevice hardware and a manual editor step | **chose vertex AO baked in Blender (Cycles)** — scripted, reproducible; LightmapGI not tested |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200 zombies | 144 (vsync) | 55 | 88k | capture used for the comparison |
+| Desktop RTX 4080 | Claude pane (Chromium) | style + 200 zombies | 144 (vsync) | 45 | 69k | horde update 1.8 ms |
+| Laptop Intel Arc | Chrome | style + 200 zombies | — | — | — | **J: pass ≥ 50 FPS, draw calls < 250** |
+
+Known gaps vs reference: no roof clutter (tents, garden, solar), shorter/cooler shadows, water a bit brighter,
+no ladders/bridges/trees/boats. These are content, not renderer limits.
 
 ## 0.5 Spike C — Twin-stick feel
 

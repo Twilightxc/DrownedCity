@@ -27,13 +27,13 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
   **Fallback:** cap at 100 and design horde nights as multiple waves.
 
 ## 0.4 Spike B — "Style 1.5" look on WebGL2
-- [ ] Generate one rooftop base building + 3 props from `tools/blender/scene_v15_web.py` style → .glb.
-- [ ] Water shader: depth-tinted colour, 2 scrolling normal layers, cheap foam ring near geometry.
-- [ ] Wall shader: waterline stain from world Y (single `mix`), parameter = current water level.
-- [ ] One shadowed directional sun with dusk colour, emissive windows + glow, depth fog.
-- [ ] Baked lighting: verify `LightmapGI` works in Compatibility on the pinned version; if not, bake AO
+- [x] Generate one rooftop base building + 3 props from `tools/blender/scene_v15_web.py` style → .glb.
+- [x] Water shader: depth-tinted colour, 2 scrolling normal layers, cheap foam ring near geometry.
+- [x] Wall shader: waterline stain from world Y (single `mix`), parameter = current water level.
+- [x] One shadowed directional sun with dusk colour, emissive windows + glow, depth fog.
+- [x] Baked lighting: verify `LightmapGI` works in Compatibility on the pinned version; if not, bake AO
       into vertex colours in Blender.
-- **Pass:** side-by-side screenshot vs `docs/art/03_style15_horde.png` that J accepts; stays within budget
+- **Pass (J to judge `docs/art/05_spike_b_vs_ref.png` + live URL):** side-by-side screenshot vs `docs/art/03_style15_horde.png` that J accepts; stays within budget
   (draw calls < 250) with Spike A running.
 
 ## 0.5 Spike C — Twin-stick feel, mouse + gamepad

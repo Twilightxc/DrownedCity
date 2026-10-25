@@ -5,9 +5,9 @@ extends MultiMeshInstance3D
 
 const FLOATS_PER_INSTANCE: int = 16  # 12 transform (3x4, row-major) + 4 colour
 
-## Cool grey clothes, pale green skin (Style 1.5).
-@export var clothes_color: Color = Color(0.42, 0.45, 0.5)
-@export var skin_color: Color = Color(0.62, 0.74, 0.55)
+## Cool grey clothes, pale green skin (Style 1.5). sRGB.
+@export var clothes_color: Color = Color("#515865")
+@export var skin_color: Color = Color("#93ad7a")
 
 var _buffer: PackedFloat32Array
 
@@ -78,6 +78,7 @@ func _make_zombie_mesh() -> ArrayMesh:
 	var mesh: ArrayMesh = st.commit()
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_is_srgb = true
 	mat.roughness = 1.0
 	mesh.surface_set_material(0, mat)
 	return mesh

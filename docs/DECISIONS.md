@@ -2,7 +2,12 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
-| 2026-10-25 | Main scene = current spike (horde spike for 0.3); add a launcher only if several spikes must be live at once | Live URL always shows what J must test |
+| 2026-10-25 | Spike launcher: default = newest spike, older via `?spike=<name>` (web) / `--spike=<name>` (desktop) | Spike A Arc test must stay reachable while Spike B is live |
+| 2026-10-25 | Asset format: palette colour in vertex RGB + baked AO in vertex alpha, one shared Style 1.5 shader; lit windows on a 2nd surface | ~1–2 draw calls per building, no textures, matches flat palette |
+| 2026-10-25 | Baked lighting = Cycles AO into vertex colours (Blender), not LightmapGI | LightmapGI baking needs RD hardware + manual editor step; vertex AO is scripted and reproducible |
+| 2026-10-25 | Water "depth" tint and foam from a footprint SDF (≤ 16 boxes) instead of the depth texture | No extra depth pass on iGPU/WebGL2; buildings are boxes anyway |
+| 2026-10-25 | Asset kits run on installed Blender 4.4 (`blender -b --python`); `bpy` pip wheel needs Python 3.13 | No extra Python install; kits use only bmesh + glTF exporter APIs stable across 4.4–5.x |
+| 2026-10-25 | Main scene = current spike (horde spike for 0.3); add a launcher only if several spikes must be live at once — superseded by the spike launcher | Live URL always shows what J must test |
 | 2026-10-25 | Debug overlay and spike harness text skip `tr()`; player-facing text still goes through `tr()` | Developer-only text; avoids translation churn on throwaway UI |
 | 2026-10-25 | Horde = struct-of-arrays `RefCounted` in `combat/` + one MultiMesh; flow field resolves directions lazily | No nodes/physics per zombie; per-cell direction pass was 7 ms on web |
 | 2026-10-25 | Pin Godot 4.7.2-stable (`.godot-version`, read by CI) | Latest stable at Phase 0 setup |
