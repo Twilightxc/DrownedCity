@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WeaponConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/weapon_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+display_name = "Spike rifle"
+damage = 1
+penetration = 3
+fire_rate = 8.0
+max_range = 30.0
+spread_deg = 2.0
