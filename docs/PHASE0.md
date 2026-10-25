@@ -17,13 +17,13 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
 - **Pass (pending first push to GitHub):** pushing a commit updates the live URL within ~10 min, build number matches the commit.
 
 ## 0.3 Spike A — Horde on web (biggest risk)
-- [ ] Flat rooftop + surrounding water test scene, iso ortho camera.
-- [ ] Zombies rendered with `MultiMeshInstance3D` (blocky placeholder mesh, per-instance colour).
-- [ ] Shared flow field on a 2D grid (BFS/Dijkstra from player/base targets), recomputed at most every
+- [x] Flat rooftop + surrounding water test scene, iso ortho camera.
+- [x] Zombies rendered with `MultiMeshInstance3D` (blocky placeholder mesh, per-instance colour).
+- [x] Shared flow field on a 2D grid (BFS/Dijkstra from player/base targets), recomputed at most every
       0.25 s; agents sample field + simple separation; no physics bodies per zombie.
-- [ ] Hitscan bullets with penetration (ray test against spatial hash, not physics).
-- [ ] Spawn slider: 50 / 100 / 200 / 300.
-- **Pass:** ≥ 50 FPS with 200 zombies on J's laptop (Intel Arc iGPU, Chrome, web build).
+- [x] Hitscan bullets with penetration (ray test against spatial hash, not physics).
+- [x] Spawn slider: 50 / 100 / 200 / 300.
+- **Pass (J to measure on Arc):** ≥ 50 FPS with 200 zombies on J's laptop (Intel Arc iGPU, Chrome, web build).
   **Fallback:** cap at 100 and design horde nights as multiple waves.
 
 ## 0.4 Spike B — "Style 1.5" look on WebGL2

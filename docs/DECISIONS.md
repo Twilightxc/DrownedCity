@@ -2,6 +2,9 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-25 | Main scene = current spike (horde spike for 0.3); add a launcher only if several spikes must be live at once | Live URL always shows what J must test |
+| 2026-10-25 | Debug overlay and spike harness text skip `tr()`; player-facing text still goes through `tr()` | Developer-only text; avoids translation churn on throwaway UI |
+| 2026-10-25 | Horde = struct-of-arrays `RefCounted` in `combat/` + one MultiMesh; flow field resolves directions lazily | No nodes/physics per zombie; per-cell direction pass was 7 ms on web |
 | 2026-10-25 | Pin Godot 4.7.2-stable (`.godot-version`, read by CI) | Latest stable at Phase 0 setup |
 | 2026-10-25 | Test framework: GUT 9.7.1, vendored in `addons/gut`, excluded from export | Pure GDScript, one-line headless CLI with non-zero exit on failure; vendoring pins the version for CI |
 | 2026-10-25 | Build number = CI-written `platform/build_info.json` (short SHA, UTC date, run #); local runs show `dev` | Web build cannot call git; every bug report maps to a commit |

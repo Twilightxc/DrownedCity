@@ -1,0 +1,70 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://game/spikes/horde_spike.gd" id="1_spike"]
+[ext_resource type="Resource" path="res://data/combat/horde_spike.tres" id="2_horde"]
+[ext_resource type="Script" path="res://game/iso_camera_rig.gd" id="3_rig"]
+[ext_resource type="Script" path="res://game/spikes/spike_player.gd" id="4_player"]
+[ext_resource type="Resource" path="res://data/weapons/spike_rifle.tres" id="5_rifle"]
+[ext_resource type="Script" path="res://combat/horde_renderer.gd" id="6_renderer"]
+[ext_resource type="Script" path="res://game/spikes/tracers.gd" id="7_tracers"]
+
+[sub_resource type="Environment" id="Env_spike"]
+background_mode = 1
+background_color = Color(0.13, 0.2, 0.22, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.45, 0.5, 0.55, 1)
+ambient_light_energy = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_player"]
+albedo_color = Color(0.92, 0.55, 0.2, 1)
+
+[sub_resource type="CapsuleMesh" id="Mesh_player"]
+material = SubResource("Mat_player")
+radius = 0.28
+height = 1.6
+
+[sub_resource type="BoxMesh" id="Mesh_aim"]
+material = SubResource("Mat_player")
+size = Vector3(0.08, 0.08, 0.6)
+
+[node name="HordeSpike" type="Node3D"]
+script = ExtResource("1_spike")
+horde_config = ExtResource("2_horde")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_spike")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.7071, -0.5417, 0.4545, 0, 0.6428, 0.766, -0.7071, -0.5417, 0.4545, 0, 10, 0)
+light_color = Color(1, 0.85, 0.7, 1)
+shadow_enabled = true
+directional_shadow_max_distance = 60.0
+
+[node name="IsoCameraRig" type="Node3D" parent="."]
+script = ExtResource("3_rig")
+distance = 40.0
+ortho_size = 30.0
+
+[node name="Camera3D" type="Camera3D" parent="IsoCameraRig"]
+current = true
+far = 200.0
+
+[node name="Player" type="Node3D" parent="."]
+script = ExtResource("4_player")
+weapon = ExtResource("5_rifle")
+
+[node name="Body" type="MeshInstance3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+mesh = SubResource("Mesh_player")
+
+[node name="AimMarker" type="Node3D" parent="Player"]
+
+[node name="Barrel" type="MeshInstance3D" parent="Player/AimMarker"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.5)
+mesh = SubResource("Mesh_aim")
+
+[node name="HordeRenderer" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("6_renderer")
+
+[node name="Tracers" type="MeshInstance3D" parent="."]
+script = ExtResource("7_tracers")

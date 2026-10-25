@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="HordeConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/horde_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+speed = 2.2
+speed_jitter = 0.25
+steering = 8.0
+radius = 0.3
+separation_strength = 4.0
+hp = 3
+attack_range = 0.9
+attack_interval = 1.0
+flow_recompute_sec = 0.25
+spawn_counts = PackedInt32Array(50, 100, 200, 300)
+default_count_index = 2
+spawn_per_second = 120.0
+spawn_min_distance = 8.0

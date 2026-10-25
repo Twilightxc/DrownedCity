@@ -1,0 +1,217 @@
+extends Node3D
+## Spike A (Phase 0.3): can the web build hold 200+ zombies at 50+ FPS on an Intel Arc iGPU?
+## Flat rooftop over flood water, MultiMesh horde on a shared flow field, hitscan rifle.
+## Spawn count: slider, [ / ] keys, or D-pad left/right.
+
+const GROUND_Y: float = 0.0
+const BUILDING_DEPTH: float = 6.0
+const WATER_Y: float = -4.0
+
+@export var horde_config: HordeConfig
+@export var roof_size: Vector2i = Vector2i(40, 40)
+## Obstacles in roof cells: stair house, AC units, water tanks, low walls.
+@export var obstacles: Array[Rect2i] = [
+	Rect2i(4, 4, 5, 4), Rect2i(26, 6, 3, 2), Rect2i(30, 6, 3, 2), Rect2i(8, 26, 3, 3),
+	Rect2i(28, 28, 4, 4), Rect2i(16, 17, 10, 1), Rect2i(18, 30, 1, 7), Rect2i(33, 16, 1, 9),
+]
+@export var roof_color: Color = Color(0.55, 0.52, 0.47)
+@export var obstacle_color: Color = Color(0.45, 0.43, 0.4)
+@export var wall_color: Color = Color(0.5, 0.46, 0.4)
+@export var water_color: Color = Color(0.17, 0.33, 0.31)
+
+var _grid: NavGrid
+var _horde: Horde
+var _target_count: int = 0
+var _count_index: int = 0
+var _flow_timer: float = 0.0
+var _flow_cell: Vector2i = Vector2i(-1, -1)
+var _spawn_budget: float = 0.0
+var _perimeter: Array[Vector2i] = []
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+var _horde_ms: float = 0.0
+var _flow_ms: float = 0.0
+var _render_ms: float = 0.0
+var _stats_timer: float = 0.0
+
+var _count_slider: HSlider
+var _count_label: Label
+
+@onready var _rig: IsoCameraRig = $IsoCameraRig
+@onready var _camera: Camera3D = $IsoCameraRig/Camera3D
+@onready var _player: SpikePlayer = $Player
+@onready var _renderer: HordeRenderer = $HordeRenderer
+@onready var _tracers: Tracers = $Tracers
+
+
+func _ready() -> void:
+	_rng.randomize()
+	_grid = NavGrid.new(roof_size.x, roof_size.y, 1.0, -Vector2(roof_size) * 0.5)
+	for rect: Rect2i in obstacles:
+		_grid.set_blocked_rect(rect)
+	_collect_perimeter()
+
+	var capacity: int = 0
+	for n: int in horde_config.spawn_counts:
+		capacity = maxi(capacity, n)
+	_horde = Horde.new(horde_config, _grid, capacity, _rng.randi())
+	_renderer.setup(capacity)
+
+	_build_level_meshes()
+	_player.setup(_grid, _horde, _camera, GROUND_Y)
+	_player.position = Vector3(0.5, GROUND_Y, 2.5)
+	_player.fired.connect(_tracers.add)
+	_rig.position = _player.position
+
+	_build_ui()
+	_set_count_index(horde_config.default_count_index)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("horde_more"):
+		_set_count_index(_count_index + 1)
+	elif event.is_action_pressed("horde_less"):
+		_set_count_index(_count_index - 1)
+
+
+func _process(delta: float) -> void:
+	delta = minf(delta, 1.0 / 20.0)  # a hitch must not teleport the crowd through walls
+	var target: Vector2 = _player.ground_position()
+
+	_flow_timer -= delta
+	var cell: Vector2i = _grid.world_to_cell(target)
+	if cell != _flow_cell and _flow_timer <= 0.0:
+		var t0: int = Time.get_ticks_usec()
+		_horde.recompute_flow([cell] as Array[Vector2i])
+		_flow_ms = (Time.get_ticks_usec() - t0) / 1000.0
+		_flow_cell = cell
+		_flow_timer = horde_config.flow_recompute_sec
+
+	_spawn(delta, target)
+
+	var t1: int = Time.get_ticks_usec()
+	_horde.update(delta, target)
+	var t2: int = Time.get_ticks_usec()
+	_renderer.sync(_horde, GROUND_Y)
+	var t3: int = Time.get_ticks_usec()
+	_horde_ms = lerpf(_horde_ms, (t2 - t1) / 1000.0, 0.1)
+	_render_ms = lerpf(_render_ms, (t3 - t2) / 1000.0, 0.1)
+
+	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
+	_publish_stats(delta)
+
+
+func _spawn(delta: float, target: Vector2) -> void:
+	if _horde.count >= _target_count:
+		_spawn_budget = 0.0
+		while _horde.count > _target_count:
+			_horde.kill(_horde.count - 1)
+		return
+	_spawn_budget += horde_config.spawn_per_second * delta
+	var min_d2: float = horde_config.spawn_min_distance * horde_config.spawn_min_distance
+	while _spawn_budget >= 1.0 and _horde.count < _target_count:
+		_spawn_budget -= 1.0
+		for attempt: int in 8:
+			var c: Vector2i = _perimeter[_rng.randi() % _perimeter.size()]
+			var p: Vector2 = _grid.cell_center(c) + Vector2(_rng.randf_range(-0.3, 0.3), _rng.randf_range(-0.3, 0.3))
+			if p.distance_squared_to(target) >= min_d2 and _horde.spawn(p):
+				break
+
+
+func _collect_perimeter() -> void:
+	_perimeter.clear()
+	for x: int in _grid.width:
+		for y: int in [0, _grid.height - 1]:
+			if _grid.is_walkable(Vector2i(x, y)):
+				_perimeter.append(Vector2i(x, y))
+	for y: int in range(1, _grid.height - 1):
+		for x: int in [0, _grid.width - 1]:
+			if _grid.is_walkable(Vector2i(x, y)):
+				_perimeter.append(Vector2i(x, y))
+
+
+func _set_count_index(i: int) -> void:
+	_count_index = clampi(i, 0, horde_config.spawn_counts.size() - 1)
+	_target_count = horde_config.spawn_counts[_count_index]
+	if _count_slider != null:
+		_count_slider.set_value_no_signal(_count_index)
+		_count_label.text = "Horde target: %d   ([ / ], D-pad left/right)" % _target_count
+
+
+func _publish_stats(delta: float) -> void:
+	_stats_timer -= delta
+	if _stats_timer > 0.0:
+		return
+	_stats_timer = 0.25
+	DebugOverlay.set_stat("zombies", "%d / %d" % [_horde.count, _target_count])
+	DebugOverlay.set_stat("horde_update", "%.2f ms" % _horde_ms)
+	DebugOverlay.set_stat("horde_render_sync", "%.2f ms" % _render_ms)
+	DebugOverlay.set_stat("flow_field", "%.2f ms (every %.2f s)" % [_flow_ms, horde_config.flow_recompute_sec])
+	DebugOverlay.set_stat("kills", str(_horde.kills))
+	DebugOverlay.set_stat("hits_taken", str(_horde.hits_on_target))
+	DebugOverlay.set_stat("shots", str(_player.shots_fired))
+
+
+func _build_level_meshes() -> void:
+	var size: Vector2 = _grid.world_size()
+	_add_box(Vector3(0, GROUND_Y - BUILDING_DEPTH * 0.5, 0), Vector3(size.x, BUILDING_DEPTH, size.y), roof_color)
+	for rect: Rect2i in obstacles:
+		var thin: bool = rect.size.x == 1 or rect.size.y == 1
+		var h: float = 1.1 if thin else 1.8
+		var center: Vector2 = _grid.origin + (Vector2(rect.position) + Vector2(rect.size) * 0.5) * _grid.cell_size
+		_add_box(Vector3(center.x, GROUND_Y + h * 0.5, center.y), Vector3(rect.size.x, h, rect.size.y), wall_color if thin else obstacle_color)
+
+	var water: MeshInstance3D = MeshInstance3D.new()
+	var plane: PlaneMesh = PlaneMesh.new()
+	plane.size = Vector2(240, 240)
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.albedo_color = water_color
+	mat.roughness = 0.2
+	plane.material = mat
+	water.mesh = plane
+	water.position.y = WATER_Y
+	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(water)
+
+
+func _add_box(center: Vector3, size: Vector3, color: Color) -> void:
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	var box: BoxMesh = BoxMesh.new()
+	box.size = size
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = 1.0
+	box.material = mat
+	mi.mesh = box
+	mi.position = center
+	add_child(mi)
+
+
+func _build_ui() -> void:
+	var layer: CanvasLayer = CanvasLayer.new()
+	layer.layer = 50
+	add_child(layer)
+	var panel: PanelContainer = PanelContainer.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	panel.offset_left = -330.0
+	panel.offset_top = 8.0
+	panel.offset_right = -8.0
+	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	layer.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	panel.add_child(box)
+	_count_label = Label.new()
+	box.add_child(_count_label)
+	_count_slider = HSlider.new()
+	_count_slider.min_value = 0
+	_count_slider.max_value = horde_config.spawn_counts.size() - 1
+	_count_slider.step = 1
+	_count_slider.tick_count = horde_config.spawn_counts.size()
+	_count_slider.ticks_on_borders = true
+	_count_slider.focus_mode = Control.FOCUS_NONE  # keep keys/pad for the game; [ ] and D-pad drive it
+	_count_slider.value_changed.connect(func(v: float) -> void: _set_count_index(int(v)))
+	box.add_child(_count_slider)
+	var help: Label = Label.new()
+	help.text = "Move WASD / left stick · Aim mouse / right stick\nFire LMB / RT · F3 / Back: debug overlay"
+	help.add_theme_font_size_override("font_size", 12)
+	box.add_child(help)
