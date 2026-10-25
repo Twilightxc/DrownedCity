@@ -67,3 +67,22 @@ func test_diagonal_shot() -> void:
 	_rebuild()
 	_hitscan.cast(_horde, Vector2(0.5, 0.5), Vector2(1, 1), 25.0, 1, _hits)
 	assert_eq(_hits, PackedInt32Array([0]))
+
+
+func test_wall_corner_blocks_diagonal_shot() -> void:
+	# Regression (Copilot, PR #2): the ray clips only the corner of wall cell (3, 3);
+	# half-cell sampling at t = 0.5 / 1.0 lands in (2, 3) and (3, 2) and missed it.
+	_grid.set_blocked_rect(Rect2i(3, 3, 1, 1))
+	_horde.spawn(Vector2(5.5, 0.6))  # on the ray, behind the corner
+	_rebuild()
+	var travelled: float = _hitscan.cast(_horde, Vector2(2.5, 3.6), Vector2(1, -1), 25.0, 5, _hits)
+	assert_eq(_hits.size(), 0, "corner of the wall stops the bullet")
+	assert_lt(travelled, 1.0)
+
+
+func test_shot_just_past_corner_is_not_blocked() -> void:
+	_grid.set_blocked_rect(Rect2i(3, 3, 1, 1))
+	_horde.spawn(Vector2(5.4, 0.5))
+	_rebuild()
+	_hitscan.cast(_horde, Vector2(2.4, 3.5), Vector2(1, -1), 25.0, 5, _hits)
+	assert_eq(_hits, PackedInt32Array([0]), "passes 0.1 m beside the corner")

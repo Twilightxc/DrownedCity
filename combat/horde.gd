@@ -109,6 +109,8 @@ func update(delta: float, target: Vector2) -> void:
 	var attack_r2: float = config.attack_range * config.attack_range
 	var stop_r2: float = attack_r2 * 0.6
 	var turn: float = clampf(config.steering * delta, 0.0, 1.0)
+	var max_step: float = grid.cell_size * 0.45
+	var max_step2: float = max_step * max_step
 	var target_cell: Vector2i = Vector2i(floori((target.x - ox) * inv), floori((target.y - oy) * inv))
 
 	for a: int in count:
@@ -144,7 +146,12 @@ func update(delta: float, target: Vector2) -> void:
 
 		# Separation displaces directly (position-based) so it never builds up momentum.
 		var v: Vector2 = vel[a].lerp(desired, turn)
-		var np: Vector2 = p + v * delta + push * minf(sep_k * delta, 0.5)
+		var step: Vector2 = v * delta + push * minf(sep_k * delta, 0.5)
+		# Under half a cell per frame, so the destination-cell check can't skip a 1-cell wall
+		# (a dense pile summed ~1.7 m of push in one frame).
+		if step.length_squared() > max_step2:
+			step = step.normalized() * max_step
+		var np: Vector2 = p + step
 
 		# Slide along blocked cells one axis at a time.
 		var nx_cell: int = floori((np.x - ox) * inv)

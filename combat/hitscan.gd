@@ -1,8 +1,8 @@
 class_name Hitscan
 extends RefCounted
 ## Bullet ray vs. horde through the spatial hash (no physics engine).
-## Walks the ray in half-cell steps, tests agents in nearby cells once each,
-## stops at blocked cells, and returns hits ordered along the ray.
+## Walks every grid cell the ray crosses, tests agents in nearby cells once each,
+## stops at the first blocked cell, and returns hits ordered along the ray.
 
 var grid: NavGrid
 
@@ -33,12 +33,22 @@ func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits:
 	var w: int = grid.width
 	var h: int = grid.height
 
-	var step: float = grid.cell_size * 0.5
+	# Grid traversal (Amanatides & Woo): visit every cell the ray crosses, in order,
+	# so a ray clipping only a wall's corner still stops there.
+	var cs: float = grid.cell_size
+	var c: Vector2i = grid.world_to_cell(from)
+	var step_x: int = 1 if dir.x > 0.0 else -1
+	var step_y: int = 1 if dir.y > 0.0 else -1
+	var t_delta_x: float = cs / absf(dir.x) if dir.x != 0.0 else INF
+	var t_delta_y: float = cs / absf(dir.y) if dir.y != 0.0 else INF
+	var next_x: float = grid.origin.x + (c.x + (1 if step_x > 0 else 0)) * cs
+	var next_y: float = grid.origin.y + (c.y + (1 if step_y > 0 else 0)) * cs
+	var t_max_x: float = (next_x - from.x) / dir.x if dir.x != 0.0 else INF
+	var t_max_y: float = (next_y - from.y) / dir.y if dir.y != 0.0 else INF
+
 	var end_t: float = max_range
-	var t: float = 0.0
+	var t: float = 0.0  # distance at which the ray entered cell c
 	while t <= end_t:
-		var p: Vector2 = from + dir * t
-		var c: Vector2i = grid.world_to_cell(p)
 		if grid.in_bounds(c) and grid.blocked[grid.index_of(c)] != 0:
 			end_t = t
 			break
@@ -56,7 +66,14 @@ func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits:
 						_cand_agent.append(a)
 						_cand_t.append(along)
 					a = nexts[a]
-		t += step
+		if t_max_x < t_max_y:
+			t = t_max_x
+			t_max_x += t_delta_x
+			c.x += step_x
+		else:
+			t = t_max_y
+			t_max_y += t_delta_y
+			c.y += step_y
 
 	# Insertion sort: a handful of candidates per shot.
 	var n: int = _cand_agent.size()
