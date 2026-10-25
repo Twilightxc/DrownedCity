@@ -90,3 +90,23 @@ func test_apply_damage_removes_dead_and_keeps_survivors() -> void:
 		xs.append(horde.positions[a].x)
 	xs.sort()
 	assert_eq(xs, [0.0, 2.0, 4.0] as Array[float])
+
+
+func test_dense_crowd_cannot_push_through_thin_wall() -> void:
+	# Regression (Copilot, PR #2): 50 neighbours summed a push of ~1.7 m in one frame,
+	# skipping over a 1-cell wall because only the destination cell was checked.
+	_grid = NavGrid.new(20, 20, 1.0, Vector2.ZERO)
+	_grid.set_blocked_rect(Rect2i(6, 0, 1, 20))
+	var horde: Horde = _horde(64)
+	for i: int in 50:
+		horde.spawn(Vector2(5.8, 5.5 + (i % 2) * 0.0001))
+	horde.spawn(Vector2(5.9, 5.5))
+	var target: Vector2 = Vector2(2.0, 5.5)
+	horde.recompute_flow([_grid.world_to_cell(target)] as Array[Vector2i])
+	for step: int in 30:
+		horde.update(1.0 / 60.0, target)
+		for a: int in horde.count:
+			if horde.positions[a].x >= 6.0:
+				fail_test("agent %d crossed the wall to x=%.2f at step %d" % [a, horde.positions[a].x, step])
+				return
+	pass_test("nobody crossed")
