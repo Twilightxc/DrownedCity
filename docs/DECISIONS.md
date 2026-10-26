@@ -7,6 +7,8 @@
 | 2026-10-26 | Pad layout: RT fire, LT throw, X reload, A interact, Y orders wheel, LB/RB camera, D-pad ↑↓ zoom, Start tuning, Back overlay | Shoulders were promised to camera turn; D-pad ←→ already drive the horde slider |
 | 2026-10-26 | Orders wheel reads mouse motion since it opened (not cursor position); stick release keeps the last pick | Works on the web without pointer lock; letting go of the stick first doesn't cancel |
 | 2026-10-26 | Feel numbers live in `data/input/twin_stick.tres`, edited live by an F4 / Start panel (not saved) | J tunes on the web build without a rebuild, then reports the values |
+| 2026-10-26 | Whole-scene mood = abandoned / desolate (J): weathered kit (`decay` per building), ruins, overgrowth, flotsam, cooler graded light | J's call after Spike B; loneliness supports the survival tone, lit base windows become the only sign of life |
+| 2026-10-26 | Weathering is baked into vertex colour per 0.8 m quad (streaks, peeling patches), not shader noise or decals | Keeps 1 draw call and no textures per building; deterministic from the kit seed |
 | 2026-10-25 | Spike launcher: default = newest spike, older via `?spike=<name>` (web) / `--spike=<name>` (desktop) | Spike A Arc test must stay reachable while Spike B is live |
 | 2026-10-25 | Asset format: palette colour in vertex RGB + baked AO in vertex alpha, one shared Style 1.5 shader; lit windows on a 2nd surface | ~1–2 draw calls per building, no textures, matches flat palette |
 | 2026-10-25 | Baked lighting = Cycles AO into vertex colours (Blender), not LightmapGI | LightmapGI baking needs RD hardware + manual editor step; vertex AO is scripted and reproducible |

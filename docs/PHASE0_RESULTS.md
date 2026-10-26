@@ -76,6 +76,27 @@ Arc notes:
 Known gaps vs reference: no roof clutter (tents, garden, solar), shorter/cooler shadows, water a bit brighter,
 no ladders/bridges/trees/boats. These are content, not renderer limits.
 
+### 0.4b Abandoned / desolate pass (J's request, 2026-10-26)
+
+Comparison: `docs/art/06_desolate_vs_spike_b.png` (left: PR #4 look, right: this pass).
+
+| Item | How | Result |
+| --- | --- | --- |
+| Weathering | `kit_building.py` `decay` 0..1: aged palette, rain streaks from parapets and sills, peeling patches (vertex colour per 0.8 m quad) | base 0.45, backdrops 0.85–0.9 |
+| Windows | per window: lit / intact / broken (void + shards) / boarded / frame gone | base keeps a boarded floor and a few lit rooms; backdrops dark |
+| Ruins | parapet gaps and broken segments; `building_brick_2f` roof hole; `building_concrete_5f` top-corner collapse with rubble and rebar | still 1 draw call per building |
+| Overgrowth | vines down facades, moss along parapets, weeds and debris on derelict roofs | |
+| Flood props | `prop_flood_debris_a/b`: sunken car, leaning dead lamp, dead tree, road sign, planks, barrels, tyres, trash | 664 / 748 tris; lighter algae tint via group `floating` |
+| Grade | cooler sun (1.45), grey-green fog from 50 m, Environment adjustments: saturation 0.8, contrast 1.1 | adjustments work in Compatibility (desktop GL + WebGL2) |
+
+Tris: base 20.2k, brick 9.4k, concrete 15.5k (were 11.9k / 4.4k / 7.1k).
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200 zombies | 144 (vsync) | 49 | 131k | capture for `06` |
+| Desktop RTX 4080 | Claude pane (Chromium), local web export | style + 200 zombies | 144 (vsync) | 58 | 129k | horde update 2.0 ms, no console errors |
+| Laptop Intel Arc | Chrome | style + 200 / 300 zombies | — | — | — | **J: pass ≥ 50 FPS, draw calls < 250** |
+
 ## 0.5 Spike C — Twin-stick feel — built, awaiting J's playtest
 
 Live: default URL (`?spike=twinstick`) = Spike B scene + horde + two supply crates. Spike B stays at

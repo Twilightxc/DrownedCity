@@ -1,8 +1,8 @@
 # phase0/spike-c-twin-stick
 
-- **PR:** not opened yet. The branch is pushed (J pushed it from GitHub Desktop). Description draft: `build/PR_phase0.5.md` on the laptop only.
+- **PR:** #7
 - **Machine:** laptop (ASUS, Intel Arc 140V)
-- **Base:** `main` @ `5073dbb`. Does **not** include PR #5 (`phase0/spike-b-desolate`).
+- **Base:** `main` @ `5073dbb`; `main` @ `0ef799f` merged in, so it includes PR #5 (desolate look).
 - **Updated:** 2026-10-26
 
 ## J asked
@@ -43,9 +43,9 @@ See PHASE0_RESULTS §0.5. In short:
 - F3 for FPS.
 
 ## Next session must know
-- **Merge with PR #5:** code merges cleanly (checked with `git merge-tree`). Only `docs/DECISIONS.md` and
-  `docs/PHASE0_RESULTS.md` conflict; keep both sides, newest rows first. After both merge, the twinstick
-  scene picks up the desolate look through `style_spike.tscn`.
+- **PR #5 merged into this branch:** only `docs/DECISIONS.md` and `docs/PHASE0_RESULTS.md` conflicted; both
+  sides were kept. The twinstick scene now has the desolate look through `style_spike.tscn`. After the merge
+  the 41 tests pass, headless runs are clean, and the scripted-input run passes every step.
 - The desolate look (131k primitives) still needs its own Arc measurement; the 60 FPS row above is pre-desolate.
 - Crates sit at roof (-8, 3) and (6, -4). Move them if the base roof layout changes.
 - Visual check without a human: a scratch `SceneTree` script (`-s drive.gd`) that loads the scene, fakes input

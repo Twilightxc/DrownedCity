@@ -14,7 +14,7 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
 - [x] GitHub Actions: download pinned Godot + export templates, headless export preset "Web"
       (thread support OFF), run tests, deploy `build/web` to Pages on push to `main`.
 - [x] Export preset committed; `.gitignore` excludes `.godot/` and build output.
-- **Pass (pending first push to GitHub):** pushing a commit updates the live URL within ~10 min, build number matches the commit.
+- **Pass (2026-10-25):** pushing a commit updates the live URL within ~10 min, build number matches the commit.
 
 ## 0.3 Spike A — Horde on web (biggest risk)
 - [x] Flat rooftop + surrounding water test scene, iso ortho camera.
@@ -35,6 +35,8 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
       into vertex colours in Blender.
 - **Pass (J to judge `docs/art/05_spike_b_vs_ref.png` + live URL):** side-by-side screenshot vs `docs/art/03_style15_horde.png` that J accepts; stays within budget
   (draw calls < 250) with Spike A running.
+- [x] Abandoned / desolate pass on the whole scene (J's request): weathering, ruins, overgrowth, flotsam,
+      cooler grade → `docs/art/06_desolate_vs_spike_b.png`.
 
 ## 0.5 Spike C — Twin-stick feel, mouse + gamepad
 - [x] Input map: WASD/left stick move, mouse/right stick aim, fire, reload, throw, interact, radial menu.
