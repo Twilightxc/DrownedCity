@@ -2,6 +2,12 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Survivors are individually recognisable: male/female bodies (men larger on average), build, height, skin tone (6–8), hair/beard; stored in SimCore; cosmetic only | J's request; pillar 1 "every survivor matters" (GDD §3) |
+| 2026-10-26 | One humanoid rig for survivors and human enemies: 2 base bodies + build blend shapes + bone scale; hair as a modular head piece (replaces "one base mesh") | Shares Mixamo clips; ≤ 6 survivors keeps cost low (GDD §13) |
+| 2026-10-26 | Animation: people = skeleton + AnimationTree with upper/lower split (8-way walk while aiming); horde = vertex animation textures on the MultiMesh, no per-zombie skeleton | Realistic motion (J) within the 200-zombie WebGL2 budget; twin-stick strafing |
+| 2026-10-26 | Zombie sub-variants inside each type (male/female, build, clothing by origin); the type's silhouette stays dominant; human enemies use the survivor character system + faction colours | J's request; readability pillar (GDD §9) |
+| 2026-10-26 | Hit/death feedback: brief slow on unarmored enemies, blood bursts + pools, corpses stay (capped, fade/sink), random dismemberment on death, gore on/off setting; low-poly style, no ragdolls | J's request; caps keep the web budget; toggle for rating and streaming (GDD §6) |
+| 2026-10-26 | Add Phase 0 spike 0.7 (animated horde + corpses + blood, measured on Arc) | Only new request that can break the 200-zombie web budget; Phase 0 estimate 25 → 33 h, demo ~650 → ~700 h |
 | 2026-10-25 | Spike launcher: default = newest spike, older via `?spike=<name>` (web) / `--spike=<name>` (desktop) | Spike A Arc test must stay reachable while Spike B is live |
 | 2026-10-25 | Asset format: palette colour in vertex RGB + baked AO in vertex alpha, one shared Style 1.5 shader; lit windows on a 2nd surface | ~1–2 draw calls per building, no textures, matches flat palette |
 | 2026-10-25 | Baked lighting = Cycles AO into vertex colours (Blender), not LightmapGI | LightmapGI baking needs RD hardware + manual editor step; vertex AO is scripted and reproducible |
