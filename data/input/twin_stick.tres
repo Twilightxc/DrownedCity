@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TwinStickConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/input/twin_stick_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+move_speed = 4.5
+move_accel = 40.0
+move_decel = 60.0
+stick_deadzone = 0.25
+aim_plane_height = 0.9
+aim_line = true
+pad_auto_fire = false
+auto_fire_threshold = 0.85
+aim_assist = true
+aim_assist_cone_deg = 12.0
+aim_assist_range = 18.0
+aim_assist_strength = 0.6
+pad_throw_range = 8.0
+interact_radius = 1.5
+radial_time_scale = 0.4

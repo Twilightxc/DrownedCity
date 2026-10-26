@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://game/spikes/horde_spike.gd" id="1_spike"]
 [ext_resource type="Resource" path="res://data/combat/horde_spike.tres" id="2_horde"]
@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://data/weapons/spike_rifle.tres" id="5_rifle"]
 [ext_resource type="Script" path="res://combat/horde_renderer.gd" id="6_renderer"]
 [ext_resource type="Script" path="res://game/spikes/tracers.gd" id="7_tracers"]
+[ext_resource type="Resource" path="res://data/input/twin_stick.tres" id="8_controls"]
 
 [sub_resource type="Environment" id="Env_spike"]
 background_mode = 1
@@ -52,6 +53,7 @@ far = 200.0
 [node name="Player" type="Node3D" parent="."]
 script = ExtResource("4_player")
 weapon = ExtResource("5_rifle")
+controls = ExtResource("8_controls")
 
 [node name="Body" type="MeshInstance3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)

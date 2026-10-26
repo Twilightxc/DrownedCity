@@ -10,3 +10,5 @@ penetration = 3
 fire_rate = 8.0
 max_range = 30.0
 spread_deg = 2.0
+magazine_size = 30
+reload_time = 1.6

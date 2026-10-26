@@ -4,6 +4,11 @@
 | --- | --- | --- |
 | 2026-10-26 | Claude sessions work in a git worktree (`.claude/worktrees/<branch>`), never in the main checkout; remove it after the last commit so GitHub Desktop can push | GitHub Desktop switched the shared checkout and stashed a session's work twice in one day |
 | 2026-10-26 | Multi-machine handoff: one note per branch in `docs/handoff/<branch>.md` + `tools/handoff.sh` at session start | Claude Code memory is per machine; per-branch files never conflict on merge; the 0.5 session only found PR #5 when GitHub Desktop switched branches |
+| 2026-10-26 | Mouse aim ray hits a plane at body height (0.9 m), not the floor | Iso pitch makes the floor point land ~1.3 m behind the zombie under the cursor |
+| 2026-10-26 | Gamepad aim assist = bend toward the best target in a ±12° / 18 m cone with line of sight (60 %); no assist on mouse | "Light assist, pad only" from Phase 0.5; numbers are live-tunable |
+| 2026-10-26 | Pad layout: RT fire, LT throw, X reload, A interact, Y orders wheel, LB/RB camera, D-pad ↑↓ zoom, Start tuning, Back overlay | Shoulders were promised to camera turn; D-pad ←→ already drive the horde slider |
+| 2026-10-26 | Orders wheel reads mouse motion since it opened (not cursor position); stick release keeps the last pick | Works on the web without pointer lock; letting go of the stick first doesn't cancel |
+| 2026-10-26 | Feel numbers live in `data/input/twin_stick.tres`, edited live by an F4 / Start panel (not saved) | J tunes on the web build without a rebuild, then reports the values |
 | 2026-10-26 | Whole-scene mood = abandoned / desolate (J): weathered kit (`decay` per building), ruins, overgrowth, flotsam, cooler graded light | J's call after Spike B; loneliness supports the survival tone, lit base windows become the only sign of life |
 | 2026-10-26 | Weathering is baked into vertex colour per 0.8 m quad (streaks, peeling patches), not shader noise or decals | Keeps 1 draw call and no textures per building; deterministic from the kit seed |
 | 2026-10-25 | Spike launcher: default = newest spike, older via `?spike=<name>` (web) / `--spike=<name>` (desktop) | Spike A Arc test must stay reachable while Spike B is live |

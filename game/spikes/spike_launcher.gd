@@ -3,10 +3,11 @@ extends Node
 ## Default is the newest spike, so the live URL always shows what is under test.
 
 const SPIKES: Dictionary[String, String] = {
+	"twinstick": "res://game/spikes/twin_stick_spike.tscn",
 	"style": "res://game/spikes/style_spike.tscn",
 	"horde": "res://game/spikes/horde_spike.tscn",
 }
-const DEFAULT_SPIKE: String = "style"
+const DEFAULT_SPIKE: String = "twinstick"
 
 
 func _ready() -> void:
