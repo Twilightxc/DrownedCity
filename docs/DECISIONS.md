@@ -2,12 +2,14 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Claude sessions work in a git worktree (`.claude/worktrees/<branch>`), never in the main checkout; remove it after the last commit so GitHub Desktop can push | GitHub Desktop switched the shared checkout and stashed a session's work twice in one day |
 | 2026-10-26 | Survivors are individually recognisable: male/female bodies (men larger on average), build, height, skin tone (6–8), hair/beard; stored in SimCore; cosmetic only | J's request; pillar 1 "every survivor matters" (GDD §3) |
 | 2026-10-26 | One humanoid rig for survivors and human enemies: 2 base bodies + build blend shapes + bone scale; hair as a modular head piece (replaces "one base mesh") | Shares Mixamo clips; ≤ 6 survivors keeps cost low (GDD §13) |
 | 2026-10-26 | Animation: people = skeleton + AnimationTree with upper/lower split (8-way walk while aiming); horde = vertex animation textures on the MultiMesh, no per-zombie skeleton | Realistic motion (J) within the 200-zombie WebGL2 budget; twin-stick strafing |
 | 2026-10-26 | Zombie sub-variants inside each type (male/female, build, clothing by origin); the type's silhouette stays dominant; human enemies use the survivor character system + faction colours | J's request; readability pillar (GDD §9) |
 | 2026-10-26 | Hit/death feedback: brief slow on unarmored enemies, blood bursts + pools, corpses stay (capped, fade/sink), random dismemberment on death, gore on/off setting; low-poly style, no ragdolls | J's request; caps keep the web budget; toggle for rating and streaming (GDD §6) |
 | 2026-10-26 | Add Phase 0 spike 0.7 (animated horde + corpses + blood, measured on Arc) | Only new request that can break the 200-zombie web budget; Phase 0 estimate 25 → 33 h, demo ~650 → ~700 h |
+| 2026-10-26 | Multi-machine handoff: one note per branch in `docs/handoff/<branch>.md` + `tools/handoff.sh` at session start | Claude Code memory is per machine; per-branch files never conflict on merge; the 0.5 session only found PR #5 when GitHub Desktop switched branches |
 | 2026-10-26 | Whole-scene mood = abandoned / desolate (J): weathered kit (`decay` per building), ruins, overgrowth, flotsam, cooler graded light | J's call after Spike B; loneliness supports the survival tone, lit base windows become the only sign of life |
 | 2026-10-26 | Weathering is baked into vertex colour per 0.8 m quad (streaks, peeling patches), not shader noise or decals | Keeps 1 draw call and no textures per building; deterministic from the kit seed |
 | 2026-10-25 | Spike launcher: default = newest spike, older via `?spike=<name>` (web) / `--spike=<name>` (desktop) | Spike A Arc test must stay reachable while Spike B is live |
