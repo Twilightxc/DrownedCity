@@ -1,6 +1,6 @@
 # chore/handoff-notes
 
-- **PR:** not opened. Pushed up to `806c2a6`; the worktree commit after it still needs a push from GitHub Desktop.
+- **PR:** not opened. Pushed (Claude pushes from the laptop CLI with the GCM variables in CLAUDE.md).
 - **Machine:** laptop (ASUS, Intel Arc 140V)
 - **Base:** main @ `5073dbb`
 - **Updated:** 2026-10-26
@@ -28,8 +28,6 @@
 - PR #5 (`phase0/spike-b-desolate`, desktop) has no note yet. The desktop session should add one, including
   whether J's map/layout request ("ปรับดีไซน์ของแมพ แผนที่") is still open. PR #5 only changes mood and
   buildings, not the roof/map layout.
-- Optional: J signs the laptop's git CLI in once (Git Credential Manager). Sessions could then push from their
-  worktree and skip the remove-then-push-from-Desktop step.
 
 ## J must test
 Run `tools/handoff.sh` in Git Bash on each machine. It should list PR #5 and the open branches, and warn which

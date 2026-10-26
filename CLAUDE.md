@@ -92,7 +92,7 @@ the other machine.
 | Machine | Has | Use it for |
 | --- | --- | --- |
 | Desktop RTX 4080 (dev) | Godot, Blender, local web export | asset kits (`tools/blender`), captures, local web builds |
-| Laptop ASUS, Intel Arc 140V (min-spec) | git + GitHub Desktop only: no Godot/Blender/`gh`, CLI `git push` has no credentials | Arc measurements; code + GUT tests after downloading Godot into the session scratchpad (ask J first) |
+| Laptop ASUS, Intel Arc 140V (min-spec) | git + GitHub Desktop only: no Godot/Blender/`gh`. CLI `git push` works only with `GCM_INTERACTIVE=always` and `GIT_TERMINAL_PROMPT=1` set (Git Credential Manager login) | Arc measurements; code + GUT tests after downloading Godot into the session scratchpad (ask J first) |
 
 - **Session start:** run `tools/handoff.sh` (Git Bash) before any work. It fetches, then prints this
   checkout's state, every branch not merged into main with its handoff note, and files that more than one
@@ -100,15 +100,15 @@ the other machine.
 - **One note per branch:** `docs/handoff/<branch with / → ->.md`, on that branch. Format in
   `docs/handoff/README.md`. Create it in the first commit, keep it current, and always update it before a
   push or before J switches machines. Quote J's request there, especially the parts not done yet.
-- **Before J switches machines:** commit, update the note, push. On the laptop J pushes with GitHub Desktop.
+- **Before J switches machines:** commit, update the note, push.
 - **Work in a git worktree, never in the main checkout** (`C:\DrownedCity` on the laptop is J's GitHub
   Desktop checkout; switching branches there stashed a session's work twice on 2026-10-26).
   - Start: `git worktree add .claude/worktrees/<branch with / → -> <branch>` (new branch:
     `-b <branch> origin/main`), then switch the session into it (Claude Code: `EnterWorktree` with `path`).
     Godot skips the hidden `.claude/` folder, and `.claude/worktrees/` is git-ignored.
-  - Finish: a branch checked out in a worktree can't be checked out in GitHub Desktop, so after the last commit
-    leave the worktree and `git worktree remove .claude/worktrees/<name>` from the main checkout. J then pushes
-    from GitHub Desktop. If the CLI `git push` works on that machine, push from the worktree instead.
+  - Finish: push from the worktree when the user asked for a push or PR (laptop: with the two variables in the
+    table above), then leave the worktree and `git worktree remove .claude/worktrees/<name>` from the main
+    checkout. A branch checked out in a worktree can't be checked out in GitHub Desktop.
   - The stash is shared by all worktrees: never a bare `git stash pop`.
 - GitHub Desktop may still switch the main checkout's branch and stash its changes. If files change on disk
   unexpectedly, check `git status -sb` and `git stash list` before editing.
