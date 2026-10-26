@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Claude sessions work in a git worktree (`.claude/worktrees/<branch>`), never in the main checkout; remove it after the last commit so GitHub Desktop can push | GitHub Desktop switched the shared checkout and stashed a session's work twice in one day |
 | 2026-10-26 | Multi-machine handoff: one note per branch in `docs/handoff/<branch>.md` + `tools/handoff.sh` at session start | Claude Code memory is per machine; per-branch files never conflict on merge; the 0.5 session only found PR #5 when GitHub Desktop switched branches |
 | 2026-10-25 | Spike launcher: default = newest spike, older via `?spike=<name>` (web) / `--spike=<name>` (desktop) | Spike A Arc test must stay reachable while Spike B is live |
 | 2026-10-25 | Asset format: palette colour in vertex RGB + baked AO in vertex alpha, one shared Style 1.5 shader; lit windows on a 2nd surface | ~1–2 draw calls per building, no textures, matches flat palette |

@@ -10,3 +10,6 @@ platform/build_info.json
 
 # Python
 __pycache__/
+
+# Claude Code worktrees (see CLAUDE.md "Machines and handoff")
+.claude/worktrees/
