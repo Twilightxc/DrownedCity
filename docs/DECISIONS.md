@@ -2,6 +2,8 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Claude sessions work in a git worktree (`.claude/worktrees/<branch>`), never in the main checkout; remove it after the last commit so GitHub Desktop can push | GitHub Desktop switched the shared checkout and stashed a session's work twice in one day |
+| 2026-10-26 | Multi-machine handoff: one note per branch in `docs/handoff/<branch>.md` + `tools/handoff.sh` at session start | Claude Code memory is per machine; per-branch files never conflict on merge; the 0.5 session only found PR #5 when GitHub Desktop switched branches |
 | 2026-10-26 | Whole-scene mood = abandoned / desolate (J): weathered kit (`decay` per building), ruins, overgrowth, flotsam, cooler graded light | J's call after Spike B; loneliness supports the survival tone, lit base windows become the only sign of life |
 | 2026-10-26 | Weathering is baked into vertex colour per 0.8 m quad (streaks, peeling patches), not shader noise or decals | Keeps 1 draw call and no textures per building; deterministic from the kit seed |
 | 2026-10-25 | Spike launcher: default = newest spike, older via `?spike=<name>` (web) / `--spike=<name>` (desktop) | Spike A Arc test must stay reachable while Spike B is live |

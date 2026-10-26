@@ -86,3 +86,35 @@ resource). 3. Risk is chosen (team size, noise, distance). 4. A living base you 
 - CI: GitHub Actions → headless Godot export Web → deploy to GitHub Pages on push to `main`.
 - Never commit secrets; J adds API keys (itch.io butler, Supabase) to GitHub Secrets.
 - Telemetry requires explicit opt-in consent; no personal data (PDPA).
+
+## Machines and handoff
+
+J runs Claude Code on two machines, often on different branches at the same time. Claude's memory is per
+machine; **the repo is the only shared channel**, so whatever is not committed and pushed doesn't exist for
+the other machine.
+
+| Machine | Has | Use it for |
+| --- | --- | --- |
+| Desktop RTX 4080 (dev) | Godot, Blender, local web export | asset kits (`tools/blender`), captures, local web builds |
+| Laptop ASUS, Intel Arc 140V (min-spec) | git, GitHub Desktop, `gh` 2.103 (logged in as Twilightxc since 2026-10-26; may need the full path `C:\Program Files\GitHub CLI\gh.exe` in old shells). No Godot or Blender. CLI `git push` works only with `GCM_INTERACTIVE=always` and `GIT_TERMINAL_PROMPT=1` set (Git Credential Manager login) | Arc measurements; code + GUT tests after downloading Godot into the session scratchpad (ask J first); open PRs with `gh` |
+
+- **Session start:** run `tools/handoff.sh` (Git Bash) before any work. It fetches, then prints this
+  checkout's state, every branch not merged into main with its handoff note, and files that more than one
+  branch touches. Read the notes of branches that touch the same files as your task.
+- **One note per branch:** `docs/handoff/<branch with / → ->.md`, on that branch. Format in
+  `docs/handoff/README.md`. Create it in the first commit, keep it current, and always update it before a
+  push or before J switches machines. Quote J's request there, especially the parts not done yet.
+- **Before J switches machines:** commit, update the note, push.
+- **Work in a git worktree, never in the main checkout** (`C:\DrownedCity` on the laptop is J's GitHub
+  Desktop checkout; switching branches there stashed a session's work twice on 2026-10-26).
+  - Start: `git worktree add .claude/worktrees/<branch with / → -> <branch>` (new branch:
+    `-b <branch> origin/main`), then switch the session into it (Claude Code: `EnterWorktree` with `path`).
+    Godot skips the hidden `.claude/` folder, and `.claude/worktrees/` is git-ignored.
+  - Finish: push from the worktree when the user asked for a push or PR (laptop: with the two variables in the
+    table above), then leave the worktree and `git worktree remove .claude/worktrees/<name>` from the main
+    checkout. A branch checked out in a worktree can't be checked out in GitHub Desktop.
+  - The stash is shared by all worktrees: never a bare `git stash pop`.
+- GitHub Desktop may still switch the main checkout's branch and stash its changes. If files change on disk
+  unexpectedly, check `git status -sb` and `git stash list` before editing.
+- Parallel branches collide in `docs/DECISIONS.md` / `docs/PHASE0_RESULTS.md` (rows added at the top).
+  Resolve by keeping both sides, newest first.
