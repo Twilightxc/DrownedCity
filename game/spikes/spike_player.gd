@@ -30,7 +30,8 @@ var aim_dir: Vector2 = Vector2(0, 1)  # world XZ
 var velocity: Vector2 = Vector2.ZERO
 var using_pad: bool = false
 var aim_locked: bool = false  ## radial menu open: sticks/mouse pick a command instead
-var assist_target: int = -1
+var assist_target: int = -1  ## agent index this frame; may go stale once a shot swap-removes agents
+var assist_point: Vector2 = Vector2.ZERO  ## that agent's position when it was picked
 var interact_target: SupplyCrate
 var shots_fired: int = 0
 var ammo: int = 0
@@ -195,7 +196,8 @@ func _update_aim() -> void:
 				var cone: float = deg_to_rad(controls.aim_assist_cone_deg)
 				assist_target = _assist.pick(horde, ground_position(), raw, controls.aim_assist_range, cone)
 				if assist_target >= 0:
-					aim_dir = AimAssist.bend(raw, ground_position(), horde.positions[assist_target], controls.aim_assist_strength)
+					assist_point = horde.positions[assist_target]
+					aim_dir = AimAssist.bend(raw, ground_position(), assist_point, controls.aim_assist_strength)
 	else:
 		var hit: Variant = _mouse_on_plane(ground_y + controls.aim_plane_height)
 		if hit != null:
@@ -269,8 +271,10 @@ func _compute_throw_target() -> Vector3:
 	var p: Vector2 = ground_position()
 	var target: Vector2 = p + aim_dir * controls.pad_throw_range
 	if using_pad:
-		if assist_target >= 0 and assist_target < horde.count:
-			target = horde.positions[assist_target]
+		# The saved point, not horde.positions[assist_target]: a shot this frame may have killed that
+		# agent and swapped another one into its index.
+		if assist_target >= 0:
+			target = assist_point
 	else:
 		var hit: Variant = _mouse_on_plane(ground_y)
 		if hit != null:

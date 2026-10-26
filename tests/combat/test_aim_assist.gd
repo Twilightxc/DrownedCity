@@ -33,6 +33,22 @@ func test_skips_target_behind_wall() -> void:
 	assert_eq(_assist.pick(_horde, Vector2(5, 5), Vector2.RIGHT, 18.0, CONE), 1)
 
 
+func test_angle_beats_distance() -> void:
+	# Copilot PR #7 case: near but 3° off must not win over far but 1° off.
+	var from: Vector2 = Vector2(2, 15)
+	_horde.spawn(from + Vector2.RIGHT.rotated(deg_to_rad(3.0)) * 2.0)  # 0: 2 m, 3°
+	_horde.spawn(from + Vector2.RIGHT.rotated(deg_to_rad(1.0)) * 17.0)  # 1: 17 m, 1°
+	assert_eq(_assist.pick(_horde, from, Vector2.RIGHT, 18.0, CONE), 1)
+
+
+func test_many_blocked_candidates_do_not_hide_a_visible_one() -> void:
+	_grid.set_blocked_rect(Rect2i(10, 0, 1, 6))
+	for i: int in 6:  # six better-aligned zombies, all behind the wall
+		_horde.spawn(Vector2(12.5 + i, 5.0 + 0.02 * i))
+	_horde.spawn(Vector2(9.0, 5.8))  # 6: worse angle (~11°), visible
+	assert_eq(_assist.pick(_horde, Vector2(5, 5), Vector2.RIGHT, 18.0, CONE), 6)
+
+
 func test_ignores_targets_behind_shooter() -> void:
 	_horde.spawn(Vector2(2.0, 5.0))
 	assert_eq(_assist.pick(_horde, Vector2(5, 5), Vector2.RIGHT, 18.0, CONE), -1)

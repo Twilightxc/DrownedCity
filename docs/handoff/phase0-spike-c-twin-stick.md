@@ -30,6 +30,11 @@
 - New input actions in `project.godot`. Tunables in `data/input/twin_stick.tres`, `data/weapons/spike_grenade.tres`,
   and `spike_rifle.tres` (magazine).
 - 41 GUT tests pass. A desktop run on the Arc with scripted input exercised every feature.
+- Fixes from Copilot's review of PR #7 (43 tests now pass):
+  - aim assist ranks by angle with distance only as a tie-break, and checks line of sight per candidate
+    instead of keeping a top-4 shortlist
+  - the throw target uses the assist point saved before shots swap-remove agents
+  - an orders wheel whose release was lost during the tuning pause now cancels on resume
 
 ## Not done / next
 - **Feel is unverified.** J plays 10 min per device, tunes with F4, and records the verdict and values in

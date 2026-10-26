@@ -38,6 +38,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	# A release we never saw, e.g. let go while the tuning panel paused the tree: cancel, don't pick.
+	if _radial.visible and not Input.is_action_pressed("radial_menu"):
+		_close_radial(false)
 	if _radial.visible and _player.using_pad:
 		_radial.point_stick(Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down", 0.0))
 	if _toast_left > 0.0:
