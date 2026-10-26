@@ -1,8 +1,8 @@
 # design/characters-and-gore
 
-- **PR:** not opened. Not pushed: the laptop CLI has no git credentials, so J pushes from GitHub Desktop.
+- **PR:** #6
 - **Machine:** laptop (ASUS, Intel Arc 140V)
-- **Base:** main @ `5073dbb`. Docs only, no code.
+- **Base:** main @ `5073dbb`; `main` @ `0ef799f` (PR #5) merged in. Docs only, no code.
 - **Updated:** 2026-10-26
 
 ## J asked
