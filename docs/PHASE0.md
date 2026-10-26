@@ -37,9 +37,10 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
   (draw calls < 250) with Spike A running.
 
 ## 0.5 Spike C — Twin-stick feel, mouse + gamepad
-- [ ] Input map: WASD/left stick move, mouse/right stick aim, fire, reload, throw, interact, radial menu.
-- [ ] Iso-correct aiming (screen → ground plane), light aim assist on gamepad only.
-- [ ] Camera rotate 90° (Q/E, shoulder buttons) keeps controls camera-relative.
+- [x] Input map: WASD/left stick move, mouse/right stick aim, fire, reload, throw, interact, radial menu.
+- [x] Iso-correct aiming (screen → aim plane at body height), light aim assist on gamepad only.
+- [x] Camera rotate 90° (Q/E, shoulder buttons) keeps controls camera-relative. (+ zoom: wheel / D-pad up/down)
+- [x] Live tuning panel (F4 / Start) so feel numbers change without a rebuild.
 - **Pass:** J plays 10 minutes with each input device and says it feels right (subjective — J decides).
 
 ## 0.6 Spike D — Save on web

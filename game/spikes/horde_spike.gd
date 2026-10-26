@@ -1,5 +1,7 @@
 extends Node3D
 ## Spike A (Phase 0.3): can the web build hold 200+ zombies at 50+ FPS on an Intel Arc iGPU?
+## Also the shared harness for later spikes: player HUD line (ammo, grenades) and a controls
+## cheat sheet that follows the input device.
 ## Flat rooftop over flood water, MultiMesh horde on a shared flow field, hitscan rifle.
 ## Spawn count: slider, [ / ] keys, or D-pad left/right.
 ## With `level_scene` set (Spike B), that scene supplies the art and its "nav_obstacle" nodes
@@ -39,6 +41,9 @@ var _stats_timer: float = 0.0
 
 var _count_slider: HSlider
 var _count_label: Label
+var _status_label: Label
+var _help_label: Label
+var _grenades: Grenades
 
 @onready var _rig: IsoCameraRig = $IsoCameraRig
 @onready var _camera: Camera3D = $IsoCameraRig/Camera3D
@@ -71,10 +76,17 @@ func _ready() -> void:
 	_player.setup(_grid, _horde, _camera, GROUND_Y)
 	_player.position = Vector3(0.5, GROUND_Y, 2.5)
 	_player.fired.connect(_tracers.add)
+	if _player.throwable != null:
+		_grenades = Grenades.new()
+		_grenades.horde = _horde
+		add_child(_grenades)
+		_player.grenades = _grenades
 	_rig.position = _player.position
 
 	_build_ui()
 	_set_count_index(horde_config.default_count_index)
+	_player.device_changed.connect(func(_pad: bool) -> void: _update_help())
+	_update_help()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -108,6 +120,7 @@ func _process(delta: float) -> void:
 	_render_ms = lerpf(_render_ms, (t3 - t2) / 1000.0, 0.1)
 
 	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
+	_update_status()
 	_publish_stats(delta)
 
 
@@ -160,6 +173,29 @@ func _publish_stats(delta: float) -> void:
 	DebugOverlay.set_stat("kills", str(_horde.kills))
 	DebugOverlay.set_stat("hits_taken", str(_horde.hits_on_target))
 	DebugOverlay.set_stat("shots", str(_player.shots_fired))
+	DebugOverlay.set_stat("input", "gamepad" if _player.using_pad else "mouse + keyboard")
+	DebugOverlay.set_stat("assist_target", str(_player.assist_target))
+
+
+func _update_status() -> void:
+	var text: String = "Ammo %d / %d" % [_player.ammo, _player.weapon.magazine_size]
+	if _player.reload_left > 0.0:
+		text = "Reloading %d%%" % int(_player.reload_progress() * 100.0)
+	if _player.throwable != null:
+		text += "   ·   Grenades %d" % _player.grenade_count
+	if _status_label.text != text:
+		_status_label.text = text
+
+
+func _update_help() -> void:
+	_help_label.text = _help_text(_player.using_pad)
+
+
+## Controls cheat sheet for the device in use; subclasses append their extras.
+func _help_text(pad: bool) -> String:
+	if pad:
+		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT\nCamera LB/RB, D-pad up/down · Back: debug overlay"
+	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB\nCamera Q/E, wheel · F3: debug overlay"
 
 
 func _build_level_meshes() -> void:
@@ -203,7 +239,7 @@ func _build_ui() -> void:
 	add_child(layer)
 	var panel: PanelContainer = PanelContainer.new()
 	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	panel.offset_left = -330.0
+	panel.offset_left = -470.0
 	panel.offset_top = 8.0
 	panel.offset_right = -8.0
 	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -221,7 +257,8 @@ func _build_ui() -> void:
 	_count_slider.focus_mode = Control.FOCUS_NONE  # keep keys/pad for the game; [ ] and D-pad drive it
 	_count_slider.value_changed.connect(func(v: float) -> void: _set_count_index(int(v)))
 	box.add_child(_count_slider)
-	var help: Label = Label.new()
-	help.text = "Move WASD / left stick · Aim mouse / right stick\nFire LMB / RT · F3 / Back: debug overlay"
-	help.add_theme_font_size_override("font_size", 12)
-	box.add_child(help)
+	_status_label = Label.new()
+	box.add_child(_status_label)
+	_help_label = Label.new()
+	_help_label.add_theme_font_size_override("font_size", 12)
+	box.add_child(_help_label)

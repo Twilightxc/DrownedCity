@@ -59,3 +59,36 @@ func set_blocked_rect(rect: Rect2i, value: bool = true) -> void:
 
 func world_size() -> Vector2:
 	return Vector2(width, height) * cell_size
+
+
+## Distance along `dir` from `from` to the first blocked cell, capped at max_range.
+## Cells outside the grid don't block (bullets fly off the roof).
+func ray_distance(from: Vector2, dir: Vector2, max_range: float) -> float:
+	dir = dir.normalized()
+	var c: Vector2i = world_to_cell(from)
+	var step_x: int = 1 if dir.x > 0.0 else -1
+	var step_y: int = 1 if dir.y > 0.0 else -1
+	var t_delta_x: float = cell_size / absf(dir.x) if dir.x != 0.0 else INF
+	var t_delta_y: float = cell_size / absf(dir.y) if dir.y != 0.0 else INF
+	var next_x: float = origin.x + (c.x + (1 if step_x > 0 else 0)) * cell_size
+	var next_y: float = origin.y + (c.y + (1 if step_y > 0 else 0)) * cell_size
+	var t_max_x: float = (next_x - from.x) / dir.x if dir.x != 0.0 else INF
+	var t_max_y: float = (next_y - from.y) / dir.y if dir.y != 0.0 else INF
+	var t: float = 0.0
+	while t <= max_range:
+		if in_bounds(c) and blocked[index_of(c)] != 0:
+			return t
+		if t_max_x < t_max_y:
+			t = t_max_x
+			t_max_x += t_delta_x
+			c.x += step_x
+		else:
+			t = t_max_y
+			t_max_y += t_delta_y
+			c.y += step_y
+	return max_range
+
+
+func line_of_sight(a: Vector2, b: Vector2) -> bool:
+	var d: float = a.distance_to(b)
+	return d < 0.0001 or ray_distance(a, b - a, d) >= d

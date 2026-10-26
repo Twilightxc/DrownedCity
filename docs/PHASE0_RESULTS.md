@@ -25,9 +25,9 @@ Measured numbers per spike. Device/browser on every row; J's Arc laptop is the p
 | Device | Browser | Renderer | FPS | Draw calls | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Desktop RTX 4080 (dev) | Claude browser pane (Chromium) | gl_compatibility | 143 | 10 | empty test scene |
-| Laptop Intel Arc (min-spec) | Chrome | — | — | — | **J to fill in** |
+| Laptop Intel Arc (min-spec) | Chrome | gl_compatibility | — | — | n/a: the default URL now opens the Spike B scene; see the 0.4 Arc row (60 FPS) |
 
-## 0.3 Spike A — Horde on web — built, awaiting Arc measurement
+## 0.3 Spike A — Horde on web — ✅ pass at 200 on Arc (2026-10-26, measured in the heavier Spike B scene)
 
 Scene: 40×40 m rooftop with 8 obstacles over flood water. Zombies are one `MultiMeshInstance3D`
 (raw buffer write per frame), steered by a shared BFS flow field (recompute ≤ every 0.25 s, only when the
@@ -38,8 +38,8 @@ Overlay (F3) shows `Horde Update`, `Horde Render Sync` and `Flow Field` times.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Desktop RTX 4080 (dev) | Claude pane (Chromium) | 200 | 144 (vsync) | 52 | 60k | 0.33 ms | 1.8 ms | spread out, approaching |
 | Desktop RTX 4080 (dev) | Claude pane (Chromium) | 300 | 144 (vsync) | 55 | 87k | 1.5–3.4 ms | 1.8 ms | 300 packed around player = worst case |
-| Laptop Intel Arc | Chrome | 200 | — | — | — | — | — | **J: pass ≥ 50 FPS** |
-| Laptop Intel Arc | Chrome | 300 | — | — | — | — | — | J |
+| Laptop Intel Arc | Chrome | 200 | 60 (vsync) | 59 | 89k | 1.98 ms | 0.50 ms | measured in the Spike B scene (horde + full style), all 200 packed on the player = worst case; see 0.4 |
+| Laptop Intel Arc | Chrome | 300 | — | — | — | — | — | not measured yet (headroom check, not a pass criterion) |
 
 Findings so far:
 - A full per-cell direction pass cost ~7 ms per recompute on web → directions are now resolved lazily
@@ -47,7 +47,7 @@ Findings so far:
 - Worst case is CPU, not GPU: separation cost grows when the whole horde piles on the player.
   If Arc misses the target, first lever = cap separation neighbours per agent; fallback per plan = cap 100.
 
-## 0.4 Spike B — "Style 1.5" look — built, awaiting J's verdict
+## 0.4 Spike B — "Style 1.5" look — ✅ perf pass on Arc (2026-10-26); awaiting J's visual verdict
 
 Comparison: `docs/art/05_spike_b_vs_ref.png` (left: reference render, right: Godot capture).
 Live: default URL (`?spike=style`); Spike A stays at `?spike=horde`.
@@ -65,14 +65,53 @@ Live: default URL (`?spike=style`); Spike A stays at `?spike=horde`.
 | --- | --- | --- | --- | --- | --- | --- |
 | Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200 zombies | 144 (vsync) | 48–55 | 88k | capture used for the comparison (`--hide-ui`) |
 | Desktop RTX 4080 | Claude pane (Chromium) | style + 200 zombies | 144 (vsync) | 45 | 69k | horde update 1.8 ms |
-| Laptop Intel Arc | Chrome | style + 200 zombies | — | — | — | **J: pass ≥ 50 FPS, draw calls < 250** |
+| Laptop Intel Arc | Chrome | style + 200 zombies | 60 (vsync), process 6.2 ms | 59 | 89k | build `5073dbb · #10`; 200 packed on the player (worst case); objects 456, VRAM 62.7 MB, horde update 1.98 ms, flow field 0.50 ms. Adapter reads "WebKit WebGL" (Chrome masks the GPU name); device per J |
+
+Arc notes:
+- Pass with margin: 60 FPS is the display's vsync cap, draw calls are 59 of 250, primitives 89k of 300k.
+- The overlay's ms value is `TIME_PROCESS` (CPU script time): 6.2 of 16.7 ms. GPU time is not measured,
+  so the real headroom above 60 FPS is unknown. That is enough for the gate; measure it only if a later
+  phase gets close to the budget.
 
 Known gaps vs reference: no roof clutter (tents, garden, solar), shorter/cooler shadows, water a bit brighter,
 no ladders/bridges/trees/boats. These are content, not renderer limits.
 
-## 0.5 Spike C — Twin-stick feel
+## 0.5 Spike C — Twin-stick feel — built, awaiting J's playtest
 
-_Not started._
+Live: default URL (`?spike=twinstick`) = Spike B scene + horde + two supply crates. Spike B stays at
+`?spike=style`, Spike A at `?spike=horde`. All three use the new player controls.
+
+| Action | Mouse + keyboard | Gamepad (Xbox layout) |
+| --- | --- | --- |
+| Move | WASD | Left stick |
+| Aim | Mouse | Right stick (+ aim assist) |
+| Fire | LMB | RT |
+| Reload | R (auto on empty) | X |
+| Throw grenade | hold RMB → ring at cursor, release | hold LT → ring along aim / on assist target, release |
+| Interact (crate restocks grenades) | F | A |
+| Orders wheel | hold Tab, move mouse, release (Esc cancels) | hold Y, right stick, release (B cancels) |
+| Camera rotate 90° | Q / E | LB / RB |
+| Zoom | Wheel | D-pad up / down |
+| Tuning panel (pauses) | F4 | Start |
+| Debug overlay | F3 | Back |
+
+| Item | How |
+| --- | --- |
+| Iso aiming | Mouse ray hits a plane at body height (0.9 m), not the floor: on a −35° iso camera the floor plane aims ~1.3 m behind a zombie under the cursor (unit test) |
+| Aim assist | Gamepad only: zombie with the smallest angle inside ±12° and 18 m, line of sight via the NavGrid, aim bent 60 % toward it; aim line turns green while it holds a target |
+| Camera-relative | Move/aim map through the camera's yaw every frame, so they follow a 90° turn (0.25 s tween) |
+| Movement | Accel 40 / decel 60 m/s² toward 4.5 m/s (was instant) |
+| Tunables | `data/input/twin_stick.tres`, rifle magazine/reload in `spike_rifle.tres`, grenade in `spike_grenade.tres`; the panel edits them live, not saved; its bottom line lists every value for a screenshot |
+
+Checked by Claude (desktop GL, Arc 140V, scripted input): mouse aim + fire, throw ring → flight → blast
+kills, pad aim with assist (green line), wheel pick + order toast, camera turn, tuning panel pause,
+crate restock. Unit tests: aim math, aim assist, NavGrid ray, wheel sectors (41 total).
+**Not checked: how it feels.** That is J's call: 10 min per device.
+
+| Device | Input | Verdict | Tuned values (panel summary line) | Notes |
+| --- | --- | --- | --- | --- |
+| Laptop Intel Arc, Chrome | Mouse + keyboard | — | — | **J** |
+| Laptop Intel Arc, Chrome | Gamepad | — | — | **J** |
 
 ## 0.6 Spike D — Save on web
 

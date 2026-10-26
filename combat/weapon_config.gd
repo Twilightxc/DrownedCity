@@ -8,3 +8,5 @@ extends Resource
 @export var fire_rate: float = 8.0  ## shots per second
 @export var max_range: float = 30.0  ## m
 @export var spread_deg: float = 2.0  ## ± random angle per shot
+@export var magazine_size: int = 30
+@export var reload_time: float = 1.6  ## s
