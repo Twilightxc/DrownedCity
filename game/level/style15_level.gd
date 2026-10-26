@@ -4,9 +4,12 @@ extends Node3D
 ## Style 1.5 shaders, publishes the water level as a global shader uniform, and feeds building
 ## footprints to the water shader (foam ring + shallow tint).
 ## Nodes in group "nav_obstacle" carry metadata/footprint (metres) for the spike's NavGrid.
+## Nodes in group "floating" sit on the water line and get a lighter wet/algae tint, otherwise the
+## whole prop would read as algae.
 
 const SURFACE_MATERIAL: Material = preload("res://game/level/style15_surface.tres")
 const EMISSIVE_MATERIAL: Material = preload("res://game/level/style15_emissive.tres")
+const FLOATING_MATERIAL: Material = preload("res://game/level/style15_surface_floating.tres")
 const MAX_FOOTPRINTS: int = 16
 
 @export var water_level: float = -8.6
@@ -15,11 +18,14 @@ const MAX_FOOTPRINTS: int = 16
 
 func _ready() -> void:
 	RenderingServer.global_shader_parameter_set("water_level", water_level)
-	_apply_materials(self)
+	_apply_materials(self, SURFACE_MATERIAL)
+	for node: Node in get_tree().get_nodes_in_group("floating"):
+		if is_ancestor_of(node):
+			_apply_materials(node, FLOATING_MATERIAL)
 	_publish_footprints()
 
 
-func _apply_materials(root: Node) -> void:
+func _apply_materials(root: Node, surface: Material) -> void:
 	for node: Node in root.find_children("*", "MeshInstance3D", true, false):
 		var mi: MeshInstance3D = node as MeshInstance3D
 		if mi == water or mi.mesh == null:
@@ -30,7 +36,7 @@ func _apply_materials(root: Node) -> void:
 			if mat_name == "emissive":
 				mi.set_surface_override_material(s, EMISSIVE_MATERIAL)
 			elif mat_name == "surface":
-				mi.set_surface_override_material(s, SURFACE_MATERIAL)
+				mi.set_surface_override_material(s, surface)
 
 
 func _publish_footprints() -> void:
