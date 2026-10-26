@@ -92,7 +92,7 @@ the other machine.
 | Machine | Has | Use it for |
 | --- | --- | --- |
 | Desktop RTX 4080 (dev) | Godot, Blender, local web export | asset kits (`tools/blender`), captures, local web builds |
-| Laptop ASUS, Intel Arc 140V (min-spec) | git + GitHub Desktop only: no Godot/Blender/`gh`. CLI `git push` works only with `GCM_INTERACTIVE=always` and `GIT_TERMINAL_PROMPT=1` set (Git Credential Manager login) | Arc measurements; code + GUT tests after downloading Godot into the session scratchpad (ask J first) |
+| Laptop ASUS, Intel Arc 140V (min-spec) | git, GitHub Desktop, `gh` 2.103 (logged in as Twilightxc since 2026-10-26; may need the full path `C:\Program Files\GitHub CLI\gh.exe` in old shells). No Godot or Blender. CLI `git push` works only with `GCM_INTERACTIVE=always` and `GIT_TERMINAL_PROMPT=1` set (Git Credential Manager login) | Arc measurements; code + GUT tests after downloading Godot into the session scratchpad (ask J first); open PRs with `gh` |
 
 - **Session start:** run `tools/handoff.sh` (Git Bash) before any work. It fetches, then prints this
   checkout's state, every branch not merged into main with its handoff note, and files that more than one

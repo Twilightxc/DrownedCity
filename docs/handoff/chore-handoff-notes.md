@@ -1,6 +1,6 @@
 # chore/handoff-notes
 
-- **PR:** not opened. Pushed (Claude pushes from the laptop CLI with the GCM variables in CLAUDE.md).
+- **PR:** #8. Claude pushes from the laptop CLI using the GCM variables in CLAUDE.md, and the laptop now has `gh` too.
 - **Machine:** laptop (ASUS, Intel Arc 140V)
 - **Base:** main @ `5073dbb`
 - **Updated:** 2026-10-26
