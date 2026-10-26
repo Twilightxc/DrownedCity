@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Multi-machine handoff: one note per branch in `docs/handoff/<branch>.md` + `tools/handoff.sh` at session start | Claude Code memory is per machine; per-branch files never conflict on merge; the 0.5 session only found PR #5 when GitHub Desktop switched branches |
 | 2026-10-25 | Spike launcher: default = newest spike, older via `?spike=<name>` (web) / `--spike=<name>` (desktop) | Spike A Arc test must stay reachable while Spike B is live |
 | 2026-10-25 | Asset format: palette colour in vertex RGB + baked AO in vertex alpha, one shared Style 1.5 shader; lit windows on a 2nd surface | ~1–2 draw calls per building, no textures, matches flat palette |
 | 2026-10-25 | Baked lighting = Cycles AO into vertex colours (Blender), not LightmapGI | LightmapGI baking needs RD hardware + manual editor step; vertex AO is scripted and reproducible |

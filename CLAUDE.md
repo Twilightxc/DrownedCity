@@ -82,3 +82,26 @@ resource). 3. Risk is chosen (team size, noise, distance). 4. A living base you 
 - CI: GitHub Actions → headless Godot export Web → deploy to GitHub Pages on push to `main`.
 - Never commit secrets; J adds API keys (itch.io butler, Supabase) to GitHub Secrets.
 - Telemetry requires explicit opt-in consent; no personal data (PDPA).
+
+## Machines and handoff
+
+J runs Claude Code on two machines, often on different branches at the same time. Claude's memory is per
+machine; **the repo is the only shared channel**, so whatever is not committed and pushed doesn't exist for
+the other machine.
+
+| Machine | Has | Use it for |
+| --- | --- | --- |
+| Desktop RTX 4080 (dev) | Godot, Blender, local web export | asset kits (`tools/blender`), captures, local web builds |
+| Laptop ASUS, Intel Arc 140V (min-spec) | git + GitHub Desktop only: no Godot/Blender/`gh`, CLI `git push` has no credentials | Arc measurements; code + GUT tests after downloading Godot into the session scratchpad (ask J first) |
+
+- **Session start:** run `tools/handoff.sh` (Git Bash) before any work. It fetches, then prints this
+  checkout's state, every branch not merged into main with its handoff note, and files that more than one
+  branch touches. Read the notes of branches that touch the same files as your task.
+- **One note per branch:** `docs/handoff/<branch with / → ->.md`, on that branch. Format in
+  `docs/handoff/README.md`. Create it in the first commit, keep it current, and always update it before a
+  push or before J switches machines. Quote J's request there, especially the parts not done yet.
+- **Before J switches machines:** commit, update the note, push. On the laptop J pushes with GitHub Desktop.
+- GitHub Desktop may switch branches and stash work under a running session. If files change on disk
+  unexpectedly, check `git status -sb` and `git stash list` before editing.
+- Parallel branches collide in `docs/DECISIONS.md` / `docs/PHASE0_RESULTS.md` (rows added at the top).
+  Resolve by keeping both sides, newest first.

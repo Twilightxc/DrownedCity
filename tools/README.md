@@ -1,5 +1,14 @@
 # tools/
 
+## handoff.sh — session-start briefing (both machines)
+
+```bash
+tools/handoff.sh            # git fetch, then: this checkout, unmerged branches + their docs/handoff notes, overlapping files
+tools/handoff.sh --no-fetch # offline
+```
+
+See `CLAUDE.md` → "Machines and handoff" and `docs/handoff/README.md`.
+
 ## blender/ — procedural asset & mockup scripts
 
 Run headless with the Blender Python module (no Blender GUI needed):
