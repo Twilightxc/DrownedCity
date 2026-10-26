@@ -66,7 +66,11 @@ Reference images: `docs/art/03_style15_horde.png`, `docs/art/04_style15_horde_hu
 `01`/`02` are rejected alternatives (too flat / too expensive for web).
 - Low-poly, flat palette colours. Survivors warm & saturated; zombies pale green skin, cool grey clothes.
 - Wet/algae stain on walls from world height (one `mix()` in shader, no noise). Murky green-teal water.
-- One shadowed directional sun, warm low-angle dusk; emissive windows/fires + glow; depth fog.
+- One shadowed directional sun, low-angle dusk; emissive windows/fires + glow; depth fog.
+- **Mood: abandoned and lonely** (J, 2026-10-26; `docs/art/06_desolate_vs_spike_b.png`). Bleached, desaturated
+  city: rain streaks, peeling walls, broken/boarded windows, collapsed corners and roof holes, vines and moss,
+  flotsam, sunken cars, dead lamps and trees in the water. Lit windows only where survivors live. Cooler
+  light, slightly desaturated grade, thicker fog. Survivors stay warm so they read against it.
 - Assets are built by `tools/blender/*.py` (Blender `bpy` 5.x via pip), exported as .glb. Keep scripts as the
   source of truth so variations are reproducible.
 

@@ -34,14 +34,14 @@ Notes for turning these into game assets:
 
 ```bash
 blender -b --factory-startup --python tools/blender/kit_building.py -- assets/models [name ...]
-blender -b --factory-startup --python tools/blender/kit_props.py -- assets/models
+blender -b --factory-startup --python tools/blender/kit_props.py -- assets/models [name ...]
 ```
 
 | Script | Output |
 | --- | --- |
-| `kit_common.py` | palette, `MeshBuilder` (boxes/cylinders with per-corner colour + material slot), Cycles AO → vertex alpha, glTF export |
-| `kit_building.py` | `building_base_3f` (playable roof 25×21 inside the parapet), `building_brick_2f`, `building_concrete_5f`; origin = water surface |
-| `kit_props.py` | `prop_water_tower`, `prop_ac_unit`, `prop_sandbag_wall`; origin = roof surface |
+| `kit_common.py` | palette, `MeshBuilder` (boxes/cylinders with per-corner colour + material slot, nested `transform()` frames, per-quad `face_color`, `aging`), Cycles AO → vertex alpha, glTF export |
+| `kit_building.py` | `building_base_3f` (playable roof 25×21 inside the parapet), `building_brick_2f` (roof hole), `building_concrete_5f` (collapsed corner); `decay` drives weathering, broken windows, vines; origin = water surface |
+| `kit_props.py` | `prop_water_tower`, `prop_ac_unit`, `prop_sandbag_wall` (origin = roof surface); `prop_flood_debris_a/b` (origin = water surface) |
 
 Vertex RGB = palette colour (linear), vertex alpha = baked AO; material slot `surface` / `emissive` is swapped
 for the Style 1.5 shaders at runtime (`game/level/style15_level.gd`). Tested with Blender 4.4.3.
