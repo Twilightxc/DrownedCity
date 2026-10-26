@@ -1,6 +1,6 @@
-# Phase 0 — Technical spikes (≈ 25 h of J's time, 1–2 weeks)
+# Phase 0 — Technical spikes (≈ 33 h of J's time, 2–3 weeks)
 
-Goal: prove the four riskiest technical bets **before** building real systems. Spike code may be thrown
+Goal: prove the riskiest technical bets **before** building real systems. Spike code may be thrown
 away; what we keep is the project skeleton, CI, and measured numbers in `docs/PHASE0_RESULTS.md`.
 
 ## 0.1 Project skeleton
@@ -50,6 +50,24 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
 - [ ] Export / import save file button (protects against browser cache clears).
 - **Pass:** state survives closing and reopening the browser; exported file re-imports on another browser.
 
+## 0.7 Spike E — Animated horde, corpses and blood on web
+Added 2026-10-26 (J): characters with limbs and realistic motion, enemy variants, hit slow, blood, corpses,
+dismemberment (GDD §3, §6, §9, §13). This is the only part of that request that can break the 200-zombie web
+budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J's Mixamo download (login).
+- [ ] Low-poly zombie with limbs (target ≤ ~500 tris) from `tools/blender`, 2 variants (male / female), rigged
+      to a Mixamo humanoid; clips: walk, attack, hit flinch, death (J downloads from Mixamo).
+- [ ] Bake the clips into a vertex animation texture (VAT) in Blender; the horde MultiMesh vertex shader plays
+      a clip + time offset per instance (`INSTANCE_CUSTOM`). No skeleton per zombie. Works in Compatibility.
+- [ ] Hit: brief slow on unarmored agents (per-type data, 0 for armored), flinch clip, blood burst along the
+      bullet.
+- [ ] Death: death clip → corpse stays (own MultiMesh, capped ring buffer, oldest fade; in water float then
+      sink); random dismemberment (corpse variant missing a limb + a flying limb piece); blood pools as flat
+      quads (check whether `Decal` works in Compatibility on 4.7.2 first).
+- [ ] Gore toggle (blood + dismemberment on/off).
+- **Pass (J on Arc, Chrome):** 200 animated zombies + corpse cap full + blood ≥ 50 FPS, draw calls < 250,
+  < 300k tris on screen; J judges the motion reads as real enough. **Fallback:** fewer variants, lower corpse
+  cap / faster fade, then 100 zombies.
+
 ## Exit criteria
-All four spikes pass (or have an accepted fallback) and results are logged in `docs/PHASE0_RESULTS.md`
+All spikes pass (or have an accepted fallback) and results are logged in `docs/PHASE0_RESULTS.md`
 with device, browser, FPS, draw calls. Then plan Phase 1 (web demo vertical slice, see GDD §15, §17).

@@ -3,6 +3,12 @@
 | Date | Decision | Why |
 | --- | --- | --- |
 | 2026-10-26 | Claude sessions work in a git worktree (`.claude/worktrees/<branch>`), never in the main checkout; remove it after the last commit so GitHub Desktop can push | GitHub Desktop switched the shared checkout and stashed a session's work twice in one day |
+| 2026-10-26 | Survivors are individually recognisable: male/female bodies (men larger on average), build, height, skin tone (6–8), hair/beard; stored in SimCore; cosmetic only | J's request; pillar 1 "every survivor matters" (GDD §3) |
+| 2026-10-26 | One humanoid rig for survivors and human enemies: 2 base bodies + build blend shapes + bone scale; hair as a modular head piece (replaces "one base mesh") | Shares Mixamo clips; ≤ 6 survivors keeps cost low (GDD §13) |
+| 2026-10-26 | Animation: people = skeleton + AnimationTree with upper/lower split (8-way walk while aiming); horde = vertex animation textures on the MultiMesh, no per-zombie skeleton | Realistic motion (J) within the 200-zombie WebGL2 budget; twin-stick strafing |
+| 2026-10-26 | Zombie sub-variants inside each type (male/female, build, clothing by origin); the type's silhouette stays dominant; human enemies use the survivor character system + faction colours | J's request; readability pillar (GDD §9) |
+| 2026-10-26 | Hit/death feedback: brief slow on unarmored enemies, blood bursts + pools, corpses stay (capped, fade/sink), random dismemberment on death, gore on/off setting; low-poly style, no ragdolls | J's request; caps keep the web budget; toggle for rating and streaming (GDD §6) |
+| 2026-10-26 | Add Phase 0 spike 0.7 (animated horde + corpses + blood, measured on Arc) | Only new request that can break the 200-zombie web budget; Phase 0 estimate 25 → 33 h, demo ~650 → ~700 h |
 | 2026-10-26 | Multi-machine handoff: one note per branch in `docs/handoff/<branch>.md` + `tools/handoff.sh` at session start | Claude Code memory is per machine; per-branch files never conflict on merge; the 0.5 session only found PR #5 when GitHub Desktop switched branches |
 | 2026-10-26 | Mouse aim ray hits a plane at body height (0.9 m), not the floor | Iso pitch makes the floor point land ~1.3 m behind the zombie under the cursor |
 | 2026-10-26 | Gamepad aim assist = bend toward the best target in a ±12° / 18 m cone with line of sight (60 %); no assist on mouse | "Light assist, pad only" from Phase 0.5; numbers are live-tunable |
