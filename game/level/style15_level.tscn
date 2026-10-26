@@ -1,0 +1,159 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://game/level/style15_level.gd" id="1_level"]
+[ext_resource type="PackedScene" path="res://assets/models/building_base_3f.glb" id="2_base"]
+[ext_resource type="PackedScene" path="res://assets/models/building_brick_2f.glb" id="3_brick"]
+[ext_resource type="PackedScene" path="res://assets/models/building_concrete_5f.glb" id="4_concrete"]
+[ext_resource type="PackedScene" path="res://assets/models/prop_water_tower.glb" id="5_tower"]
+[ext_resource type="PackedScene" path="res://assets/models/prop_ac_unit.glb" id="6_ac"]
+[ext_resource type="PackedScene" path="res://assets/models/prop_sandbag_wall.glb" id="7_sandbag"]
+[ext_resource type="Shader" path="res://game/shaders/water.gdshader" id="8_water"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat_dusk"]
+sky_top_color = Color(0.36, 0.47, 0.6, 1)
+sky_horizon_color = Color(0.85, 0.7, 0.58, 1)
+ground_bottom_color = Color(0.12, 0.18, 0.19, 1)
+ground_horizon_color = Color(0.5, 0.48, 0.45, 1)
+sun_angle_max = 10.0
+
+[sub_resource type="Sky" id="Sky_dusk"]
+sky_material = SubResource("SkyMat_dusk")
+process_mode = 1
+
+[sub_resource type="Environment" id="Env_dusk"]
+background_mode = 1
+background_color = Color(0.16, 0.24, 0.26, 1)
+sky = SubResource("Sky_dusk")
+ambient_light_source = 3
+ambient_light_energy = 0.5
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_exposure = 0.85
+glow_enabled = true
+glow_intensity = 0.9
+glow_strength = 1.1
+glow_blend_mode = 0
+glow_hdr_threshold = 1.0
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.62, 0.66, 0.68, 1)
+fog_density = 0.55
+fog_depth_begin = 45.0
+fog_depth_end = 170.0
+
+[sub_resource type="FastNoiseLite" id="Noise_a"]
+frequency = 0.02
+fractal_octaves = 3
+
+[sub_resource type="NoiseTexture2D" id="NormalTex_a"]
+width = 256
+height = 256
+seamless = true
+as_normal_map = true
+bump_strength = 6.0
+noise = SubResource("Noise_a")
+
+[sub_resource type="FastNoiseLite" id="Noise_b"]
+seed = 7
+frequency = 0.035
+fractal_octaves = 2
+
+[sub_resource type="NoiseTexture2D" id="NormalTex_b"]
+width = 256
+height = 256
+seamless = true
+as_normal_map = true
+bump_strength = 4.0
+noise = SubResource("Noise_b")
+
+[sub_resource type="ShaderMaterial" id="Mat_water"]
+shader = ExtResource("8_water")
+shader_parameter/normal_a = SubResource("NormalTex_a")
+shader_parameter/normal_b = SubResource("NormalTex_b")
+
+[sub_resource type="PlaneMesh" id="Mesh_water"]
+material = SubResource("Mat_water")
+size = Vector2(400, 400)
+
+[node name="Style15Level" type="Node3D" node_paths=PackedStringArray("water")]
+script = ExtResource("1_level")
+water = NodePath("Water")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_dusk")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.9539, 0.1500, -0.2598, -0.0000, 0.8660, 0.5000, 0.3000, -0.4770, 0.8262, 0, 20, 0)
+light_color = Color(1, 0.78, 0.56, 1)
+light_energy = 1.6
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_normal_bias = 1.5
+directional_shadow_mode = 1
+directional_shadow_split_1 = 0.35
+directional_shadow_max_distance = 80.0
+
+[node name="Water" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -8.6, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_water")
+
+[node name="BaseBuilding" parent="." groups=["water_footprint"] instance=ExtResource("2_base")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -8.6, 0)
+metadata/footprint = Vector2(26, 22)
+
+[node name="RoofHut" type="Marker3D" parent="." groups=["nav_obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.8, 0, -9)
+metadata/footprint = Vector2(3, 2.6)
+
+[node name="Backdrop" type="Node3D" parent="."]
+
+[node name="Concrete5F" parent="Backdrop" groups=["water_footprint"] instance=ExtResource("4_concrete")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -8.6, -26)
+metadata/footprint = Vector2(12, 13)
+
+[node name="Concrete5F2" parent="Backdrop" groups=["water_footprint"] instance=ExtResource("4_concrete")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, -8.6, -12)
+metadata/footprint = Vector2(12, 13)
+
+[node name="Brick2F" parent="Backdrop" groups=["water_footprint"] instance=ExtResource("3_brick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, -8.6, 18)
+metadata/footprint = Vector2(14, 12)
+
+[node name="Brick2F2" parent="Backdrop" groups=["water_footprint"] instance=ExtResource("3_brick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27, -8.6, 7)
+metadata/footprint = Vector2(14, 12)
+
+[node name="Props" type="Node3D" parent="."]
+
+[node name="WaterTower" parent="Props" groups=["nav_obstacle"] instance=ExtResource("5_tower")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -7.5)
+metadata/footprint = Vector2(3.4, 3.4)
+
+[node name="AC1" parent="Props" groups=["nav_obstacle"] instance=ExtResource("6_ac")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -8)
+metadata/footprint = Vector2(1.3, 1)
+
+[node name="AC2" parent="Props" groups=["nav_obstacle"] instance=ExtResource("6_ac")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -8)
+metadata/footprint = Vector2(1.3, 1)
+
+[node name="AC3" parent="Props" groups=["nav_obstacle"] instance=ExtResource("6_ac")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 2)
+metadata/footprint = Vector2(1.3, 1)
+
+[node name="Sandbags1" parent="Props" groups=["nav_obstacle"] instance=ExtResource("7_sandbag")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 9.5)
+metadata/footprint = Vector2(3.2, 0.7)
+
+[node name="Sandbags2" parent="Props" groups=["nav_obstacle"] instance=ExtResource("7_sandbag")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 9.5)
+metadata/footprint = Vector2(3.2, 0.7)
+
+[node name="Sandbags3" parent="Props" groups=["nav_obstacle"] instance=ExtResource("7_sandbag")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 11.5, 0, -2)
+metadata/footprint = Vector2(3.2, 0.7)
+
+[node name="Sandbags4" parent="Props" groups=["nav_obstacle"] instance=ExtResource("7_sandbag")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 11.5, 0, 5)
+metadata/footprint = Vector2(3.2, 0.7)
