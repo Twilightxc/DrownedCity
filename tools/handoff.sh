@@ -31,7 +31,7 @@ fi
 changes=$(git status --short)
 if [[ -n "$changes" ]]; then
 	echo "uncommitted (invisible to the other machine):"
-	echo "$changes" | head -20 | indent
+	echo "$changes" | sed -n '1,20p' | indent  # sed reads to EOF: no SIGPIPE under pipefail
 fi
 stashes=$(git stash list)
 if [[ -n "$stashes" ]]; then
@@ -67,14 +67,15 @@ while read -r ref; do
 		git show "$ref:$note" | indent
 	else
 		echo "   (no handoff note at $note: read its commits/PR instead)"
-		git log --format='%h %s' "$base..$ref" | head -5 | indent
+		git log -5 --format='%h %s' "$base..$ref" | indent
 	fi
 done < <(git for-each-ref --format='%(refname:short)' --no-merged="$base" refs/remotes/origin)
 [[ $found == 0 ]] && echo "(nothing: every pushed branch is merged)"
 
-# This checkout's own committed + uncommitted changes count too, pushed or not.
+# This checkout's own committed, uncommitted and untracked files count too, pushed or not.
 if [[ -n "$current" ]]; then
-	{ git diff --name-only "$base...HEAD"; git diff --name-only HEAD; } | sort -u | sed "s|$| $current|" >> "$touched"
+	{ git diff --name-only "$base...HEAD"; git diff --name-only HEAD; git ls-files --others --exclude-standard; } \
+		| sort -u | sed "s|$| $current|" >> "$touched"
 fi
 
 echo
