@@ -4,6 +4,7 @@ usage: blender -b --factory-startup --python tools/blender/kit_props.py -- [out_
 
 Origin = centre of the footprint on the roof surface (z = 0).
 Footprints (for nav-grid obstacles): water tower 3.4 x 3.4, AC unit 1.3 x 1.0, sandbag wall 3.2 x 0.7.
+Every footprint also blocks hitscan, so each prop reaches at least the 0.9 m muzzle height.
 """
 import math
 import os
@@ -33,10 +34,13 @@ def ac_unit(mb):
     mb.box((0, 0, 0.03), (1.4, 1.1, 0.06), "metal")
 
 
+SANDBAG_ROWS = 5  # 5 x 0.2 m = 1.0 m: above the 0.9 m muzzle height, so it visibly blocks shots
+
+
 def sandbag_wall(mb):
-    for row in range(2):
+    for row in range(SANDBAG_ROWS):
         for i in range(5):
-            x = -1.28 + i * 0.64 + (0.32 if row else 0.0)
+            x = -1.28 + i * 0.64 + (0.32 if row % 2 else 0.0)
             if x > 1.3:
                 continue
             col = "sand" if (i + row) % 2 == 0 else "sand_dark"

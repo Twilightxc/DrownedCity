@@ -63,7 +63,7 @@ Live: default URL (`?spike=style`); Spike A stays at `?spike=horde`.
 
 | Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200 zombies | 144 (vsync) | 55 | 88k | capture used for the comparison |
+| Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200 zombies | 144 (vsync) | 48–55 | 88k | capture used for the comparison (`--hide-ui`) |
 | Desktop RTX 4080 | Claude pane (Chromium) | style + 200 zombies | 144 (vsync) | 45 | 69k | horde update 1.8 ms |
 | Laptop Intel Arc | Chrome | style + 200 zombies | — | — | — | **J: pass ≥ 50 FPS, draw calls < 250** |
 
