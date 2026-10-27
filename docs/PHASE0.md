@@ -1,4 +1,4 @@
-# Phase 0 — Technical spikes (≈ 33 h of J's time, 2–3 weeks)
+# Phase 0 — Technical spikes (≈ 39 h of J's time, 3 weeks)
 
 Goal: prove the riskiest technical bets **before** building real systems. Spike code may be thrown
 away; what we keep is the project skeleton, CI, and measured numbers in `docs/PHASE0_RESULTS.md`.
@@ -76,6 +76,24 @@ budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J'
   < 300k tris on screen, **also during a grenade blast into the pack with ~50 zombies burning and the limb cap
   full**; J judges the motion reads as real enough. **Fallback:** fewer variants, lower corpse cap / faster fade,
   lower limb cap, burning shown by shader only; then 100 zombies.
+
+## 0.8 Spike F — Building interiors with a cutaway camera
+Added 2026-10-27 (J): interior exploration (GDD §5). New risk: a readable cutaway in iso, multi-floor nav, and
+staying in the draw-call budget with an interior loaded next to the outside block. Needs the **desktop**
+(Blender) for the kit.
+- [ ] Interior kit in `tools/blender` (wall, wall with door / window, floor, stair, door, furniture/containers ×4)
+      + a seeded layout generator in Godot for one 3-floor building (rooms, corridor, stairwell). Pieces are
+      instanced per type (MultiMesh or merged per floor at load), not one node per wall.
+- [ ] Cutaway: floors above the player and the roof hide; walls facing the camera cut to waist height (one plane
+      uniform in the wall shader), correct after each 90° camera turn; smooth fade in/out at the entrance.
+- [ ] Entrances: roof hatch, stairs between floors, a window at water level (boat stops at the window).
+- [ ] NavGrid + flow field per floor, linked through the stair cells; hitscan and LOS inside.
+- [ ] Unseen rooms stay dark until the player has line of sight; interior dark by default + flashlight
+      (one shadowless spot light).
+- [ ] ~30 dormant zombies inside that wake by noise and follow across floors.
+- **Pass (J on Arc, Chrome):** inside the building with 30 zombies awake and the outside block still drawn
+  ≥ 50 FPS, draw calls < 250; J says the cutaway reads clearly at every camera angle and moving between floors
+  feels right. **Fallback:** hide the outside block while inside; simpler cutaway (hide whole near walls).
 
 ## Exit criteria
 All spikes pass (or have an accepted fallback) and results are logged in `docs/PHASE0_RESULTS.md`

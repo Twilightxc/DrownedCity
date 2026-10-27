@@ -19,17 +19,23 @@ J's decisions (2026-10-27): "Ragdoll: แบบปลอมตามข้อเ
 ฤดู ฤดดูร้อนไม่ได้ลดจนเห็นถนนแต่แค่ลดจนเห็นอีกชั้นได้และสำรวจได้ ฤดูฝนน้ำก็ขึ้นกลับถ้าเกิดอยากใช้ก็เตรียมเครื่องสูบออก
 ตลอดหรือก่อปิดหน้าต่างถาวร เรื่องระบบสำรวจในอาคาร"
 
+Follow-up (2026-10-27): "ข้อเสนอสำรวจในอาคารด้านบน: เพิ่มเป็น spike ในเฟส 0 / ฤดู: เดิม GDD มี 3 ฤดู ยึดตามเดิมฉันแค่บอก
+รายละเอียดเพิ่ม / อยากทำตัวเต็มออนเว็บเลยได้ไหม ค่อยอัพเกรดก่อนขายสตรีมอีกที แล้วถ้าอัพเกรดอยากทำให้งานภาพดูดีกว่านี้ทำได้ไหม
+ถ้ายกเครื่องเปลี่ยนใหม่หมด"
+
 ## Done
 - `docs/GDD.md`: §3 traits table; §4 floor holding (pumps or sealing) + construction; §5 interior exploration
   (proposal); §6 weapon schema, class stats, ammo, attachments, payloads, fake ragdoll, fire/explosion
   effects; §9 enemy HP; §10 seasons (2, one floor apart), map size, occupants, airdrops, destruction, loot,
   quests; §13 character detail budget + immersion; §14 UI screens; §17 scope note + demo cut proposal.
-- `docs/PHASE0.md` 0.7: effects items + harder pass condition. `docs/DECISIONS.md`: 6 rows.
+- `docs/PHASE0.md` 0.7: effects items + harder pass condition. `docs/DECISIONS.md`: 7 rows.
+- Follow-up: new spike 0.8 (interiors + cutaway) in PHASE0 and GDD §17 (Phase 0 33 → 39 h); seasons back to 3
+  with J's one-floor details.
 
 ## Not done / next
-- J reviews the proposals, above all interior exploration (§5) and the demo cut list (§17).
-- Seasons: the 3-season version was replaced by 2 seasons; J to confirm.
-- Hour estimate in §17 is not updated (+80–100 h, rough).
+- J reviews the demo cut list (§17); the hour estimate there is not updated for the new systems (+80–100 h, rough).
+- "Full game on the web first, upgrade before Steam" and "a full visual overhaul for Steam": answered in chat
+  only. It changes the decided platform plan (CLAUDE.md) only if J decides; nothing written yet.
 
 ## J must test
 Nothing. Docs only.
