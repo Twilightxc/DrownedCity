@@ -50,6 +50,7 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
 - [x] Minimal SimCore (3 survivors, 4 resources, day counter) serializes to versioned JSON in `user://`.
 - [x] Export / import save file button (protects against browser cache clears).
 - **Pass:** state survives closing and reopening the browser; exported file re-imports on another browser.
+  Chrome: ✅ J 2026-10-27. Import in a second browser: not confirmed yet.
 
 ## 0.7 Spike E — Animated horde, corpses and blood on web
 Added 2026-10-26 (J): characters with limbs and realistic motion, enemy variants, hit slow, blood, corpses,
