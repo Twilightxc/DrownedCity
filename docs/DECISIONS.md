@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-27 | Web build is free to play during development and grows with the game; at the Steam launch (paid, Forward+ High + more detailed assets from the same scripts) the web build is cut back to a trial via `demo_build`; web saves import into the Steam version; the web page says "free during development" from the start | J; same code base; the upgrade keeps the Style 1.5 identity (renderer, asset detail, water/effects), a full art overhaul only after EA feedback |
 | 2026-10-27 | Fake ragdoll for the horde: "blown back" death clip + corpse slides along an arc; limbs are capped rigid bodies; real ragdolls only for few human enemies on the desktop High preset, later | J; the horde is MultiMesh + VAT with no skeleton, and physics per zombie breaks the web budget |
 | 2026-10-27 | Spike 0.7 also measures explosions, burning zombies, ground fire and the flying-limb cap on Arc | J; these effects are the next likely budget breakers |
 | 2026-10-27 | Weapon names are semi-fictional (based on real patterns, no brand or trademark names such as Colt, Kalashnikov, AK-47) | J; trademarks on some gun names in some countries; decide final names before the Steam page |

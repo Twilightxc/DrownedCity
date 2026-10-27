@@ -34,12 +34,13 @@ Follow-up (2026-10-27): "ข้อเสนอสำรวจในอาคา�
 
 ## Not done / next
 - J reviews the demo cut list (§17); the hour estimate there is not updated for the new systems (+80–100 h, rough).
-- "Full game on the web first, upgrade before Steam" and "a full visual overhaul for Steam": answered in chat
-  only. It changes the decided platform plan (CLAUDE.md) only if J decides; nothing written yet.
+- Platform: J decided "เหมือนให้เล่นเดโม่ฟรีออนเว็บ พออัพเกรดบนสตรีมก็ขาย อดลดเว็บลงแบบทดลองเล่นแทน" → written to
+  CLAUDE.md (platform plan), GDD §1, DECISIONS. Visual upgrade = Forward+ High + asset detail + water/effects;
+  a full art overhaul only after EA feedback (advice, not decided).
 
 ## J must test
 Nothing. Docs only.
 
 ## Next session must know
-- Touches `docs/GDD.md`, `docs/PHASE0.md`, `docs/DECISIONS.md`. Other branches editing DECISIONS: keep both sides,
+- Touches `CLAUDE.md`, `docs/GDD.md`, `docs/PHASE0.md`, `docs/DECISIONS.md`. Other branches editing DECISIONS: keep both sides,
   newest first.

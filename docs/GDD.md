@@ -10,7 +10,7 @@ Oct 25, 2026 · @J · ชื่อเกมชั่วคราว
 | --- | --- |
 | แนว | Survival management + top-down action (isometric 3D, กล้อง orthographic) |
 | มุมกล้อง | Isometric orthographic หมุนได้ 90° ซูมได้ |
-| แพลตฟอร์ม | เฟส 1: เดโมเว็บ (GitHub Pages + itch.io) · เฟส 2: PC บน Steam |
+| แพลตฟอร์ม | เฟส 1: เดโมเว็บ (GitHub Pages + itch.io) · เฟส 2: PC บน Steam · เว็บเล่นฟรีระหว่างพัฒนา เมื่อขายบน Steam (ภาพอัปเกรด) เว็บลดเหลือแบบทดลองเล่น และ save จากเว็บ import เข้า Steam ได้ |
 | Engine | Godot 4 (GDScript; ส่วนจำลองที่หนักย้ายไป C++ GDExtension ภายหลัง) |
 | ความยากหลัก | ตายถาวรเสมอ (permadeath) |
 | ผู้เล่นเป้าหมาย | คนที่ชอบ State of Decay, Frostpunk, This War of Mine และ arcade ยิงซอมบี้แบบ Boxhead |

@@ -19,6 +19,11 @@ Current phase and tasks: `docs/PHASE0.md`.
 1. **Web demo** — GitHub Pages + itch.io, free. Proves the core loop, collects feedback/telemetry.
 2. **Steam Early Access** → 3. **1.0**. Same repo, same code; only content flags, renderer preset and save
    backend differ.
+- **Web stays free; Steam is the paid, upgraded version** (J, 2026-10-27). While in development the web build is
+  free to play and grows with the game. When the Steam version goes on sale (Forward+ "High" preset, more detailed
+  assets), the web build is cut back to a trial by the `demo_build` content flag. Web saves export as a file that
+  the Steam version imports, so players keep their community. Say "free during development" on the web page from
+  the start, so the cut is no surprise.
 
 ## Tech stack (decided)
 
