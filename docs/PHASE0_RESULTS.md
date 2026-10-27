@@ -142,7 +142,7 @@ crate restock. Unit tests: aim math, aim assist, NavGrid ray, wheel sectors (41 
 | J's machine (not stated), Chrome, live URL `d1a18ab · #28` | Mouse + keyboard | ✅ "no problems felt" | defaults (no tuning reported) | J, 2026-10-27 |
 | — | Gamepad | — | — | **J: pending, no gamepad yet** |
 
-## 0.6 Spike D — Save on web — 🟡 pass in Chrome (J, 2026-10-27); import in a second browser not confirmed
+## 0.6 Spike D — Save on web — ✅ pass (J, 2026-10-27)
 
 Live: default URL (`?spike=save`). Twin-stick stays at `?spike=twinstick`, Spike B at `?spike=style`,
 Spike A at `?spike=horde`.
@@ -167,4 +167,4 @@ Checked by Claude (desktop RTX 4080):
 | Device | Browser | Check | Result |
 | --- | --- | --- | --- |
 | J's machine (not stated) | Chrome, live URL `7e2ba96 · #39` | save spike checks in Chrome | ✅ "no problems" (J, 2026-10-27) |
-| J's machine | Chrome → another browser (Edge/Firefox) | export file → import → same day and stock | **J: not confirmed yet** (J reported Chrome only) |
+| J's machine (not stated) | Chrome → Edge/Firefox, live URL `7e2ba96 · #39` | export file → import → same day and stock | ✅ same day and stock (J, 2026-10-27) |
