@@ -105,7 +105,7 @@ Arc for 0.4b skipped by J: low risk. Draw calls are unchanged (~59 of 250), and 
 ~131k of 300k; the PR #4 look ran at the 60 FPS vsync cap on Arc. The default scene carries this look, so
 the next Arc measurement of any spike (e.g. 0.7) covers it in passing.
 
-## 0.5 Spike C — Twin-stick feel — 🟡 mouse + keyboard pass (J, 2026-10-27); gamepad pending (no pad yet)
+## 0.5 Spike C — Twin-stick feel — ✅ mouse + keyboard pass (J, 2026-10-27); gamepad feel deferred by J
 
 Live: default URL (`?spike=twinstick`) = Spike B scene + horde + two supply crates. Spike B stays at
 `?spike=style`, Spike A at `?spike=horde`. All three use the new player controls.
@@ -140,7 +140,7 @@ crate restock. Unit tests: aim math, aim assist, NavGrid ray, wheel sectors (41 
 | Device | Input | Verdict | Tuned values (panel summary line) | Notes |
 | --- | --- | --- | --- | --- |
 | J's machine (not stated), Chrome, live URL `d1a18ab · #28` | Mouse + keyboard | ✅ "no problems felt" | defaults (no tuning reported) | J, 2026-10-27 |
-| — | Gamepad | — | — | **J: pending, no gamepad yet** |
+| — | Gamepad | deferred by J (2026-10-27) | — | no pad at hand; not a Phase 0 exit blocker, test when a pad is available |
 
 ## 0.6 Spike D — Save on web — ✅ pass (J, 2026-10-27)
 
