@@ -1,6 +1,8 @@
 // Horde zombie: vertex animation texture (VAT) on a MultiMesh, no skeleton per zombie (PHASE0 0.7).
-// UV.x = the corner's VAT column; INSTANCE_CUSTOM = (row A, row B, blend, unused), written by
-// HordeRenderer from each agent's clip and time. Colour as Style 1.5: palette in vertex RGB, baked AO
+// UV.x = the corner's VAT column, UV.y = its body part; INSTANCE_CUSTOM = (row A, row B, blend, hidden
+// parts bitmask), written by HordeRenderer / CorpseLayer from each agent's clip and time. A hidden part
+// collapses to one point (zero-area triangles): dismembered corpses and severed limbs reuse the mesh.
+// Colour as Style 1.5: palette in vertex RGB, baked AO
 // in vertex alpha, times the instance tint. Works in Compatibility (texelFetch on half-float textures).
 shader_type spatial;
 render_mode cull_back, diffuse_burley, specular_schlick_ggx;
@@ -17,6 +19,9 @@ void vertex() {
 	float k = INSTANCE_CUSTOM.z;
 	VERTEX = mix(texelFetch(vat_position, a, 0).xyz, texelFetch(vat_position, b, 0).xyz, k);
 	NORMAL = normalize(mix(texelFetch(vat_normal, a, 0).xyz, texelFetch(vat_normal, b, 0).xyz, k));
+	if (((int(INSTANCE_CUSTOM.w) >> int(UV.y)) & 1) != 0) {
+		VERTEX = vec3(0.0);
+	}
 }
 
 void fragment() {

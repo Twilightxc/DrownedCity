@@ -198,3 +198,26 @@ same way, so the building palette may be darker than authored; not changed here 
 Budget note: +80k primitives for 200 zombies (180 tris × main + shadow pass). 300 zombies should land near
 255k of 300k; if Arc or the corpse cap pushes past budget, the first levers are no horde shadows on the far
 split, then a coarser mesh for distant zombies.
+
+### 0.7 part 2 — hit reaction, corpses, blood, dismemberment, gore toggle
+
+| Item | How |
+| --- | --- |
+| Hit | `Horde.apply_damage(agents, damage, source, blast)`: survivors flinch (VAT clip) and slow down (−30 % for 0.4 s per hit, stacks to 1.2 s; `HordeConfig`, 0 for armored later); hits and deaths queue as events |
+| Corpses | `game/fx/corpse_layer.gd`: ring buffer (cap 160) per look, death clip once then hold; `death_blown` for blasts, facing the blast; old corpses sink through the floor (45 s, or early when the ring is about to wrap); off-grid corpses float 6 s, then sink; no corpse shadows (half the cost) |
+| Dismemberment | 12 % per bullet kill, 60 % per blast: the corpse hides a part group (head, arm, forearm, shin, leg) via a bitmask in `INSTANCE_CUSTOM.w` against the part index in UV.y; the limb is the same mesh with every other part hidden, thrown 0.5–1.3 m along the push |
+| Blood | `game/fx/blood_fx.gd`: droplet bursts along the bullet (cap 256), flat pools (cap 160) from hits (30 %) and under every corpse; grow in, shrink out after 60 s; no decals (Compatibility has none) |
+| Toggle | `GoreConfig.enabled` (`data/fx/gore.tres`): off = no blood, no dismemberment, corpses stay; in the F4 / Start tuning panel on `?spike=twinstick` with the dismember chance and hit slow |
+| Test harness | `-- --auto-shoot` / `&autoshoot=1`: fire at the nearest zombie every 0.1 s, a grenade every 4 s; repeatable load for measurements |
+| Tests | hit slow/flinch/events, slow speed, death event, corpse cap, sink, dismember masks + limb throw, gore off, blast facing, pool ring, one long frame: 10 new, 78 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200, auto-shoot, ~60 corpses (corpse shadows on) | 144 (vsync) | 65 | 268k | led to turning corpse shadows off |
+| Desktop RTX 4080 | desktop GL Compatibility 1440p | style + 200, auto-shoot, corpse shadows off | 144 (vsync) | 56 | 240k | |
+| Desktop RTX 4080 | ANGLE (GLES3 on D3D11) 1080p | style + 200, auto-shoot | 143 | 59 | 233k | corpses + pools draw as on desktop GL |
+| Desktop RTX 4080 | Claude pane (Chromium), local web export | style + 200, `&autoshoot=1`, 145 corpses, 160 pools | 140–144 | 70 | 239k | no console errors; horde update 1.3 ms |
+| Laptop Intel Arc | Chrome | style + 200, `&autoshoot=1` | — | — | — | **J** after part 3 |
+
+Found on the way: a resumed background tab hands the next frame a multi-second delta; the corpse and blood
+timers now clamp it like the horde does, or every corpse sank at once.

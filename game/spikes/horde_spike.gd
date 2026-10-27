@@ -13,6 +13,8 @@ const WATER_Y: float = -4.0
 
 @export var horde_config: HordeConfig
 @export var level_scene: PackedScene
+## Spike E (0.7): corpses, blood and dismemberment; needs the animated horde (HordeRenderer.models).
+@export var gore_config: GoreConfig
 @export var roof_size: Vector2i = Vector2i(40, 40)
 ## Obstacles in roof cells: stair house, AC units, water tanks, low walls.
 @export var obstacles: Array[Rect2i] = [
@@ -44,6 +46,13 @@ var _count_label: Label
 var _status_label: Label
 var _help_label: Label
 var _grenades: Grenades
+var _corpses: CorpseLayer
+var _blood: BloodFx
+## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
+## so captures and measurements see a repeatable gore load without hands on the keyboard.
+var _auto_shoot: bool = false
+var _auto_fire_left: float = 0.0
+var _auto_throw_left: float = 2.0
 
 @onready var _rig: IsoCameraRig = $IsoCameraRig
 @onready var _camera: Camera3D = $IsoCameraRig/Camera3D
@@ -70,6 +79,16 @@ func _ready() -> void:
 		capacity = maxi(capacity, n)
 	_horde = Horde.new(horde_config, _grid, capacity, _rng.randi())
 	_renderer.setup(capacity)
+	if gore_config != null and not _renderer.models.is_empty():
+		_corpses = CorpseLayer.new()
+		_corpses.grid = _grid
+		_corpses.ground_y = GROUND_Y
+		add_child(_corpses)
+		_corpses.setup(gore_config, _renderer.models)
+		_blood = BloodFx.new()
+		_blood.ground_y = GROUND_Y
+		add_child(_blood)
+		_blood.setup(gore_config)
 
 	if level_scene == null:
 		_build_level_meshes()
@@ -83,6 +102,9 @@ func _ready() -> void:
 		_player.grenades = _grenades
 	_rig.position = _player.position
 
+	_auto_shoot = "--auto-shoot" in OS.get_cmdline_user_args()
+	if OS.has_feature("web"):
+		_auto_shoot = str(JavaScriptBridge.eval("window.location.search", true)).contains("autoshoot=1")
 	_build_ui()
 	_set_count_index(horde_config.default_count_index)
 	_player.device_changed.connect(func(_pad: bool) -> void: _update_help())
@@ -110,11 +132,14 @@ func _process(delta: float) -> void:
 		_flow_timer = horde_config.flow_recompute_sec
 
 	_spawn(delta, target)
+	if _auto_shoot:
+		_auto_attack(delta, target)
 
 	var t1: int = Time.get_ticks_usec()
 	_horde.update(delta, target)
 	var t2: int = Time.get_ticks_usec()
 	_renderer.sync(_horde, GROUND_Y)
+	_drain_horde_events()
 	var t3: int = Time.get_ticks_usec()
 	_horde_ms = lerpf(_horde_ms, (t2 - t1) / 1000.0, 0.1)
 	_render_ms = lerpf(_render_ms, (t3 - t2) / 1000.0, 0.1)
@@ -122,6 +147,43 @@ func _process(delta: float) -> void:
 	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
 	_update_status()
 	_publish_stats(delta)
+
+
+func _auto_attack(delta: float, from: Vector2) -> void:
+	var nearest: int = -1
+	var best: float = INF
+	for a: int in _horde.count:
+		var d2: float = _horde.positions[a].distance_squared_to(from)
+		if d2 < best:
+			best = d2
+			nearest = a
+	if nearest < 0:
+		return
+	var at: Vector2 = _horde.positions[nearest]
+	_auto_fire_left -= delta
+	if _auto_fire_left <= 0.0 and best < 15.0 * 15.0:
+		_auto_fire_left = 0.1
+		_player.aim_dir = (at - from).normalized()
+		_player._fire()
+	_auto_throw_left -= delta
+	if _auto_throw_left <= 0.0 and _grenades != null and _player.throwable != null:
+		_auto_throw_left = 4.0
+		_grenades.throw(_player.throwable, _player.position + Vector3(0, 1.2, 0), Vector3(at.x, GROUND_Y, at.y))
+
+
+## Hits and deaths since the last frame → blood and corpses.
+func _drain_horde_events() -> void:
+	if _blood != null:
+		for i: int in _horde.hit_points.size():
+			_blood.hit(_horde.hit_points[i], _horde.hit_dirs[i])
+	if _corpses != null:
+		for d: Horde.Death in _horde.deaths:
+			_corpses.add_death(d)
+			if _blood != null:
+				var size: float = randf_range(gore_config.death_pool_size.x, gore_config.death_pool_size.y)
+				# Under the body: it falls forward, or backwards away from a blast.
+				_blood.pool(d.position + (d.push if d.blast else d.heading) * 0.5, size)
+	_horde.clear_events()
 
 
 func _spawn(delta: float, target: Vector2) -> void:
@@ -171,6 +233,12 @@ func _publish_stats(delta: float) -> void:
 	DebugOverlay.set_stat("horde_render_sync", "%.2f ms" % _render_ms)
 	DebugOverlay.set_stat("flow_field", "%.2f ms (every %.2f s)" % [_flow_ms, horde_config.flow_recompute_sec])
 	DebugOverlay.set_stat("kills", str(_horde.kills))
+	if _corpses != null:
+		DebugOverlay.set_stat("corpses", "%d / %d" % [_corpses.live_count(), gore_config.corpse_cap])
+		DebugOverlay.set_stat("gore", "on" if gore_config.enabled else "off")
+		DebugOverlay.set_stat("blood_pools", "%d / %d" % [_blood.pool_count(), gore_config.pool_cap])
+		if _auto_shoot and Engine.get_process_frames() % 240 == 0:
+			print("gore: corpses %d pools %d kills %d" % [_corpses.live_count(), _blood.pool_count(), _horde.kills])
 	DebugOverlay.set_stat("hits_taken", str(_horde.hits_on_target))
 	DebugOverlay.set_stat("shots", str(_player.shots_fired))
 	DebugOverlay.set_stat("input", "gamepad" if _player.using_pad else "mouse + keyboard")
