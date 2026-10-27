@@ -1,6 +1,6 @@
 # fix/hitscan-corner-tie
 
-- **PR:** not opened (pushed: yes)
+- **PR:** #11, CI green (run #32), ready to merge
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `cb80807`
 - **Updated:** 2026-10-27
