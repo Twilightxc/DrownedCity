@@ -1,6 +1,6 @@
 # docs/phase0-verdicts
 
-- **PR:** not opened (pushed: yes)
+- **PR:** #10, CI green (run #29), ready to merge
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `d1a18ab`
 - **Updated:** 2026-10-27
