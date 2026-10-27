@@ -47,7 +47,7 @@ Findings so far:
 - Worst case is CPU, not GPU: separation cost grows when the whole horde piles on the player.
   If Arc misses the target, first lever = cap separation neighbours per agent; fallback per plan = cap 100.
 
-## 0.4 Spike B — "Style 1.5" look — ✅ perf pass on Arc (2026-10-26); awaiting J's visual verdict
+## 0.4 Spike B — "Style 1.5" look — ✅ pass (perf on Arc 2026-10-26; look accepted by J 2026-10-27)
 
 Comparison: `docs/art/05_spike_b_vs_ref.png` (left: reference render, right: Godot capture).
 Live: default URL (`?spike=style`); Spike A stays at `?spike=horde`.
@@ -73,6 +73,10 @@ Arc notes:
   so the real headroom above 60 FPS is unknown. That is enough for the gate; measure it only if a later
   phase gets close to the budget.
 
+Look verdict (J, 2026-10-27, live URL build `d1a18ab · #28`, i.e. with the desolate pass and PR #9):
+"บรรยากาศเริ่มเข้าที่เข้าทางแล้ว" ("the atmosphere is starting to fall into place") → accepted for Phase 0. Further tuning of mood
+(`decay`, light, fog, grade) is content work for later phases.
+
 Known gaps vs reference: no roof clutter (tents, garden, solar), shorter/cooler shadows, water a bit brighter,
 no ladders/bridges/trees/boats. These are content, not renderer limits.
 
@@ -95,9 +99,13 @@ Tris: base 20.2k, brick 9.4k, concrete 15.5k (were 11.9k / 4.4k / 7.1k).
 | --- | --- | --- | --- | --- | --- | --- |
 | Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200 zombies | 144 (vsync) | 49 | 131k | capture for `06` |
 | Desktop RTX 4080 | Claude pane (Chromium), local web export | style + 200 zombies | 144 (vsync) | 58 | 129k | horde update 2.0 ms, no console errors |
-| Laptop Intel Arc | Chrome | style + 200 / 300 zombies | — | — | — | **J: pass ≥ 50 FPS, draw calls < 250** |
+| Laptop Intel Arc | Chrome | style + 200 / 300 zombies | — | — | — | **skipped by J (2026-10-27)** |
 
-## 0.5 Spike C — Twin-stick feel — built, awaiting J's playtest
+Arc for 0.4b skipped by J: low risk. Draw calls are unchanged (~59 of 250), and primitives rose ~47% to
+~131k of 300k; the PR #4 look ran at the 60 FPS vsync cap on Arc. The default scene carries this look, so
+the next Arc measurement of any spike (e.g. 0.7) covers it in passing.
+
+## 0.5 Spike C — Twin-stick feel — 🟡 mouse + keyboard pass (J, 2026-10-27); gamepad pending (no pad yet)
 
 Live: default URL (`?spike=twinstick`) = Spike B scene + horde + two supply crates. Spike B stays at
 `?spike=style`, Spike A at `?spike=horde`. All three use the new player controls.
@@ -131,8 +139,8 @@ crate restock. Unit tests: aim math, aim assist, NavGrid ray, wheel sectors (41 
 
 | Device | Input | Verdict | Tuned values (panel summary line) | Notes |
 | --- | --- | --- | --- | --- |
-| Laptop Intel Arc, Chrome | Mouse + keyboard | — | — | **J** |
-| Laptop Intel Arc, Chrome | Gamepad | — | — | **J** |
+| J's machine (not stated), Chrome, live URL `d1a18ab · #28` | Mouse + keyboard | ✅ "no problems felt" | defaults (no tuning reported) | J, 2026-10-27 |
+| — | Gamepad | — | — | **J: pending, no gamepad yet** |
 
 ## 0.6 Spike D — Save on web
 
