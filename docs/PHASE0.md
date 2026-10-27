@@ -65,9 +65,17 @@ budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J'
       sink); random dismemberment (corpse variant missing a limb + a flying limb piece); blood pools as flat
       quads (check whether `Decal` works in Compatibility on 4.7.2 first).
 - [ ] Gore toggle (blood + dismemberment on/off).
+- [ ] Added 2026-10-27 (J): fake ragdoll, fire and explosion effects (GDD §6):
+  - Explosion: "blown back" death clip + corpse slides along an arc away from the blast; one short flash light,
+    debris/smoke particles, scorch mark, water column when it lands in water.
+  - Flying limbs as real rigid bodies, capped (start at 16 at once, oldest freezes).
+  - Burning: per-instance flag in the horde shader (emissive flicker) + one shared particle system, no particle
+    node per zombie.
+  - Ground fire: timed cells in the NavGrid with a flow-field cost and damage; ~10 burning cells at once.
 - **Pass (J on Arc, Chrome):** 200 animated zombies + corpse cap full + blood ≥ 50 FPS, draw calls < 250,
-  < 300k tris on screen; J judges the motion reads as real enough. **Fallback:** fewer variants, lower corpse
-  cap / faster fade, then 100 zombies.
+  < 300k tris on screen, **also during a grenade blast into the pack with ~50 zombies burning and the limb cap
+  full**; J judges the motion reads as real enough. **Fallback:** fewer variants, lower corpse cap / faster fade,
+  lower limb cap, burning shown by shader only; then 100 zombies.
 
 ## Exit criteria
 All spikes pass (or have an accepted fallback) and results are logged in `docs/PHASE0_RESULTS.md`

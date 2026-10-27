@@ -2,6 +2,12 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-27 | Fake ragdoll for the horde: "blown back" death clip + corpse slides along an arc; limbs are capped rigid bodies; real ragdolls only for few human enemies on the desktop High preset, later | J; the horde is MultiMesh + VAT with no skeleton, and physics per zombie breaks the web budget |
+| 2026-10-27 | Spike 0.7 also measures explosions, burning zombies, ground fire and the flying-limb cap on Arc | J; these effects are the next likely budget breakers |
+| 2026-10-27 | Weapon names are semi-fictional (based on real patterns, no brand or trademark names such as Colt, Kalashnikov, AK-47) | J; trademarks on some gun names in some countries; decide final names before the Steam page |
+| 2026-10-27 | Weapon classes: AR = automatic 5.56/7.62, Rifle = semi-auto DMR .308, plus Sniper, Pistol, SMG, Shotgun, LMG, grenade launcher, flamethrower; one stat schema in `data/weapons/` with L/M/H armour and cover penetration; starting balance by sustained DPS vs a 100 HP Walker (GDD §6) | J's list and stat structure; one table keeps penetration readable |
+| 2026-10-27 | Seasonal water: 2 seasons on a 21-day cycle, one floor apart; hot season drops one floor (never to the streets) and opens it for search; rainy season floods it back; a held floor needs pumps running all season or permanently sealed openings (replaces the 3-season version) | J |
+| 2026-10-27 | Design proposals added to GDD for J's review: traits table, gun attachments, shared explosive payloads, building occupants, airdrops, construction with roof bridges, 3-level destruction, loot and quest layers, interior exploration with a cutaway camera, UI screen list; not yet in the hour estimate | J's request for design help; demo cut proposal in GDD §17 |
 | 2026-10-26 | Claude sessions work in a git worktree (`.claude/worktrees/<branch>`), never in the main checkout; remove it after the last commit so GitHub Desktop can push | GitHub Desktop switched the shared checkout and stashed a session's work twice in one day |
 | 2026-10-26 | Survivors are individually recognisable: male/female bodies (men larger on average), build, height, skin tone (6–8), hair/beard; stored in SimCore; cosmetic only | J's request; pillar 1 "every survivor matters" (GDD §3) |
 | 2026-10-26 | One humanoid rig for survivors and human enemies: 2 base bodies + build blend shapes + bone scale; hair as a modular head piece (replaces "one base mesh") | Shares Mixamo clips; ≤ 6 survivors keeps cost low (GDD §13) |
