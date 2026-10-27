@@ -356,7 +356,8 @@ def collapse_ruin(mb, spec, top, weather):
 
 
 def roof_hole_ruin(mb, spec, top, weather):
-    """Intact shell with a caved-in patch of roof slab: dark void, sagging slab pieces, rebar."""
+    """Intact shell with a caved-in patch of roof slab: an open shaft down to the top floor, slab pieces
+    hanging from the edges, rubble and rebar."""
     w, d = spec["size"]
     X0, X1, Y0, Y1 = -w / 2, w / 2, -d / 2, d / 2
     t = PARAPET_T
@@ -368,11 +369,25 @@ def roof_hole_ruin(mb, spec, top, weather):
 
     def body_fc(c, n, rgba):
         if n[2] > 0.5 and hx0 < c[0] < hx1 and hy0 < c[1] < hy1:
-            return K.color("void")
+            return None  # open the body's top face so the hanging slabs and the floor below show
         return weather(c, n, rgba)
 
     all_sides = {"-x", "+x", "-y", "+y"}
     wall_block(mb, spec, top, X0, X1, Y0, Y1, -UNDERWATER, top - 0.12, all_sides, body_fc)
+    # shaft: interior walls just inside the opening, top-floor slab at the bottom with fallen roof on it
+    z_floor = top - FLOOR
+    zw, hw = (top - 0.12 + z_floor) / 2, top - 0.12 - z_floor
+    mb.box((hx0 + 0.05, (hy0 + hy1) / 2, zw), (0.1, hy1 - hy0, hw), "interior")
+    mb.box((hx1 - 0.05, (hy0 + hy1) / 2, zw), (0.1, hy1 - hy0, hw), "interior")
+    mb.box(((hx0 + hx1) / 2, hy0 + 0.05, zw), (hx1 - hx0 - 0.2, 0.1, hw), "interior")
+    mb.box(((hx0 + hx1) / 2, hy1 - 0.05, zw), (hx1 - hx0 - 0.2, 0.1, hw), "interior")
+    mb.box(((hx0 + hx1) / 2, (hy0 + hy1) / 2, z_floor - 0.06), (hx1 - hx0 - 0.2, hy1 - hy0 - 0.2, 0.12), "void")
+    for _ in range(10):
+        size = random.uniform(0.3, 0.9)
+        with mb.transform((random.uniform(hx0 + 0.5, hx1 - 0.5), random.uniform(hy0 + 0.5, hy1 - 0.5),
+                           z_floor + size * 0.2),
+                          (random.uniform(-0.5, 0.5), random.uniform(-0.5, 0.5), random.uniform(0, math.pi))):
+            mb.box((0, 0, 0), (size, size * random.uniform(0.6, 1.3), size * 0.35), random.choice(("rubble", "roof_slab")))
     roof_slab(mb, top, [(X0 + t, hx0, Y0 + t, Y1 - t), (hx1, X1 - t, Y0 + t, Y1 - t),
                         (hx0, hx1, Y0 + t, hy0), (hx0, hx1, hy1, Y1 - t)])
     for edge in range(4):  # slab pieces hinged down into the hole
