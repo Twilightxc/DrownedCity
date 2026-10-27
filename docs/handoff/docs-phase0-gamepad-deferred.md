@@ -1,6 +1,6 @@
 # docs/phase0-gamepad-deferred
 
-- **PR:** not opened (pushed: yes)
+- **PR:** #15, CI green (run #43), ready to merge
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `b4f4a70`
 - **Updated:** 2026-10-27
