@@ -209,7 +209,7 @@ split, then a coarser mesh for distant zombies.
 | Blood | `game/fx/blood_fx.gd`: droplet bursts along the bullet (cap 256), flat pools (cap 160) from hits (30 %) and under every corpse; grow in, shrink out after 60 s; no decals (Compatibility has none) |
 | Toggle | `GoreConfig.enabled` (`data/fx/gore.tres`): off = no blood, no dismemberment, corpses stay; in the F4 / Start tuning panel on `?spike=twinstick` with the dismember chance and hit slow |
 | Test harness | `-- --auto-shoot` / `&autoshoot=1`: fire at the nearest zombie every 0.1 s, a grenade every 4 s; repeatable load for measurements |
-| Tests | hit slow/flinch/events, slow speed, death event, corpse cap, sink, dismember masks + limb throw, gore off, blast facing, pool ring: 9 new, 77 total |
+| Tests | hit slow/flinch/events, slow speed, death event, corpse cap, sink, dismember masks + limb throw, gore off, blast facing, pool ring, one long frame: 10 new, 78 total |
 
 | Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
 | --- | --- | --- | --- | --- | --- | --- |

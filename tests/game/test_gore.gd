@@ -35,13 +35,27 @@ func test_corpse_cap_is_never_exceeded() -> void:
 	assert_eq(_corpses.live_count(), _config.corpse_cap)
 
 
+## Steps of 1/20 s: CorpseLayer clamps each frame's delta to that.
+func _advance(sec: float) -> void:
+	for i: int in ceili(sec * 20.0):
+		_corpses._process(1.0 / 20.0)
+
+
 func test_old_corpses_sink_and_go() -> void:
 	_config.dismember_chance = 0.0
 	_corpses.add_death(_death())
-	_corpses._process(_config.corpse_life_sec + 0.01)
+	_advance(_config.corpse_life_sec + 0.1)
 	assert_eq(_corpses.live_count(), 1, "starts sinking")
-	_corpses._process(_config.sink_sec + 0.01)
+	_advance(_config.sink_sec + 0.1)
 	assert_eq(_corpses.live_count(), 0, "gone after sinking")
+
+
+func test_one_long_frame_does_not_sink_everything() -> void:
+	_config.dismember_chance = 0.0
+	_corpses.add_death(_death())
+	_corpses._process(_config.corpse_life_sec * 2.0)  # a background tab resuming
+	_corpses._process(_config.sink_sec * 2.0)
+	assert_eq(_corpses.live_count(), 1, "delta is clamped")
 
 
 func test_dismember_hides_a_group_and_throws_the_limb() -> void:

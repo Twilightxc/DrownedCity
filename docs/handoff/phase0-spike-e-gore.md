@@ -1,6 +1,6 @@
 # phase0/spike-e-gore
 
-- **PR:** not opened (pushed: yes)
+- **PR:** #17 (part 2); run #49 failed (sink test vs the delta clamp), fixed, CI re-running
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `911ef37` (0.7 part 1 merged as PR #16)
 - **Updated:** 2026-10-27
@@ -16,7 +16,7 @@ dismemberment, gore toggle).
   severed limbs), `game/fx/blood_fx.gd` (droplets + pools), `game/fx/gore_config.gd` + `data/fx/gore.tres`.
 - Shader: hidden-part bitmask in `INSTANCE_CUSTOM.w` vs part index in UV.y (kit_zombie now writes it).
 - Twinstick tuning panel: gore on/off, dismember chance, hit slow. `--auto-shoot` / `&autoshoot=1` harness.
-- 9 new GUT tests (77). Desktop GL, ANGLE and local WebGL2 checked; numbers in PHASE0_RESULTS 0.7 part 2.
+- 10 new GUT tests (78). Desktop GL, ANGLE and local WebGL2 checked; numbers in PHASE0_RESULTS 0.7 part 2.
 
 ## Not done / next
 - Part 3: fake ragdoll slide on blasts (corpse moves along an arc), flying limbs as rigid bodies (cap 16),
