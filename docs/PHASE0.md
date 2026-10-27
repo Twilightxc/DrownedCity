@@ -47,8 +47,8 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
   Mouse + keyboard: ✅ J 2026-10-27. Gamepad: pending (J has no pad yet).
 
 ## 0.6 Spike D — Save on web
-- [ ] Minimal SimCore (3 survivors, 4 resources, day counter) serializes to versioned JSON in `user://`.
-- [ ] Export / import save file button (protects against browser cache clears).
+- [x] Minimal SimCore (3 survivors, 4 resources, day counter) serializes to versioned JSON in `user://`.
+- [x] Export / import save file button (protects against browser cache clears).
 - **Pass:** state survives closing and reopening the browser; exported file re-imports on another browser.
 
 ## 0.7 Spike E — Animated horde, corpses and blood on web

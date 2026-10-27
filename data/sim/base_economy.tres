@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="SimRules" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://sim/sim_rules.gd" id="1_rules"]
+
+[resource]
+script = ExtResource("1_rules")
+starting_survivors = PackedStringArray("Mali", "Somchai", "Rosa")
+starting_stock = Dictionary[String, float]({
+"ammo": 30.0,
+"food": 8.0,
+"materials": 6.0,
+"water": 12.0
+})
+food_per_survivor = 1.0
+water_per_survivor = 1.5
+materials_per_day = 1.0
+hunger_health_loss = 10.0
+thirst_health_loss = 15.0
+shortage_morale_loss = 15.0
+scavenge_haul = Dictionary[String, float]({
+"ammo": 10.0,
+"food": 3.0,
+"materials": 2.0,
+"water": 4.0
+})
