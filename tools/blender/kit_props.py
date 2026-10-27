@@ -62,9 +62,12 @@ def street_lamp(mb, x, y, lean, yaw):
 
 def dead_tree(mb, x, y, lean):
     with mb.transform((x, y, 0.0), (lean, lean * 0.5, random.uniform(0, math.pi))):
-        mb.cylinder((0, 0, 0.6), 0.28, 5.2, "bark", segments=7, radius_top=0.12)
-        for i in range(6):
-            z = 1.6 + i * 0.45
+        trunk_base, trunk_h = -2.0, 5.2  # base under water
+        mb.cylinder((0, 0, trunk_base + trunk_h / 2), 0.28, trunk_h, "bark", segments=7, radius_top=0.12)
+        branches = 6
+        z_lo, z_hi = 1.4, trunk_base + trunk_h - 0.15  # every branch starts on the trunk
+        for i in range(branches):
+            z = z_lo + (z_hi - z_lo) * i / (branches - 1)
             with mb.transform((0, 0, z), (random.uniform(0.6, 1.1), 0.0, i * 2.1 + random.uniform(-0.3, 0.3))):
                 ln = random.uniform(0.9, 2.0) * (1.0 - i * 0.1)
                 mb.cylinder((0, 0, ln / 2), 0.08, ln, "bark", segments=5, radius_top=0.02)

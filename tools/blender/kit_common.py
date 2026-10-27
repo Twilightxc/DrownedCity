@@ -138,7 +138,8 @@ class MeshBuilder:
     def box(self, center, size, col_name, mat=0, seg=0.0, yaw=0.0, face_color=None):
         """Axis-aligned (or yawed) box in the current frame. seg > 0 splits faces into ~seg-metre quads
         so baked vertex AO has enough samples on big walls. face_color(centre, normal, rgba) -> rgba
-        recolours individual quads (weathering); centre/normal are in model space."""
+        recolours individual quads (weathering) or returns None to leave the quad out; centre/normal are in
+        model space."""
         cx, cy, cz = center
         sx, sy, sz = size[0] / 2, size[1] / 2, size[2] / 2
         rgba = color(col_name)
@@ -176,6 +177,8 @@ class MeshBuilder:
                         mid = _matvec(self._rot, tuple((q[0][k] + q[1][k]) / 2 for k in range(3)))
                         mid = tuple(mid[k] + self._origin[k] for k in range(3))
                         c = face_color(mid, _matvec(self._rot, n), rgba)
+                        if c is None:  # quad cut away (e.g. a hole in a roof)
+                            continue
                     self._face((grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]), c, mat,
                                col_name not in FRESH)
 
