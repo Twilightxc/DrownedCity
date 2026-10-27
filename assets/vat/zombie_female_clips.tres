@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="VatClips" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/vat_clips.gd" id="1_vat"]
+
+[resource]
+script = ExtResource("1_vat")
+mesh_name = "zombie_female"
+fps = 24.0
+vertex_count = 360
+frame_count = 102
+names = PackedStringArray("walk", "attack", "flinch", "death", "death_blown")
+start_row = PackedInt32Array(0, 24, 42, 50, 78)
+frames = PackedInt32Array(24, 18, 8, 28, 24)
+loops = PackedInt32Array(1, 0, 0, 0, 0)
+stride = PackedFloat32Array(1.300, 0.000, 0.000, 0.000, 0.000)

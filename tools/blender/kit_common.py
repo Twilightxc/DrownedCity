@@ -240,7 +240,8 @@ def bake_vertex_ao(obj, distance=1.6, samples=64):
     me.color_attributes.render_color_index = 0
 
 
-def export_glb(obj, out_dir, name):
+def export_glb(obj, out_dir, name, texcoords=False):
+    """texcoords=True keeps the active UV map (VAT meshes carry their vertex index there)."""
     os.makedirs(out_dir, exist_ok=True)
     for o in bpy.context.scene.objects:
         o.select_set(o == obj)
@@ -248,7 +249,7 @@ def export_glb(obj, out_dir, name):
     path = os.path.join(out_dir, name + ".glb")
     bpy.ops.export_scene.gltf(
         filepath=path, export_format="GLB", use_selection=True, export_yup=True, export_apply=True,
-        export_vertex_color="ACTIVE", export_normals=True, export_texcoords=False,
+        export_vertex_color="ACTIVE", export_normals=True, export_texcoords=texcoords,
         export_materials="EXPORT", export_animations=False,
     )
     tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)

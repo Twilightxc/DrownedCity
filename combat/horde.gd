@@ -2,6 +2,9 @@ class_name Horde
 extends RefCounted
 ## Real-time zombie crowd as struct-of-arrays. Live agents are packed in [0, count);
 ## killing swaps the last agent into the hole. No nodes, no physics bodies.
+## Animation is state only (clip + time per agent); HordeRenderer turns it into VAT rows.
+
+enum Anim { WALK, ATTACK, FLINCH }
 
 var config: HordeConfig
 var grid: NavGrid
@@ -15,6 +18,10 @@ var velocities: PackedVector2Array
 var hp: PackedInt32Array
 var speed_scale: PackedFloat32Array
 var tint: PackedColorArray
+var heading: PackedVector2Array  ## unit facing; follows the velocity, turns to the target when still
+var variant: PackedByteArray
+var anim: PackedByteArray  ## Anim
+var anim_time: PackedFloat32Array  ## walk: cycles (by distance walked); others: seconds
 
 ## Totals since start, read by the presentation layer and reported to SimCore later.
 var kills: int = 0
@@ -35,6 +42,10 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	hp.resize(max_agents)
 	speed_scale.resize(max_agents)
 	tint.resize(max_agents)
+	heading.resize(max_agents)
+	variant.resize(max_agents)
+	anim.resize(max_agents)
+	anim_time.resize(max_agents)
 	_attack_cooldown.resize(max_agents)
 	_rng.seed = rng_seed
 
@@ -49,6 +60,10 @@ func spawn(p: Vector2) -> bool:
 	speed_scale[a] = 1.0 + _rng.randf_range(-config.speed_jitter, config.speed_jitter)
 	var shade: float = _rng.randf_range(0.85, 1.1)
 	tint[a] = Color(shade, shade, shade)
+	heading[a] = Vector2(0, 1)
+	variant[a] = _rng.randi() % maxi(config.variants, 1)
+	anim[a] = Anim.WALK
+	anim_time[a] = _rng.randf()  # walk phase offset, so the crowd doesn't step in sync
 	_attack_cooldown[a] = _rng.randf() * config.attack_interval
 	count += 1
 	return true
@@ -63,6 +78,10 @@ func kill(a: int) -> void:
 		hp[a] = hp[last]
 		speed_scale[a] = speed_scale[last]
 		tint[a] = tint[last]
+		heading[a] = heading[last]
+		variant[a] = variant[last]
+		anim[a] = anim[last]
+		anim_time[a] = anim_time[last]
 		_attack_cooldown[a] = _attack_cooldown[last]
 	count = last
 
@@ -102,6 +121,11 @@ func update(delta: float, target: Vector2) -> void:
 	var pos: PackedVector2Array = positions
 	var vel: PackedVector2Array = velocities
 	var cooldown: PackedFloat32Array = _attack_cooldown
+	var head: PackedVector2Array = heading
+	var clip: PackedByteArray = anim
+	var clip_t: PackedFloat32Array = anim_time
+	var inv_stride: float = 1.0 / config.walk_stride
+	var attack_len: float = config.attack_anim_sec
 
 	var sep_dist: float = config.radius * 2.0
 	var sep_dist2: float = sep_dist * sep_dist
@@ -167,11 +191,32 @@ func update(delta: float, target: Vector2) -> void:
 		pos[a] = np
 		vel[a] = v
 
+		var speed2: float = v.length_squared()
+		if speed2 > 0.04:
+			head[a] = v / sqrt(speed2)
+		elif dist2 > 0.0001:
+			head[a] = head[a].lerp(to_target / sqrt(dist2), turn).normalized()
+
 		cooldown[a] -= delta
-		if dist2 <= attack_r2 and cooldown[a] <= 0.0:
+		var attacking: bool = dist2 <= attack_r2 and cooldown[a] <= 0.0
+		if attacking:
 			cooldown[a] = config.attack_interval
 			hits_on_target += 1
 
+		if attacking:
+			clip[a] = Anim.ATTACK
+			clip_t[a] = 0.0
+		elif clip[a] == Anim.WALK:
+			clip_t[a] = fposmod(clip_t[a] + (np - p).length() * inv_stride, 1.0)
+		else:
+			clip_t[a] += delta
+			if clip_t[a] >= attack_len:
+				clip[a] = Anim.WALK
+				clip_t[a] = 0.0
+
 	positions = pos
 	velocities = vel
+	heading = head
+	anim = clip
+	anim_time = clip_t
 	_attack_cooldown = cooldown

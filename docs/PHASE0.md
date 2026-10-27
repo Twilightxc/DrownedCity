@@ -57,9 +57,10 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
 Added 2026-10-26 (J): characters with limbs and realistic motion, enemy variants, hit slow, blood, corpses,
 dismemberment (GDD §3, §6, §9, §13). This is the only part of that request that can break the 200-zombie web
 budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J's Mixamo download (login).
-- [ ] Low-poly zombie with limbs (target ≤ ~500 tris) from `tools/blender`, 2 variants (male / female), rigged
+- [x] Low-poly zombie with limbs (target ≤ ~500 tris) from `tools/blender`, 2 variants (male / female), rigged
       to a Mixamo humanoid; clips: walk, attack, hit flinch, death (J downloads from Mixamo).
-- [ ] Bake the clips into a vertex animation texture (VAT) in Blender; the horde MultiMesh vertex shader plays
+      → 180 tris, rigid-part rig; clips are hand-keyed stand-ins until the Mixamo clips arrive.
+- [x] Bake the clips into a vertex animation texture (VAT) in Blender; the horde MultiMesh vertex shader plays
       a clip + time offset per instance (`INSTANCE_CUSTOM`). No skeleton per zombie. Works in Compatibility.
 - [ ] Hit: brief slow on unarmored agents (per-type data, 0 for armored), flinch clip, blood burst along the
       bullet.

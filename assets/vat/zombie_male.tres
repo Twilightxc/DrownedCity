@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="VatModel" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://combat/vat_model.gd" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/models/zombie_male.glb" id="2_mesh"]
+[ext_resource type="Texture2D" path="res://assets/vat/zombie_male_pos.exr" id="3_pos"]
+[ext_resource type="Texture2D" path="res://assets/vat/zombie_male_nrm.exr" id="4_nrm"]
+[ext_resource type="Resource" path="res://assets/vat/zombie_male_clips.tres" id="5_clips"]
+
+[resource]
+script = ExtResource("1_model")
+mesh_scene = ExtResource("2_mesh")
+positions = ExtResource("3_pos")
+normals = ExtResource("4_nrm")
+clips = ExtResource("5_clips")

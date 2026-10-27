@@ -65,7 +65,7 @@ mesh = SubResource("Mesh_player")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.5)
 mesh = SubResource("Mesh_aim")
 
-[node name="HordeRenderer" type="MultiMeshInstance3D" parent="."]
+[node name="HordeRenderer" type="Node3D" parent="."]
 script = ExtResource("6_renderer")
 
 [node name="Tracers" type="MeshInstance3D" parent="."]
