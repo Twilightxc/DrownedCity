@@ -3,8 +3,22 @@ extends RefCounted
 ## Real-time zombie crowd as struct-of-arrays. Live agents are packed in [0, count);
 ## killing swaps the last agent into the hole. No nodes, no physics bodies.
 ## Animation is state only (clip + time per agent); HordeRenderer turns it into VAT rows.
+## Hits and deaths are queued as events for the presentation (blood, corpses), which drains them.
 
 enum Anim { WALK, ATTACK, FLINCH }
+
+const MAX_EVENTS: int = 512  ## per queue; older events are dropped if nobody drains them
+
+
+## A zombie that just died, as the corpse layer needs it.
+class Death:
+	var position: Vector2
+	var heading: Vector2
+	var variant: int
+	var tint: Color
+	var push: Vector2  ## unit, away from the shooter or the blast
+	var blast: bool
+
 
 var config: HordeConfig
 var grid: NavGrid
@@ -22,6 +36,12 @@ var heading: PackedVector2Array  ## unit facing; follows the velocity, turns to 
 var variant: PackedByteArray
 var anim: PackedByteArray  ## Anim
 var anim_time: PackedFloat32Array  ## walk: cycles (by distance walked); others: seconds
+var slow_left: PackedFloat32Array  ## s of hit slow remaining (GDD §6)
+
+## Event queues (drained by game/fx): hit point + direction per bullet/blast hit, deaths.
+var hit_points: PackedVector2Array = PackedVector2Array()
+var hit_dirs: PackedVector2Array = PackedVector2Array()
+var deaths: Array[Death] = []
 
 ## Totals since start, read by the presentation layer and reported to SimCore later.
 var kills: int = 0
@@ -46,6 +66,7 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	variant.resize(max_agents)
 	anim.resize(max_agents)
 	anim_time.resize(max_agents)
+	slow_left.resize(max_agents)
 	_attack_cooldown.resize(max_agents)
 	_rng.seed = rng_seed
 
@@ -64,6 +85,7 @@ func spawn(p: Vector2) -> bool:
 	variant[a] = _rng.randi() % maxi(config.variants, 1)
 	anim[a] = Anim.WALK
 	anim_time[a] = _rng.randf()  # walk phase offset, so the crowd doesn't step in sync
+	slow_left[a] = 0.0
 	_attack_cooldown[a] = _rng.randf() * config.attack_interval
 	count += 1
 	return true
@@ -82,23 +104,68 @@ func kill(a: int) -> void:
 		variant[a] = variant[last]
 		anim[a] = anim[last]
 		anim_time[a] = anim_time[last]
+		slow_left[a] = slow_left[last]
 		_attack_cooldown[a] = _attack_cooldown[last]
 	count = last
 
 
 ## Applies damage to the given agents (each listed once). Returns how many died.
-func apply_damage(agents: PackedInt32Array, damage: int) -> int:
+## `source` is the muzzle or the blast centre: it sets the blood and corpse push direction.
+## Survivors flinch and slow down (hit_slow, stacking up to hit_slow_cap_sec).
+func apply_damage(agents: PackedInt32Array, damage: int, source: Vector2 = Vector2.INF, blast: bool = false) -> int:
 	var dead: PackedInt32Array = PackedInt32Array()
 	for a: int in agents:
 		hp[a] -= damage
+		var dir: Vector2 = _push_dir(a, source)
+		_queue_hit(positions[a], dir)
 		if hp[a] <= 0:
 			dead.append(a)
+			continue
+		slow_left[a] = minf(slow_left[a] + config.hit_slow_sec, config.hit_slow_cap_sec)
+		if anim[a] != Anim.ATTACK:
+			anim[a] = Anim.FLINCH
+			anim_time[a] = 0.0
 	# Highest index first so swap-removal never moves a still-pending victim.
 	dead.sort()
 	for i: int in range(dead.size() - 1, -1, -1):
-		kill(dead[i])
+		var a: int = dead[i]
+		_queue_death(a, _push_dir(a, source), blast)
+		kill(a)
 	kills += dead.size()
 	return dead.size()
+
+
+func clear_events() -> void:
+	hit_points.clear()
+	hit_dirs.clear()
+	deaths.clear()
+
+
+func _push_dir(a: int, source: Vector2) -> Vector2:
+	if source == Vector2.INF:
+		return -heading[a]
+	var d: Vector2 = positions[a] - source
+	return d.normalized() if d.length_squared() > 0.0001 else -heading[a]
+
+
+func _queue_hit(p: Vector2, dir: Vector2) -> void:
+	if hit_points.size() >= MAX_EVENTS:
+		return
+	hit_points.append(p)
+	hit_dirs.append(dir)
+
+
+func _queue_death(a: int, push: Vector2, blast: bool) -> void:
+	if deaths.size() >= MAX_EVENTS:
+		return
+	var d: Death = Death.new()
+	d.position = positions[a]
+	d.heading = heading[a]
+	d.variant = variant[a]
+	d.tint = tint[a]
+	d.push = push
+	d.blast = blast
+	deaths.append(d)
 
 
 func recompute_flow(targets: Array[Vector2i]) -> void:
@@ -126,6 +193,9 @@ func update(delta: float, target: Vector2) -> void:
 	var clip_t: PackedFloat32Array = anim_time
 	var inv_stride: float = 1.0 / config.walk_stride
 	var attack_len: float = config.attack_anim_sec
+	var flinch_len: float = config.flinch_anim_sec
+	var slow: PackedFloat32Array = slow_left
+	var slow_mul: float = 1.0 - config.hit_slow
 
 	var sep_dist: float = config.radius * 2.0
 	var sep_dist2: float = sep_dist * sep_dist
@@ -151,7 +221,8 @@ func update(delta: float, target: Vector2) -> void:
 				desired = flow.direction_at(cy * w + cx)
 			if desired == Vector2.ZERO:
 				desired = to_target / sqrt(dist2)
-			desired *= config.speed * speed_scale[a]
+			desired *= config.speed * speed_scale[a] * (slow_mul if slow[a] > 0.0 else 1.0)
+		slow[a] = maxf(slow[a] - delta, 0.0)
 
 		# Separation from neighbours in the 3x3 cells around.
 		var push: Vector2 = Vector2.ZERO
@@ -210,7 +281,7 @@ func update(delta: float, target: Vector2) -> void:
 			clip_t[a] = fposmod(clip_t[a] + (np - p).length() * inv_stride, 1.0)
 		else:
 			clip_t[a] += delta
-			if clip_t[a] >= attack_len:
+			if clip_t[a] >= (attack_len if clip[a] == Anim.ATTACK else flinch_len):
 				clip[a] = Anim.WALK
 				clip_t[a] = 0.0
 
@@ -219,4 +290,5 @@ func update(delta: float, target: Vector2) -> void:
 	heading = head
 	anim = clip
 	anim_time = clip_t
+	slow_left = slow
 	_attack_cooldown = cooldown

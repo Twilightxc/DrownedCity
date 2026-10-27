@@ -114,3 +114,8 @@ func _build_tuning() -> void:
 	_tuning.add_float("Pad throw range (m)", c, "pad_throw_range", 2.0, 12.0, 0.5)
 	_tuning.add_float("Orders wheel time scale", c, "radial_time_scale", 0.05, 1.0, 0.05)
 	_tuning.add_float("Camera turn time (s)", _rig, "rotate_time", 0.05, 0.6, 0.01)
+	if gore_config != null:
+		_tuning.add_bool("Blood + dismemberment", gore_config, "enabled")
+		_tuning.add_float("Dismember chance (bullet)", gore_config, "dismember_chance", 0.0, 1.0, 0.05)
+	_tuning.add_float("Hit slow (fraction)", horde_config, "hit_slow", 0.0, 0.8, 0.05)
+	_tuning.add_float("Hit slow per hit (s)", horde_config, "hit_slow_sec", 0.0, 1.5, 0.05)

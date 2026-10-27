@@ -8,6 +8,7 @@ normal is written to two half-float EXR textures, one row per frame. The horde s
 (game/shaders/horde_vat.gdshader) reads them with texelFetch, so the MultiMesh plays animation without
 a skeleton per zombie (GDD §13, PHASE0 0.7).
 
+UV.y holds the part index (SKELETON order), so the shader can hide parts of a corpse (dismemberment).
 Every mesh corner gets its own index in UV.x; that index is the VAT column, so the glTF exporter and
 Godot's importer may split or reorder vertices freely. The .glb.import must keep generate_lods and
 create_shadow_meshes off: both rebuild index/vertex buffers from the rest pose, which the VAT moves.
@@ -253,11 +254,13 @@ def rest_object(name, quads, skel):
     me.update()
     col = me.color_attributes.new("Col", "FLOAT_COLOR", "CORNER")
     uv = me.uv_layers.new(name="VatIndex")
-    for poly, (_p, _c, _n, col_name) in zip(me.polygons, quads):
+    parts = list(SKELETON)
+    for poly, (part, _c, _n, col_name) in zip(me.polygons, quads):
         rgba = K.color(col_name)
         for li in poly.loop_indices:
             col.data[li].color = rgba
-            uv.data[li].uv = (li + 0.5, 0.5)  # corner index = VAT column (+0.5: no rounding edge case)
+            # x: corner index = VAT column; y: part index for dismemberment masks (+0.5: no rounding edge)
+            uv.data[li].uv = (li + 0.5, parts.index(part) + 0.5)
     me.color_attributes.active_color = col
     me.materials.append(bpy.data.materials[K.SURFACE])
     obj = bpy.data.objects.new(name, me)
@@ -312,7 +315,10 @@ def bake_vat(name, quads, skel, vat_dir):
 
 
 def _write_import(exr_path):
-    """Keep the VAT as raw half floats: no compression, no mipmaps (Godot fills in the rest)."""
+    """Keep the VAT as raw half floats: no compression, no mipmaps (Godot fills in the rest).
+    An existing .import is kept, so its uid stays stable."""
+    if os.path.exists(exr_path + ".import"):
+        return
     with open(exr_path + ".import", "w", encoding="utf-8", newline="\n") as fh:
         fh.write('[remap]\n\nimporter="texture"\ntype="CompressedTexture2D"\n\n[params]\n\n'
                  "compress/mode=3\ncompress/high_quality=false\nmipmaps/generate=false\n"

@@ -85,7 +85,7 @@ func _explode(cfg: ThrowableConfig, at: Vector3) -> void:
 		horde.spatial.rebuild(horde.positions, horde.count)
 		_hits.clear()
 		horde.spatial.query_radius(horde.positions, Vector2(at.x, at.z), cfg.blast_radius, _hits)
-		killed = horde.apply_damage(_hits, cfg.damage)
+		killed = horde.apply_damage(_hits, cfg.damage, Vector2(at.x, at.z), true)
 	var fl: Flash = Flash.new()
 	fl.radius = cfg.blast_radius
 	fl.material = StandardMaterial3D.new()

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="GoreConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/fx/gore_config.gd" id="1_gore"]
+
+[resource]
+script = ExtResource("1_gore")
+enabled = true
+corpse_cap = 160
+corpse_life_sec = 45.0
+sink_sec = 1.5
+sink_depth = 0.5
+water_float_sec = 6.0
+dismember_chance = 0.12
+dismember_chance_blast = 0.6
+limb_throw = Vector2(0.5, 1.3)
+droplet_cap = 256
+droplets_per_hit = 6
+droplet_speed = Vector2(1.5, 4)
+droplet_life = 0.6
+pool_cap = 160
+pool_on_hit_chance = 0.3
+hit_pool_size = Vector2(0.3, 0.6)
+death_pool_size = Vector2(1.1, 1.7)
+pool_grow_sec = 2.5
+pool_life_sec = 60.0
+zombie_blood = Color(0.415686, 0.152941, 0.12549, 1)
+zombie_pool = Color(0.360784, 0.129412, 0.105882, 1)

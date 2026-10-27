@@ -12,6 +12,7 @@
 [ext_resource type="Resource" path="res://assets/vat/zombie_male.tres" id="10_male"]
 [ext_resource type="Resource" path="res://assets/vat/zombie_female.tres" id="11_female"]
 [ext_resource type="Script" path="res://combat/vat_model.gd" id="12_vatmodel"]
+[ext_resource type="Resource" path="res://data/fx/gore.tres" id="13_gore"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_player"]
 albedo_color = Color(0.92, 0.55, 0.2, 1)
@@ -29,6 +30,7 @@ size = Vector3(0.08, 0.08, 0.6)
 script = ExtResource("1_spike")
 horde_config = ExtResource("2_horde")
 level_scene = ExtResource("8_level")
+gore_config = ExtResource("13_gore")
 roof_size = Vector2i(25, 21)
 
 [node name="IsoCameraRig" type="Node3D" parent="."]

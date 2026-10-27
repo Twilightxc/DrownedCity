@@ -62,12 +62,14 @@ budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J'
       → 180 tris, rigid-part rig; clips are hand-keyed stand-ins until the Mixamo clips arrive.
 - [x] Bake the clips into a vertex animation texture (VAT) in Blender; the horde MultiMesh vertex shader plays
       a clip + time offset per instance (`INSTANCE_CUSTOM`). No skeleton per zombie. Works in Compatibility.
-- [ ] Hit: brief slow on unarmored agents (per-type data, 0 for armored), flinch clip, blood burst along the
+- [x] Hit: brief slow on unarmored agents (per-type data, 0 for armored), flinch clip, blood burst along the
       bullet.
-- [ ] Death: death clip → corpse stays (own MultiMesh, capped ring buffer, oldest fade; in water float then
+- [x] Death: death clip → corpse stays (own MultiMesh, capped ring buffer, oldest fade; in water float then
       sink); random dismemberment (corpse variant missing a limb + a flying limb piece); blood pools as flat
       quads (check whether `Decal` works in Compatibility on 4.7.2 first).
-- [ ] Gore toggle (blood + dismemberment on/off).
+      → oldest sink through the floor instead of a transparent fade; the limb lies where it landed (it flies in
+      part 3); no decals (Compatibility has none), flat pools.
+- [x] Gore toggle (blood + dismemberment on/off).
 - [ ] Added 2026-10-27 (J): fake ragdoll, fire and explosion effects (GDD §6):
   - Explosion: "blown back" death clip + corpse slides along an arc away from the blast; one short flash light,
     debris/smoke particles, scorch mark, water column when it lands in water.

@@ -246,7 +246,7 @@ func _fire() -> void:
 	var from: Vector2 = ground_position() + dir * radius
 	var travelled: float = _hitscan.cast(horde, from, dir, weapon.max_range, weapon.penetration, _hits)
 	if not _hits.is_empty():
-		horde.apply_damage(_hits, weapon.damage)
+		horde.apply_damage(_hits, weapon.damage, from)
 	var muzzle_y: float = ground_y + MUZZLE_HEIGHT
 	var end: Vector2 = from + dir * travelled
 	fired.emit(Vector3(from.x, muzzle_y, from.y), Vector3(end.x, muzzle_y, end.y))

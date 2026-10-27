@@ -123,6 +123,55 @@ func test_kill_moves_animation_state_with_the_agent() -> void:
 	assert_eq(horde.variant[0], 1)
 
 
+func test_hit_slows_flinches_and_queues_events() -> void:
+	_config.hp = 3
+	var horde: Horde = _horde()
+	horde.spawn(Vector2(2, 0))
+	horde.spawn(Vector2(4, 0))
+	horde.apply_damage(PackedInt32Array([0]), 1, Vector2(0, 0))
+	assert_eq(horde.anim[0], Horde.Anim.FLINCH)
+	assert_almost_eq(horde.slow_left[0], _config.hit_slow_sec, 0.001)
+	assert_eq(horde.hit_points.size(), 1)
+	assert_eq(horde.hit_dirs[0], Vector2(1, 0), "away from the shooter")
+	for i: int in 5:
+		horde.apply_damage(PackedInt32Array([1]), 0, Vector2(0, 0))
+	assert_almost_eq(horde.slow_left[1], _config.hit_slow_cap_sec, 0.001, "stacking is capped")
+	assert_true(horde.deaths.is_empty())
+
+
+func test_slowed_agent_moves_slower() -> void:
+	var a: Horde = _horde()
+	var b: Horde = _horde()
+	var target: Vector2 = Vector2(8, 0)
+	for h: Horde in [a, b]:
+		h.spawn(Vector2(-8, 0))
+		h.recompute_flow([_grid.world_to_cell(target)] as Array[Vector2i])
+		for i: int in 30:  # reach full speed first
+			h.update(1.0 / 60.0, target)
+	b.slow_left[0] = 10.0
+	var start_a: Vector2 = a.positions[0]
+	var start_b: Vector2 = b.positions[0]
+	for i: int in 30:
+		a.update(1.0 / 60.0, target)
+		b.update(1.0 / 60.0, target)
+	assert_lt(b.positions[0].distance_to(start_b), a.positions[0].distance_to(start_a) * 0.85)
+
+
+func test_death_event_carries_corpse_data() -> void:
+	var horde: Horde = _horde()
+	horde.spawn(Vector2(3, 0))
+	horde.variant[0] = 1
+	horde.apply_damage(PackedInt32Array([0]), 99, Vector2(3, -5), true)
+	assert_eq(horde.deaths.size(), 1)
+	var d: Horde.Death = horde.deaths[0]
+	assert_eq(d.position, Vector2(3, 0))
+	assert_eq(d.variant, 1)
+	assert_true(d.blast)
+	assert_eq(d.push, Vector2(0, 1))
+	horde.clear_events()
+	assert_true(horde.deaths.is_empty() and horde.hit_points.is_empty())
+
+
 func test_apply_damage_removes_dead_and_keeps_survivors() -> void:
 	var horde: Horde = _horde()
 	for i: int in 5:
