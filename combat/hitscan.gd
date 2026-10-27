@@ -34,7 +34,8 @@ func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits:
 	var h: int = grid.height
 
 	# Grid traversal (Amanatides & Woo): visit every cell the ray crosses, in order,
-	# so a ray clipping only a wall's corner still stops there.
+	# so a ray clipping only a wall's corner still stops there. Same corner rule as
+	# NavGrid.ray_distance: through a corner exactly, either side cell blocks.
 	var cs: float = grid.cell_size
 	var c: Vector2i = grid.world_to_cell(from)
 	var step_x: int = 1 if dir.x > 0.0 else -1
@@ -49,7 +50,7 @@ func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits:
 	var end_t: float = max_range
 	var t: float = 0.0  # distance at which the ray entered cell c
 	while t <= end_t:
-		if grid.in_bounds(c) and grid.blocked[grid.index_of(c)] != 0:
+		if grid.blocks_ray(c):
 			end_t = t
 			break
 		for cy: int in range(maxi(c.y - 1, 0), mini(c.y + 2, h)):
@@ -70,10 +71,18 @@ func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits:
 			t = t_max_x
 			t_max_x += t_delta_x
 			c.x += step_x
-		else:
+		elif t_max_y < t_max_x:
 			t = t_max_y
 			t_max_y += t_delta_y
 			c.y += step_y
+		else:  # exact corner: the side cells are inside the 3x3 block already searched
+			t = t_max_x
+			if t <= end_t and (grid.blocks_ray(Vector2i(c.x + step_x, c.y)) or grid.blocks_ray(Vector2i(c.x, c.y + step_y))):
+				end_t = t
+				break
+			t_max_x += t_delta_x
+			t_max_y += t_delta_y
+			c += Vector2i(step_x, step_y)
 
 	# Insertion sort: a handful of candidates per shot.
 	var n: int = _cand_agent.size()
