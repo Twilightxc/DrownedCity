@@ -9,6 +9,9 @@
 [ext_resource type="Script" path="res://game/spikes/tracers.gd" id="7_tracers"]
 [ext_resource type="Resource" path="res://data/input/twin_stick.tres" id="9_controls"]
 [ext_resource type="PackedScene" path="res://game/level/style15_level.tscn" id="8_level"]
+[ext_resource type="Resource" path="res://assets/vat/zombie_male.tres" id="10_male"]
+[ext_resource type="Resource" path="res://assets/vat/zombie_female.tres" id="11_female"]
+[ext_resource type="Script" path="res://combat/vat_model.gd" id="12_vatmodel"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_player"]
 albedo_color = Color(0.92, 0.55, 0.2, 1)
@@ -52,8 +55,9 @@ mesh = SubResource("Mesh_player")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.5)
 mesh = SubResource("Mesh_aim")
 
-[node name="HordeRenderer" type="MultiMeshInstance3D" parent="."]
+[node name="HordeRenderer" type="Node3D" parent="."]
 script = ExtResource("6_renderer")
+models = Array[ExtResource("12_vatmodel")]([ExtResource("10_male"), ExtResource("11_female")])
 
 [node name="Tracers" type="MeshInstance3D" parent="."]
 script = ExtResource("7_tracers")

@@ -75,6 +75,54 @@ func test_attacks_when_in_range() -> void:
 	assert_between(horde.hits_on_target, 2, 3, "about one hit per attack_interval over 2.5 s")
 
 
+func test_walk_phase_follows_distance() -> void:
+	var horde: Horde = _horde()
+	horde.spawn(Vector2(-8, 0))
+	horde.anim_time[0] = 0.0
+	var target: Vector2 = Vector2(8, 0)
+	horde.recompute_flow([_grid.world_to_cell(target)] as Array[Vector2i])
+	var travelled: float = 0.0
+	for step: int in 30:
+		var before: Vector2 = horde.positions[0]
+		horde.update(1.0 / 60.0, target)
+		travelled += horde.positions[0].distance_to(before)
+	assert_eq(horde.anim[0], Horde.Anim.WALK)
+	assert_almost_eq(horde.anim_time[0], fposmod(travelled / _config.walk_stride, 1.0), 0.001)
+	assert_gt(horde.heading[0].x, 0.9, "faces where it walks")
+
+
+func test_attack_plays_then_returns_to_walk() -> void:
+	var horde: Horde = _horde()
+	horde.spawn(Vector2(0.5, 0))
+	horde.recompute_flow([Vector2i(10, 10)] as Array[Vector2i])
+	var attacked: bool = false
+	for step: int in 60:
+		horde.update(1.0 / 60.0, Vector2(0, 0))
+		attacked = attacked or horde.anim[0] == Horde.Anim.ATTACK
+	assert_true(attacked, "attack clip started")
+	assert_lt(horde.heading[0].x, -0.9, "turns to face the target while standing")
+	for step: int in ceili(_config.attack_anim_sec * 60.0) + 2:
+		horde.update(1.0 / 60.0, Vector2(0, 0))
+		if horde.anim[0] == Horde.Anim.WALK:
+			pass_test("back to walk")
+			return
+	fail_test("still attacking after attack_anim_sec")
+
+
+func test_kill_moves_animation_state_with_the_agent() -> void:
+	var horde: Horde = _horde()
+	for i: int in 3:
+		horde.spawn(Vector2(i, 0))
+	horde.anim[2] = Horde.Anim.ATTACK
+	horde.anim_time[2] = 0.3
+	horde.variant[2] = 1
+	horde.kill(0)
+	assert_eq(horde.positions[0], Vector2(2, 0))
+	assert_eq(horde.anim[0], Horde.Anim.ATTACK)
+	assert_almost_eq(horde.anim_time[0], 0.3, 0.0001)
+	assert_eq(horde.variant[0], 1)
+
+
 func test_apply_damage_removes_dead_and_keeps_survivors() -> void:
 	var horde: Horde = _horde()
 	for i: int in 5:

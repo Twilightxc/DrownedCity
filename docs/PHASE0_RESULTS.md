@@ -168,3 +168,33 @@ Checked by Claude (desktop RTX 4080):
 | --- | --- | --- | --- |
 | J's machine (not stated) | Chrome, live URL `7e2ba96 · #39` | save spike checks in Chrome | ✅ "no problems" (J, 2026-10-27) |
 | J's machine (not stated) | Chrome → Edge/Firefox, live URL `7e2ba96 · #39` | export file → import → same day and stock | ✅ same day and stock (J, 2026-10-27) |
+
+## 0.7 Spike E — Animated horde, corpses and blood — 🟡 part 1 (animated horde) built
+
+Live: `?spike=style` and `?spike=twinstick` use the animated horde; `?spike=horde` keeps the box placeholder
+for comparison. The default URL is still the save spike.
+
+| Item | How | Result |
+| --- | --- | --- |
+| Zombie | `tools/blender/kit_zombie.py`: rigid-part figure (11 parts, boxes), male + female variants | 180 tris each (target ≤ 500) |
+| Clips | walk (loop, by distance walked), attack, flinch, death, death_blown (fake ragdoll); hand-keyed stand-ins until J's Mixamo clips | 102 frames at 24 fps |
+| VAT | every mesh corner's position + normal per frame → two half-float EXR textures per variant (360 × 102); column index in UV.x, so import order doesn't matter | 140 KB + 37 KB per variant |
+| Import | VAT EXR: VRAM Uncompressed, no mipmaps (`.import` written by the kit); zombie `.glb`: LODs, shadow meshes, tangents off (they rebuild buffers from the rest pose) | |
+| Shader | `game/shaders/horde_vat.gdshader`: `texelFetch` two rows from `INSTANCE_CUSTOM`, blends, same Style 1.5 colour/AO | works in desktop GL Compatibility and WebGL2 |
+| Horde | `Horde.Anim` per agent (walk / attack / flinch) + time, heading turns to the target when standing; `HordeRenderer`: one MultiMesh per variant | 2 MultiMeshes → +2 draw calls (+ shadow) |
+| Tests | VatClips rows (loop wrap, one-shot hold), walk phase by distance, attack → walk, kill keeps anim state: 6 new, 68 total | |
+
+Finding: the glTF vertex colour reaches `COLOR` one sRGB decode darker than the palette, so the dark clothes
+rendered black; `horde_vat.gdshader` re-encodes it. `style15_surface.gdshader` (buildings) reads `COLOR` the
+same way, so the building palette may be darker than authored; not changed here because J accepted that look.
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200, box placeholder (before) | 144 (vsync) | 50 | 136k | from the 2026-10-27 Forward+ comparison |
+| Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200, animated | 144 (vsync) | 53 | 215k | horde casts animated shadows |
+| Desktop RTX 4080 | Claude pane (Chromium), local web export | style + 200, animated | not valid (pane hidden, throttled) | 63 | 209k | horde update 2.5 ms, render sync 0.2 ms, no console errors |
+| Laptop Intel Arc | Chrome | style + 200 / 300, animated | — | — | — | **J** (also covers the 0.4b look) |
+
+Budget note: +80k primitives for 200 zombies (180 tris × main + shadow pass). 300 zombies should land near
+255k of 300k; if Arc or the corpse cap pushes past budget, the first levers are no horde shadows on the far
+split, then a coarser mesh for distant zombies.
