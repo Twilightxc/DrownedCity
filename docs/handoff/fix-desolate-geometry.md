@@ -1,6 +1,6 @@
 # fix/desolate-geometry
 
-- **PR:** not opened (pushed: yes)
+- **PR:** #9 (CI run #26 green; Copilot skipped it: J's review quota is used up)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `8ec3c6d`
 - **Updated:** 2026-10-27
