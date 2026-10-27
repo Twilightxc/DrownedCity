@@ -1,6 +1,6 @@
 # design/systems-pass
 
-- **PR:** not opened (pushed: yes)
+- **PR:** #12, CI green (run #35), ready to merge
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `409f69b`
 - **Updated:** 2026-10-27
