@@ -80,6 +80,18 @@ func test_wall_corner_blocks_diagonal_shot() -> void:
 	assert_lt(travelled, 1.0)
 
 
+func test_shot_through_exact_corner_is_blocked_by_either_side_cell() -> void:
+	# Regression (Copilot, PR #3): mirrored walls gave different results on a t_max tie.
+	for side: Vector2i in [Vector2i(4, 3), Vector2i(3, 4)]:
+		before_each()
+		_grid.set_blocked_rect(Rect2i(side, Vector2i.ONE))
+		_horde.spawn(Vector2(6.5, 6.5))  # on the ray, behind the corner
+		_rebuild()
+		var travelled: float = _hitscan.cast(_horde, Vector2(3.5, 3.5), Vector2(1, 1), 25.0, 5, _hits)
+		assert_eq(_hits.size(), 0, "wall %s stops the bullet" % side)
+		assert_almost_eq(travelled, 0.5 * sqrt(2.0), 0.001)
+
+
 func test_shot_just_past_corner_is_not_blocked() -> void:
 	_grid.set_blocked_rect(Rect2i(3, 3, 1, 1))
 	_horde.spawn(Vector2(5.4, 0.5))

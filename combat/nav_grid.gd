@@ -47,6 +47,11 @@ func is_walkable(cell: Vector2i) -> bool:
 	return in_bounds(cell) and blocked[index_of(cell)] == 0
 
 
+## Blocks rays. Unlike `not is_walkable`, cells outside the grid don't block.
+func blocks_ray(cell: Vector2i) -> bool:
+	return in_bounds(cell) and blocked[index_of(cell)] != 0
+
+
 func is_walkable_world(p: Vector2) -> bool:
 	return is_walkable(world_to_cell(p))
 
@@ -63,6 +68,8 @@ func world_size() -> Vector2:
 
 ## Distance along `dir` from `from` to the first blocked cell, capped at max_range.
 ## Cells outside the grid don't block (bullets fly off the roof).
+## A ray through a cell corner exactly is blocked if either side cell is (no squeezing between
+## diagonal walls); the result is the same for mirrored shots.
 func ray_distance(from: Vector2, dir: Vector2, max_range: float) -> float:
 	dir = dir.normalized()
 	var c: Vector2i = world_to_cell(from)
@@ -76,16 +83,23 @@ func ray_distance(from: Vector2, dir: Vector2, max_range: float) -> float:
 	var t_max_y: float = (next_y - from.y) / dir.y if dir.y != 0.0 else INF
 	var t: float = 0.0
 	while t <= max_range:
-		if in_bounds(c) and blocked[index_of(c)] != 0:
+		if blocks_ray(c):
 			return t
 		if t_max_x < t_max_y:
 			t = t_max_x
 			t_max_x += t_delta_x
 			c.x += step_x
-		else:
+		elif t_max_y < t_max_x:
 			t = t_max_y
 			t_max_y += t_delta_y
 			c.y += step_y
+		else:  # exact corner: step diagonally, blocked by either side cell
+			t = t_max_x
+			if t <= max_range and (blocks_ray(Vector2i(c.x + step_x, c.y)) or blocks_ray(Vector2i(c.x, c.y + step_y))):
+				return t
+			t_max_x += t_delta_x
+			t_max_y += t_delta_y
+			c += Vector2i(step_x, step_y)
 	return max_range
 
 
