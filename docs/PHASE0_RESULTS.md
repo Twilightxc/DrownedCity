@@ -142,6 +142,29 @@ crate restock. Unit tests: aim math, aim assist, NavGrid ray, wheel sectors (41 
 | J's machine (not stated), Chrome, live URL `d1a18ab · #28` | Mouse + keyboard | ✅ "no problems felt" | defaults (no tuning reported) | J, 2026-10-27 |
 | — | Gamepad | — | — | **J: pending, no gamepad yet** |
 
-## 0.6 Spike D — Save on web
+## 0.6 Spike D — Save on web — built, awaiting J's browser test
 
-_Not started._
+Live: default URL (`?spike=save`). Twin-stick stays at `?spike=twinstick`, Spike B at `?spike=style`,
+Spike A at `?spike=horde`.
+
+| Item | How |
+| --- | --- |
+| SimCore | `sim/sim_state.gd` (clock, survivors, stockpile, daily upkeep tick), `sim/survivor.gd`; numbers in `data/sim/base_economy.tres` (GDD §11 upkeep) |
+| Format | `sim/save_codec.gd`: JSON envelope `{game, schema, build, saved_unix, state}`; schema 1; migrations run one version at a time (`MIGRATIONS`); newer-schema, foreign and damaged files are refused with a message |
+| Storage | `platform/save_store.gd`: one slot in `user://saves/` (IndexedDB on web); write to `.tmp` → rename, previous save kept as `.bak`, load falls back to it if the main file is damaged |
+| Export / import | `platform/save_transfer.gd`: web = browser download + `<input type=file>` via JavaScriptBridge; desktop = native file dialog |
+| Spike UI | Next day (autosave, like the real game) · Scavenge · Save · Load · Export · Import · New game; every action is a focusable button (mouse, keyboard, gamepad A); shows "Storage persistent" from `OS.is_userfs_persistent()` |
+| Tests | SimState upkeep/shortage, codec round trip (incl. seeds > 2³¹), refusals, migration chain, store backup fallback: 16 new, 62 total |
+
+Checked by Claude (desktop RTX 4080):
+
+| Device | Browser | Check | Result |
+| --- | --- | --- | --- |
+| Desktop | desktop GL, two runs | quit → relaunch loads the save | ✅ |
+| Desktop | Claude pane (Chromium), local web export | Next day ×2 → page reload → "Loaded day 3", same stock | ✅ no console errors; storage persistent: yes |
+| — | — | export / import file | not checked: needs the browser's download and file picker (J) |
+
+| Device | Browser | Check | Result |
+| --- | --- | --- | --- |
+| J's machine | Chrome | close the whole browser, reopen → same day | **J** |
+| J's machine | Chrome → another browser (Edge/Firefox) | export file → import → same day and stock | **J** |
