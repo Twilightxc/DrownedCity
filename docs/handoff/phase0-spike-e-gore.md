@@ -1,6 +1,6 @@
 # phase0/spike-e-gore
 
-- **PR:** #17 (part 2); run #49 failed (sink test vs the delta clamp), fixed, CI re-running
+- **PR:** #17 (part 2), CI green (run #50; run #49 failed on the sink test vs the delta clamp, fixed in `0cf6b59`)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `911ef37` (0.7 part 1 merged as PR #16)
 - **Updated:** 2026-10-27
