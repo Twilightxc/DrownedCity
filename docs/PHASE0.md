@@ -33,7 +33,7 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
 - [x] One shadowed directional sun with dusk colour, emissive windows + glow, depth fog.
 - [x] Baked lighting: verify `LightmapGI` works in Compatibility on the pinned version; if not, bake AO
       into vertex colours in Blender.
-- **Pass (J to judge `docs/art/05_spike_b_vs_ref.png` + live URL):** side-by-side screenshot vs `docs/art/03_style15_horde.png` that J accepts; stays within budget
+- **Pass — accepted by J 2026-10-27 (desolate look; Arc perf 2026-10-26, Arc for 0.4b skipped by J):** side-by-side screenshot vs `docs/art/03_style15_horde.png` that J accepts; stays within budget
   (draw calls < 250) with Spike A running.
 - [x] Abandoned / desolate pass on the whole scene (J's request): weathering, ruins, overgrowth, flotsam,
       cooler grade → `docs/art/06_desolate_vs_spike_b.png`.
@@ -44,6 +44,7 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
 - [x] Camera rotate 90° (Q/E, shoulder buttons) keeps controls camera-relative. (+ zoom: wheel / D-pad up/down)
 - [x] Live tuning panel (F4 / Start) so feel numbers change without a rebuild.
 - **Pass:** J plays 10 minutes with each input device and says it feels right (subjective — J decides).
+  Mouse + keyboard: ✅ J 2026-10-27. Gamepad: pending (J has no pad yet).
 
 ## 0.6 Spike D — Save on web
 - [ ] Minimal SimCore (3 survivors, 4 resources, day counter) serializes to versioned JSON in `user://`.
