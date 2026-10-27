@@ -44,7 +44,8 @@ away; what we keep is the project skeleton, CI, and measured numbers in `docs/PH
 - [x] Camera rotate 90° (Q/E, shoulder buttons) keeps controls camera-relative. (+ zoom: wheel / D-pad up/down)
 - [x] Live tuning panel (F4 / Start) so feel numbers change without a rebuild.
 - **Pass:** J plays 10 minutes with each input device and says it feels right (subjective — J decides).
-  Mouse + keyboard: ✅ J 2026-10-27. Gamepad: pending (J has no pad yet).
+  Mouse + keyboard: ✅ J 2026-10-27. Gamepad: **deferred by J (2026-10-27), not a Phase 0 exit blocker**; the pad
+  controls stay in the build (checked by Claude with scripted input) and J tests them when a pad is at hand.
 
 ## 0.6 Spike D — Save on web
 - [x] Minimal SimCore (3 survivors, 4 resources, day counter) serializes to versioned JSON in `user://`.
