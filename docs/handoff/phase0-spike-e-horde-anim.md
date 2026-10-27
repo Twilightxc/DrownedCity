@@ -1,6 +1,6 @@
 # phase0/spike-e-horde-anim
 
-- **PR:** not opened (pushed: yes)
+- **PR:** #16 (part 1), CI green (run #46), ready to merge
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `23cae11`
 - **Updated:** 2026-10-27
