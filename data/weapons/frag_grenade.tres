@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ThrowableConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/throwable_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+display_name = "Frag"
+damage = 3
+blast_radius = 3.0
+flight_time = 0.7
+arc_height = 2.5
+min_range = 2.0
+max_range = 12.0
+carry = 3
+fire_radius = 0.0
+fire_cells = 0
+spot_burn_chance = 0.35
+spot_burn_radius = 5.0
+embers = 12
+shrapnel = true

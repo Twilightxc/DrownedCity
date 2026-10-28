@@ -18,6 +18,7 @@ const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 @export var radius: float = 0.3
 @export var weapon: WeaponConfig
 @export var throwable: ThrowableConfig
+@export var throwables: Array[ThrowableConfig] = []  ## more than one: "throwable_next" cycles them (shared count)
 @export var controls: TwinStickConfig
 
 var grid: NavGrid
@@ -137,9 +138,19 @@ func _set_pad(pad: bool) -> void:
 		device_changed.emit(pad)
 
 
+## Switches to the next of `throwables` (frag ↔ incendiary). Grenades already in flight keep theirs.
+func next_throwable() -> void:
+	if throwables.size() < 2:
+		return
+	var i: int = throwables.find(throwable)
+	throwable = throwables[(i + 1) % throwables.size()]
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("reload"):
 		start_reload()
+	elif event.is_action_pressed("throwable_next"):
+		next_throwable()
 	elif event.is_action_pressed("interact") and interact_target != null:
 		interact_target.interact(self)
 

@@ -3,7 +3,7 @@ extends Node3D
 ## Thrown grenades for the spikes: a lobbed arc, then a blast that damages every zombie in
 ## radius through the horde's spatial hash. A handful in flight at most, so one node each.
 
-signal exploded(at: Vector3, killed: int)
+signal exploded(at: Vector3, killed: int, config: ThrowableConfig)
 
 const FLASH_TIME: float = 0.25
 
@@ -90,6 +90,8 @@ func _explode(cfg: ThrowableConfig, at: Vector3) -> void:
 		killed = horde.apply_damage(_hits, cfg.damage, Vector2(at.x, at.z), true)
 		if cfg.fire_radius > 0.0:
 			_ignite(cfg, Vector2(at.x, at.z))
+		if cfg.spot_burn_chance > 0.0:
+			_ignite_spots(cfg, Vector2(at.x, at.z))
 	var fl: Flash = Flash.new()
 	fl.radius = cfg.blast_radius
 	fl.material = StandardMaterial3D.new()
@@ -103,7 +105,7 @@ func _explode(cfg: ThrowableConfig, at: Vector3) -> void:
 	fl.node.position = at
 	add_child(fl.node)
 	_flashes.append(fl)
-	exploded.emit(at, killed)
+	exploded.emit(at, killed, cfg)
 
 
 ## Incendiary: the survivors inside fire_radius catch fire, and a few ground cells start burning.
@@ -115,6 +117,16 @@ func _ignite(cfg: ThrowableConfig, at: Vector2) -> void:
 		horde.ignite(a)
 	if ground_fire != null and cfg.fire_cells > 0:
 		ground_fire.ignite_area(at, cfg.fire_radius * 0.5, cfg.fire_cells, _rng)
+
+
+## Frag: some survivors inside spot_burn_radius catch a small fire on one body part.
+func _ignite_spots(cfg: ThrowableConfig, at: Vector2) -> void:
+	horde.spatial.rebuild(horde.positions, horde.count)
+	_hits.clear()
+	horde.spatial.query_radius(horde.positions, at, maxf(cfg.spot_burn_radius, cfg.blast_radius), _hits)
+	for a: int in _hits:
+		if _rng.randf() < cfg.spot_burn_chance:
+			horde.ignite_spot(a)
 
 
 func _update_flashes(delta: float) -> void:

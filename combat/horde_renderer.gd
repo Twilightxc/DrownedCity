@@ -10,6 +10,8 @@ const FLOATS_PER_INSTANCE: int = 20  # 12 transform (3x4, row-major) + 4 colour 
 const VAT_SHADER: Shader = preload("res://game/shaders/horde_vat.gdshader")
 ## INSTANCE_CUSTOM.w bit 11 (above the 11 part bits): the shader's burning flicker.
 const BURNING_BIT: float = float(1 << 11)
+## Bits 12..15: a spot fire's part index + 1 (Horde.burn_spot); the shader lights only that part.
+const SPOT_SHIFT: int = 12
 
 @export var models: Array[VatModel] = []
 ## Placeholder colours. Cool grey clothes, pale green skin (Style 1.5). sRGB.
@@ -72,6 +74,7 @@ func _sync_look(horde: Horde, v: int, ground_y: float) -> void:
 	var clip: PackedByteArray = horde.anim
 	var clip_t: PackedFloat32Array = horde.anim_time
 	var burn: PackedFloat32Array = horde.burn_left
+	var spot: PackedByteArray = horde.burn_spot
 	var clips: VatClips = models[v].clips if not models.is_empty() else null
 	var rows_of: PackedInt32Array = _clip_index[v] if clips != null else PackedInt32Array()
 	var n: int = 0
@@ -106,7 +109,12 @@ func _sync_look(horde: Horde, v: int, ground_y: float) -> void:
 			buf[o + 16] = rows.x
 			buf[o + 17] = rows.y
 			buf[o + 18] = rows.z
-			buf[o + 19] = BURNING_BIT if burn[a] > 0.0 else 0.0
+			if burn[a] <= 0.0:
+				buf[o + 19] = 0.0
+			elif spot[a] == 0:
+				buf[o + 19] = BURNING_BIT
+			else:
+				buf[o + 19] = float(spot[a] << SPOT_SHIFT)
 	_buffers[v] = buf
 	var mm: MultiMesh = _layers[v].multimesh
 	mm.buffer = buf

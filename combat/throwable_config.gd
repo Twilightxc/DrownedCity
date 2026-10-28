@@ -14,3 +14,9 @@ extends Resource
 @export_group("Fire (incendiary)")
 @export var fire_radius: float = 0.0  ## m: zombies left alive inside catch fire; 0 = no fire
 @export var fire_cells: int = 0  ## ground cells set burning around the blast
+
+@export_group("Frag")
+@export var spot_burn_chance: float = 0.0  ## zombies left alive in spot_burn_radius catch a small spot fire
+@export var spot_burn_radius: float = 0.0  ## m; wider than blast_radius, so the sparks reach past the kills
+@export var embers: int = 0  ## burning flecks left stuck on the floor (look only: no cost, don't ignite)
+@export var shrapnel: bool = true  ## hot fragment streaks in the blast fx

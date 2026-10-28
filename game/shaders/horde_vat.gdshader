@@ -15,12 +15,15 @@ uniform vec3 burn_color : source_color = vec3(1.0, 0.42, 0.08);
 uniform float burn_energy = 2.2;
 
 // INSTANCE_CUSTOM.w bit 11 (above the 11 part bits) = burning: emissive flicker, darker albedo.
+// Bits 12..15 = a spot fire's part index + 1: only that part flickers (frag blasts).
 varying float v_burn;
 varying float v_seed;
 
 void vertex() {
 	int flags = int(INSTANCE_CUSTOM.w);
-	v_burn = float((flags >> 11) & 1);
+	int spot = (flags >> 12) & 15;
+	// Every vertex of a part shares its UV.y, so the varying is constant across the part.
+	v_burn = max(float((flags >> 11) & 1), (spot != 0 && spot - 1 == int(UV.y)) ? 1.0 : 0.0);
 	v_seed = MODEL_MATRIX[3].x * 1.7 + MODEL_MATRIX[3].z * 2.3;
 	int column = int(UV.x);
 	ivec2 a = ivec2(column, int(INSTANCE_CUSTOM.x));

@@ -14,3 +14,7 @@ extends Resource
 @export var cell_cap: int = 12  ## burning NavGrid cells at once
 @export var cell_life_sec: float = 6.0
 @export var cell_cost: int = 6  ## extra flow-field steps to cross a burning cell: the crowd walks around
+
+@export_group("Spot burning (frag)")
+@export var spot_burn_sec: float = 2.5  ## a small fire on one body part: no spread, no lurch
+@export var spot_burn_damage: int = 1  ## per burn tick

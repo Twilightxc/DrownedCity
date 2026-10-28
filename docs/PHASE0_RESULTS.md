@@ -262,3 +262,25 @@ at 59 FPS, because an earlier attempt read 1 FPS in every scene while the pane w
   shared emitter.
 - Still not done: a run in full-screen Chrome (fill rate), and J's look at whether the blasts, limbs and fire
   read well.
+
+### 0.7 part 4 — frag vs incendiary, blast force, spot fires, embers (J's look at part 3, 2026-10-28)
+
+J: "ระเบิดอยากให้เพิ่มเอฟเฟคแรงระเบิดพวกเขม่า ฝุ่น ควัน สะเก็ดระเบิดชิ้นส่วนขาดกระเด็นแบบสุ่ม และไฟสำหรับระเบิดปกติอาจเป็น
+สะเก็ดเล็กๆติดบนพื้น ส่วนที่ติดบนตัวอยากให้ติดเฉพาะจุดเล็กๆไม่ใช่ทั้งตัว ถ้าติดทั้งตัวควรเป็นระเบิดไฟ". J skipped the full-screen Chrome run.
+
+| Item | How |
+| --- | --- |
+| Two grenades | `data/weapons/frag_grenade.tres` (damage 3, r 3 m, spot fires within 5 m at 35 %, 12 embers, shrapnel) and `incendiary_grenade.tres` (was `spike_grenade.tres`: damage 2, whole-body fire within 5 m, 6 ground cells). `SpikePlayer.throwables` + G / pad B to switch; the HUD shows the current one; autoshoot alternates |
+| Spot fire | `Horde.ignite_spot`: `burn_spot` = part + 1 (torso..shins), 2.5 s, 1 damage per tick, no spread, no faster lurch; a death from it is not charred. A full ignite overrides a spot, never the other way. Shader: bits 12–15 of `INSTANCE_CUSTOM.w` light only that part; `FireFx` puts a half-size flame at the part's rough height |
+| Blast force | `ExplosionFx`, per blast: additive fireball (bigger for incendiary), 40 hot shrapnel streaks (frag only), the debris, a black soot column, the grey smoke (longer), a tan dust ring pushed out along the floor. Finished emitters hide, so idle ones draw nothing |
+| Embers | Ring of 64 small flame billboards on walkable floor only (`NavGrid`), 4–8 s, flicker, look only (no cost, don't ignite) |
+| Limbs | A blast tears off 1–2 limb groups (`blast_limbs_max`), each turned up to ±0.8 rad off the push (`limb_spread`) |
+| Flames | One soft radial-gradient texture for flames and embers: quads no longer read as squares |
+| Tests | spot fire part / no spread / not charred / full overrides spot; multi-limb + scatter; embers only on walkable floor and burn out: 5 new, 95 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 (Godot 4.7.2) | style + 200, `--auto-shoot`, 15 s, frag and incendiary alternating: up to 36 burning, 10 spot, 12 embers, limb cap full | 56–60 | 74–79 | ≤ 251k | worst frame 17–32 ms, plus one 49–62 ms frame ~1 s after the first incendiary in 2 of 3 runs (not at 300; cause not found) |
+| Laptop Intel Arc 140V | same | style + 300, same | 58–60 | 74–79 | **≤ 301k** | worst 30 ms; 300 is now just over the primitive budget (two limbs per blast corpse) |
+
+Not measured on the web yet. 200 stays within budget (+2–6 draws while a blast plays).

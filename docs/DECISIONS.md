@@ -2,6 +2,8 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-28 | Two grenade types: frag (shrapnel, floor embers that are look-only, spot fires on one body part: tick damage, no spread, no lurch, no charred corpse) and incendiary (whole-body burning + ground fire). Spot part = bits 12–15 of `INSTANCE_CUSTOM.w`; player switches with G / pad B; autoshoot alternates | J: a normal blast shouldn't set a whole body alight; whole-body fire belongs to the fire grenade |
+| 2026-10-28 | Fire quads use a soft radial-gradient texture (flame-shaped) instead of a flat colour; embers are alpha-blended, not additive | Flat additive quads read as yellow squares; additive orange vanished on the light roof |
 | 2026-10-28 | 0.7 part 3: limbs are `RigidBody3D`s capped at 16 but drawn by the corpse MultiMesh from the body transform; blast corpses slide on a scripted arc; burning = per-agent timer + shader flag + one shared flame MultiMesh; ground fire = NavGrid cell cost | Physics only where it shows (few limbs), the crowd stays struct-of-arrays; no node per zombie |
 | 2026-10-28 | Fx shaders are warmed at load (an invisible blast + flame inside the building) | First blast froze the frame ~1 s while Compatibility compiled the light, emitter and flame shaders |
 | 2026-10-28 | `?spike=style` player carries the incendiary spike grenade | `&autoshoot=1` must exercise blasts, fire and limbs for the Arc pass test |

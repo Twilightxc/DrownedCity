@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://game/spikes/horde_spike.gd" id="1_spike"]
 [ext_resource type="Resource" path="res://data/combat/horde_spike.tres" id="2_horde"]
@@ -14,7 +14,8 @@
 [ext_resource type="Script" path="res://combat/vat_model.gd" id="12_vatmodel"]
 [ext_resource type="Resource" path="res://data/fx/gore.tres" id="13_gore"]
 [ext_resource type="Resource" path="res://data/combat/fire.tres" id="14_fire"]
-[ext_resource type="Resource" path="res://data/weapons/spike_grenade.tres" id="15_grenade"]
+[ext_resource type="Resource" path="res://data/weapons/frag_grenade.tres" id="15_grenade"]
+[ext_resource type="Resource" path="res://data/weapons/incendiary_grenade.tres" id="16_incendiary"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_player"]
 albedo_color = Color(0.92, 0.55, 0.2, 1)
@@ -50,6 +51,7 @@ script = ExtResource("4_player")
 weapon = ExtResource("5_rifle")
 controls = ExtResource("9_controls")
 throwable = ExtResource("15_grenade")
+throwables = Array[Resource]([ExtResource("15_grenade"), ExtResource("16_incendiary")])
 
 [node name="Body" type="MeshInstance3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)

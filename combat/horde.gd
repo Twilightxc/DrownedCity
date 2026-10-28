@@ -8,6 +8,7 @@ extends RefCounted
 enum Anim { WALK, ATTACK, FLINCH }
 
 const MAX_EVENTS: int = 512  ## per queue; older events are dropped if nobody drains them
+const SPOT_PARTS: Vector2i = Vector2i(1, 10)  ## spot fires land on torso .. shin_r (kit_zombie SKELETON order)
 
 
 ## A zombie that just died, as the corpse layer needs it.
@@ -41,6 +42,7 @@ var anim: PackedByteArray  ## Anim
 var anim_time: PackedFloat32Array  ## walk: cycles (by distance walked); others: seconds
 var slow_left: PackedFloat32Array  ## s of hit slow remaining (GDD §6)
 var burn_left: PackedFloat32Array  ## s of burning remaining, 0 = not burning
+var burn_spot: PackedByteArray  ## 0 = the whole body burns; else part index + 1 of a small spot fire
 
 ## Event queues (drained by game/fx): hit point + direction per bullet/blast hit, deaths.
 var hit_points: PackedVector2Array = PackedVector2Array()
@@ -73,6 +75,7 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	anim_time.resize(max_agents)
 	slow_left.resize(max_agents)
 	burn_left.resize(max_agents)
+	burn_spot.resize(max_agents)
 	_burn_tick.resize(max_agents)
 	_attack_cooldown.resize(max_agents)
 	_rng.seed = rng_seed
@@ -94,6 +97,7 @@ func spawn(p: Vector2) -> bool:
 	anim_time[a] = _rng.randf()  # walk phase offset, so the crowd doesn't step in sync
 	slow_left[a] = 0.0
 	burn_left[a] = 0.0
+	burn_spot[a] = 0
 	_burn_tick[a] = 0.0
 	_attack_cooldown[a] = _rng.randf() * config.attack_interval
 	count += 1
@@ -115,6 +119,7 @@ func kill(a: int) -> void:
 		anim_time[a] = anim_time[last]
 		slow_left[a] = slow_left[last]
 		burn_left[a] = burn_left[last]
+		burn_spot[a] = burn_spot[last]
 		_burn_tick[a] = _burn_tick[last]
 		_attack_cooldown[a] = _attack_cooldown[last]
 	count = last
@@ -187,19 +192,41 @@ func recompute_flow(targets: Array[Vector2i]) -> void:
 		flow.compute(targets)
 
 
-## Sets agent `a` on fire (or refreshes it). Nothing burns without a FireConfig.
+## Sets agent `a`'s whole body on fire (or refreshes it); a spot fire grows into this.
+## Nothing burns without a FireConfig.
 func ignite(a: int) -> void:
 	if fire == null:
 		return
 	if burn_left[a] <= 0.0:
 		_burn_tick[a] = fire.burn_tick_sec
 	burn_left[a] = fire.burn_sec
+	burn_spot[a] = 0
 
 
+## A small fire on one random body part (frag blasts): ticks damage, never spreads, no lurch.
+## A zombie already burning all over stays that way.
+func ignite_spot(a: int) -> void:
+	if fire == null or (burn_left[a] > 0.0 and burn_spot[a] == 0):
+		return
+	if burn_left[a] <= 0.0:
+		_burn_tick[a] = fire.burn_tick_sec
+		burn_spot[a] = _rng.randi_range(SPOT_PARTS.x, SPOT_PARTS.y) + 1
+	burn_left[a] = maxf(burn_left[a], fire.spot_burn_sec)
+
+
+## Whole-body burners (spot fires excluded).
 func burning_count() -> int:
 	var n: int = 0
 	for a: int in count:
-		if burn_left[a] > 0.0:
+		if burn_left[a] > 0.0 and burn_spot[a] == 0:
+			n += 1
+	return n
+
+
+func spot_burning_count() -> int:
+	var n: int = 0
+	for a: int in count:
+		if burn_left[a] > 0.0 and burn_spot[a] != 0:
 			n += 1
 	return n
 
@@ -234,7 +261,7 @@ func update_fire(delta: float) -> void:
 		if _burn_tick[a] <= 0.0:
 			_burn_tick[a] += fire.burn_tick_sec
 			victims.append(a)
-		if spread_p > 0.0 and _rng.randf() < spread_p:
+		if burn_spot[a] == 0 and spread_p > 0.0 and _rng.randf() < spread_p:
 			# The spatial hash is from this frame's update(); indices are still valid (no kills yet).
 			for ny: int in range(maxi(cell.y - 1, 0), mini(cell.y + 2, h)):
 				for nx: int in range(maxi(cell.x - 1, 0), mini(cell.x + 2, w)):
@@ -249,13 +276,13 @@ func update_fire(delta: float) -> void:
 		return
 	var dead: PackedInt32Array = PackedInt32Array()
 	for a: int in victims:
-		hp[a] -= fire.burn_damage
+		hp[a] -= fire.burn_damage if burn_spot[a] == 0 else fire.spot_burn_damage
 		if hp[a] <= 0:
 			dead.append(a)
 	dead.sort()
 	for i: int in range(dead.size() - 1, -1, -1):
 		var a: int = dead[i]
-		_queue_death(a, -heading[a], false, true)
+		_queue_death(a, -heading[a], false, burn_spot[a] == 0)
 		kill(a)
 	kills += dead.size()
 
@@ -285,6 +312,7 @@ func update(delta: float, target: Vector2) -> void:
 	var slow: PackedFloat32Array = slow_left
 	var slow_mul: float = 1.0 - config.hit_slow
 	var burn: PackedFloat32Array = burn_left
+	var spot: PackedByteArray = burn_spot
 	var burn_mul: float = fire.burn_speed_mul if fire != null else 1.0
 
 	var sep_dist: float = config.radius * 2.0
@@ -311,7 +339,7 @@ func update(delta: float, target: Vector2) -> void:
 				desired = flow.direction_at(cy * w + cx)
 			if desired == Vector2.ZERO:
 				desired = to_target / sqrt(dist2)
-			desired *= config.speed * speed_scale[a] * (slow_mul if slow[a] > 0.0 else 1.0) 				* (burn_mul if burn[a] > 0.0 else 1.0)
+			desired *= config.speed * speed_scale[a] * (slow_mul if slow[a] > 0.0 else 1.0) 				* (burn_mul if burn[a] > 0.0 and spot[a] == 0 else 1.0)
 		slow[a] = maxf(slow[a] - delta, 0.0)
 
 		# Separation from neighbours in the 3x3 cells around.

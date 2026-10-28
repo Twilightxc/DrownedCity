@@ -136,3 +136,45 @@ func test_pool_ring_reuses_oldest() -> void:
 		_blood.pool(Vector2(i, 0), 1.0)
 	_blood._process(0.016)
 	assert_eq(_blood.pool_count(), _config.pool_cap)
+
+
+func test_blast_can_tear_off_several_limbs_in_scattered_directions() -> void:
+	var config: GoreConfig = GoreConfig.new()
+	config.dismember_chance_blast = 1.0
+	config.blast_limbs_max = 2
+	config.corpse_cap = 200
+	config.limb_body_cap = 200
+	var corpses: CorpseLayer = CorpseLayer.new()
+	add_child_autofree(corpses)
+	corpses.setup(config, [MALE] as Array[VatModel])
+	var seen_two: bool = false
+	for i: int in 40:
+		var hide: int = corpses.add_death(_death(true))
+		var groups: int = 0
+		for g: int in CorpseLayer.LIMB_GROUPS:
+			if hide & g == g:
+				groups += 1
+		assert_between(groups, 1, 2)
+		seen_two = seen_two or groups == 2
+	assert_true(seen_two, "two limbs from one corpse happen")
+	var off_axis: bool = false
+	for b: RigidBody3D in corpses._body:
+		if b != null and absf(b.linear_velocity.z) > 0.3:
+			off_axis = true
+	assert_true(off_axis, "blast limbs turn off the push (+x)")
+
+
+func test_embers_land_only_on_walkable_floor_and_burn_out() -> void:
+	var fx: ExplosionFx = ExplosionFx.new()
+	add_child_autofree(fx)
+	var grid: NavGrid = NavGrid.new(4, 4, 1.0, Vector2.ZERO)
+	fx.grid = grid
+	fx.blast(Vector3(2, 0, 2), 1.5, false, 20)
+	fx._process(0.01)
+	assert_eq(fx.ember_count(), 20, "all on the roof")
+	fx.blast(Vector3(-20, 0, -20), 1.5, false, 20)  # off the roof: water
+	fx._process(0.01)
+	assert_eq(fx.ember_count(), 20, "none landed in the water")
+	for i: int in 200:
+		fx._process(0.05)
+	assert_eq(fx.ember_count(), 0, "embers burn out within EMBER_LIFE")
