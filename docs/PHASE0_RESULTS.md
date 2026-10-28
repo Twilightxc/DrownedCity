@@ -169,7 +169,7 @@ Checked by Claude (desktop RTX 4080):
 | J's machine (not stated) | Chrome, live URL `7e2ba96 · #39` | save spike checks in Chrome | ✅ "no problems" (J, 2026-10-27) |
 | J's machine (not stated) | Chrome → Edge/Firefox, live URL `7e2ba96 · #39` | export file → import → same day and stock | ✅ same day and stock (J, 2026-10-27) |
 
-## 0.7 Spike E — Animated horde, corpses and blood — ✅ pass at 200 on Arc (web, Claude pane, 2026-10-28); 300 at the primitive budget edge
+## 0.7 Spike E — Animated horde, corpses and blood — ✅ pass at 200 on Arc (web, 2026-10-28; part 4 in Chrome, J); 300 at the primitive budget edge
 
 Live: `?spike=style` and `?spike=twinstick` use the animated horde; `?spike=horde` keeps the box placeholder
 for comparison. The default URL is still the save spike.
@@ -283,4 +283,10 @@ J: "ระเบิดอยากให้เพิ่มเอฟเฟคแ�
 | Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 (Godot 4.7.2) | style + 200, `--auto-shoot`, 15 s, frag and incendiary alternating: up to 36 burning, 10 spot, 12 embers, limb cap full | 56–60 | 74–79 | ≤ 251k | worst frame 17–32 ms, plus one 49–62 ms frame ~1 s after the first incendiary in 2 of 3 runs (not at 300; cause not found) |
 | Laptop Intel Arc 140V | same | style + 300, same | 58–60 | 74–79 | **≤ 301k** | worst 30 ms; 300 is now just over the primitive budget (two limbs per blast corpse) |
 
-Not measured on the web yet. 200 stays within budget (+2–6 draws while a blast plays).
+| Laptop Intel Arc 140V | Chrome, maximised window (~1920×1090), live build `c8db6be · #60` (J) | style + 200, `&autoshoot=1`, holding Incendiary: 31 burning (body), 4 fire cells, 43 flames, 8 embers, corpses 160, limb bodies 16 | 60 (4.7 ms) | 78 | 251k | horde update 0.81 ms, render sync 0.31 ms |
+| Laptop Intel Arc 140V | same | same, holding Frag: 5 body / **4 spot** burning, 6 fire cells, 27 flames, 12 embers | 60 (5.9 ms) | 78 | 251k | flow field 0.40 ms |
+
+Arc web run 2026-10-28 (J, in Chrome): **part 4 passes at 200**, with a large window, so fill rate is fine too
+(4.7–5.9 ms per frame). Spot fires and embers work on the web. J: the look is good ("พอใจแล้ว"). At the default
+zoom spot fires and embers are small; zoom in to see them. The single 49–62 ms frame seen on desktop GL after the
+first incendiary was not checked on the web (two screenshots only).
