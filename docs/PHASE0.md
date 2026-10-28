@@ -84,10 +84,12 @@ budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J'
   → **Measured 2026-10-28** (web, Claude pane on the Arc): 200 + blasts + 9–80 burning + limb cap full = 60 FPS,
   73 draws, 243k; 300 = 60 FPS, 297k (at the edge). Motion verdict from J: reads well (part 2). J skipped the
   full-screen Chrome run.
-- [ ] Added 2026-10-28 (J, after seeing part 3): two grenade types and richer blasts → part 4, see PHASE0_RESULTS
+- [x] Added 2026-10-28 (J, after seeing part 3): two grenade types and richer blasts → part 4, see PHASE0_RESULTS
   - Blast force: soot, dust, smoke, hot shrapnel, limbs torn off at random and thrown in random directions.
   - Frag (normal) grenade: small embers stuck on the floor; zombies catch fire only in small spots, never whole.
   - Whole-body burning only from the incendiary grenade (and its ground fire).
+  → **Measured 2026-10-28** (J, Chrome on the Arc, build `c8db6be · #60`): 200 + both grenades = 60 FPS,
+  78 draws, 251k. J accepts the look.
 
 ## 0.8 Spike F — Building interiors with a cutaway camera
 Added 2026-10-27 (J): interior exploration (GDD §5). New risk: a readable cutaway in iso, multi-floor nav, and
