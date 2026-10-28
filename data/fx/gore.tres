@@ -33,3 +33,5 @@ pool_grow_sec = 2.5
 pool_life_sec = 60.0
 zombie_blood = Color(0.415686, 0.152941, 0.12549, 1)
 zombie_pool = Color(0.360784, 0.129412, 0.105882, 1)
+blast_limbs_max = 2
+limb_spread = 0.8

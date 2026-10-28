@@ -13,3 +13,5 @@ burn_speed_mul = 1.25
 cell_cap = 12
 cell_life_sec = 6.0
 cell_cost = 6
+spot_burn_sec = 2.5
+spot_burn_damage = 1

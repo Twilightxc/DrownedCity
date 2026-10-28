@@ -127,10 +127,17 @@ func sliding_count() -> int:
 
 ## A zombie died: lay its corpse (maybe dismembered) and return the severed group mask (0 = whole).
 func add_death(d: Horde.Death) -> int:
-	var hide: int = 0
+	var groups: PackedInt32Array = PackedInt32Array()
 	var chance: float = config.dismember_chance_blast if d.blast else config.dismember_chance
 	if config.enabled and _rng.randf() < chance:
-		hide = LIMB_GROUPS[_rng.randi() % LIMB_GROUPS.size()]
+		var n: int = _rng.randi_range(1, maxi(config.blast_limbs_max, 1)) if d.blast else 1
+		while groups.size() < mini(n, LIMB_GROUPS.size()):
+			var g: int = LIMB_GROUPS[_rng.randi() % LIMB_GROUPS.size()]
+			if not groups.has(g):
+				groups.append(g)
+	var hide: int = 0
+	for g: int in groups:
+		hide |= g
 	var tint: Color = d.tint
 	if d.burned:
 		tint = Color(tint.r * config.charred_tint, tint.g * config.charred_tint, tint.b * config.charred_tint)
@@ -139,8 +146,10 @@ func add_death(d: Horde.Death) -> int:
 	var i: int = _add(d.position, facing, d.variant, tint, 1 if d.blast else 0, hide, 0.0)
 	if d.blast:
 		_start_slide(i, d.push)
-	if hide != 0:
-		_add_limb(d, tint, hide)
+	for g: int in groups:
+		# Blast limbs scatter: each turns a random amount off the push.
+		var dir: Vector2 = d.push.rotated(_rng.randf_range(-config.limb_spread, config.limb_spread)) if d.blast else d.push
+		_add_limb(d, tint, g, dir)
 	return hide
 
 
@@ -157,12 +166,13 @@ func _start_slide(i: int, push: Vector2) -> void:
 	_slide_t[i] = 0.0
 
 
-func _add_limb(d: Horde.Death, tint: Color, hide: int) -> void:
+## `dir` (unit) is where the limb flies: the push, turned a little for blasts.
+func _add_limb(d: Horde.Death, tint: Color, hide: int, dir: Vector2) -> void:
 	var shown: int = ALL_PARTS & ~hide
 	if not is_inside_tree() or config.limb_body_cap <= 0:
 		# No physics here: lay the limb down a little way along the push.
-		var perp: Vector2 = Vector2(-d.push.y, d.push.x)
-		var p: Vector2 = d.position + d.push * _rng.randf_range(config.limb_throw.x, config.limb_throw.y) \
+		var perp: Vector2 = Vector2(-dir.y, dir.x)
+		var p: Vector2 = d.position + dir * _rng.randf_range(config.limb_throw.x, config.limb_throw.y) \
 			+ perp * _rng.randf_range(-0.4, 0.4)
 		var yaw: float = _rng.randf() * TAU
 		var j: int = _add(p, Vector2(sin(yaw), cos(yaw)), d.variant, tint, 0, shown, 0.0)
@@ -186,7 +196,7 @@ func _add_limb(d: Horde.Death, tint: Color, hide: int) -> void:
 	add_child(body)
 	body.global_transform = Transform3D(slot.basis, slot * _pivot[i])
 	var speed: float = _rng.randf_range(config.limb_speed.x, config.limb_speed.y)
-	body.linear_velocity = Vector3(d.push.x * speed, _rng.randf_range(config.limb_lift.x, config.limb_lift.y), d.push.y * speed)
+	body.linear_velocity = Vector3(dir.x * speed, _rng.randf_range(config.limb_lift.x, config.limb_lift.y), dir.y * speed)
 	body.angular_velocity = Vector3(_rng.randf_range(-8, 8), _rng.randf_range(-8, 8), _rng.randf_range(-8, 8))
 	_body[i] = body
 	_body_age[i] = 0.0

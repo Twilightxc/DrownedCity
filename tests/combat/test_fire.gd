@@ -108,3 +108,41 @@ func test_no_fire_config_means_nothing_burns() -> void:
 	horde.spawn(Vector2(0.5, 0.5))
 	horde.ignite(0)
 	assert_eq(horde.burn_left[0], 0.0)
+
+
+func test_spot_fire_burns_one_part_without_spreading_or_lurching() -> void:
+	_fire.spread_chance_per_sec = 1000.0
+	var horde: Horde = _horde()
+	horde.spawn(Vector2(0.5, 0.5))
+	horde.spawn(Vector2(0.9, 0.5))
+	horde.ignite_spot(0)
+	assert_gt(horde.burn_left[0], 0.0)
+	assert_between(horde.burn_spot[0] - 1, Horde.SPOT_PARTS.x, Horde.SPOT_PARTS.y, "a body part, not the pelvis")
+	horde.spatial.rebuild(horde.positions, horde.count)
+	horde.update_fire(0.05)
+	assert_eq(horde.burn_left[1], 0.0, "spot fires don't spread")
+	assert_eq(horde.burning_count(), 0)
+	assert_eq(horde.spot_burning_count(), 1)
+
+
+func test_spot_fire_death_is_not_charred() -> void:
+	_fire.spot_burn_sec = 10.0
+	var horde: Horde = _horde()
+	horde.spawn(Vector2(0.5, 0.5))
+	horde.ignite_spot(0)
+	for i: int in 40:
+		horde.spatial.rebuild(horde.positions, horde.count)
+		horde.update_fire(0.1)
+	assert_eq(horde.deaths.size(), 1)
+	assert_false(horde.deaths[0].burned, "only a spot burned: no charred corpse")
+
+
+func test_full_fire_overrides_a_spot_and_never_shrinks_back() -> void:
+	var horde: Horde = _horde()
+	horde.spawn(Vector2(0.5, 0.5))
+	horde.ignite_spot(0)
+	horde.ignite(0)
+	assert_eq(horde.burn_spot[0], 0, "whole body now")
+	horde.ignite_spot(0)
+	assert_eq(horde.burn_spot[0], 0, "a frag spark doesn't turn a full fire into a spot")
+	assert_eq(horde.burn_left[0], _fire.burn_sec)

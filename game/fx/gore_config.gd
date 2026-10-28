@@ -28,6 +28,8 @@ extends Resource
 @export var limb_speed: Vector2 = Vector2(3.0, 6.0)  ## m/s along the push
 @export var limb_lift: Vector2 = Vector2(2.0, 4.5)  ## m/s up
 @export var limb_body_sec: float = 4.0  ## then the body freezes (the limb stays as a corpse part)
+@export var blast_limbs_max: int = 2  ## a blast may tear 1..this many limbs off one corpse
+@export var limb_spread: float = 0.8  ## rad: random turn of each flying limb off the push direction
 
 @export_group("Blood")
 @export var droplet_cap: int = 256

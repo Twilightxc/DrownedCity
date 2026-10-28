@@ -1,14 +1,10 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://game/spikes/style_spike.tscn" id="1_base"]
 [ext_resource type="Script" path="res://game/spikes/twin_stick_spike.gd" id="2_script"]
-[ext_resource type="Resource" path="res://data/weapons/spike_grenade.tres" id="3_grenade"]
 
 [node name="TwinStickSpike" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-
-[node name="Player" parent="."]
-throwable = ExtResource("3_grenade")
 
 [node name="IsoCameraRig" parent="."]
 zoom_index = 0

@@ -112,6 +112,7 @@ func _ready() -> void:
 		_explosions = ExplosionFx.new()
 		_explosions.ground_y = GROUND_Y
 		_explosions.water_y = _water_y
+		_explosions.grid = _grid
 		add_child(_explosions)
 		_grenades.exploded.connect(_on_blast)
 	if fire_config != null:
@@ -203,12 +204,13 @@ func _auto_attack(delta: float, from: Vector2) -> void:
 	_auto_throw_left -= delta
 	if _auto_throw_left <= 0.0 and _grenades != null and _player.throwable != null:
 		_auto_throw_left = 4.0
+		_player.next_throwable()  # alternate frag and incendiary
 		_grenades.throw(_player.throwable, _player.position + Vector3(0, 1.2, 0), Vector3(at.x, GROUND_Y, at.y))
 
 
-func _on_blast(at: Vector3, _killed: int) -> void:
+func _on_blast(at: Vector3, _killed: int, cfg: ThrowableConfig) -> void:
 	var in_water: bool = not _grid.in_bounds(_grid.world_to_cell(Vector2(at.x, at.z)))
-	_explosions.blast(at, _player.throwable.blast_radius, in_water)
+	_explosions.blast(at, cfg.blast_radius, in_water, cfg.embers, cfg.shrapnel, cfg.fire_radius > 0.0)
 
 
 ## Hits and deaths since the last frame → blood and corpses.
@@ -279,11 +281,13 @@ func _publish_stats(delta: float) -> void:
 		DebugOverlay.set_stat("blood_pools", "%d / %d" % [_blood.pool_count(), gore_config.pool_cap])
 		DebugOverlay.set_stat("limb_bodies", "%d / %d" % [_corpses.body_count(), gore_config.limb_body_cap])
 	if _ground_fire != null:
-		DebugOverlay.set_stat("burning", str(_horde.burning_count()))
+		DebugOverlay.set_stat("burning", "%d body / %d spot" % [_horde.burning_count(), _horde.spot_burning_count()])
 		DebugOverlay.set_stat("fire_cells", "%d / %d" % [_ground_fire.active_count(), fire_config.cell_cap])
 		DebugOverlay.set_stat("flames", str(_fire_fx.flame_count()))
 		if _auto_shoot and Engine.get_process_frames() % 240 == 0:
 			print("gore: corpses %d pools %d kills %d" % [_corpses.live_count(), _blood.pool_count(), _horde.kills])
+	if _explosions != null:
+		DebugOverlay.set_stat("embers", "%d / %d" % [_explosions.ember_count(), ExplosionFx.EMBER_CAP])
 	DebugOverlay.set_stat("hits_taken", str(_horde.hits_on_target))
 	DebugOverlay.set_stat("shots", str(_player.shots_fired))
 	DebugOverlay.set_stat("input", "gamepad" if _player.using_pad else "mouse + keyboard")
@@ -295,7 +299,7 @@ func _update_status() -> void:
 	if _player.reload_left > 0.0:
 		text = "Reloading %d%%" % int(_player.reload_progress() * 100.0)
 	if _player.throwable != null:
-		text += "   ·   Grenades %d" % _player.grenade_count
+		text += "   ·   %s %d" % [_player.throwable.display_name, _player.grenade_count]
 	if _status_label.text != text:
 		_status_label.text = text
 
@@ -307,8 +311,8 @@ func _update_help() -> void:
 ## Controls cheat sheet for the device in use; subclasses append their extras.
 func _help_text(pad: bool) -> String:
 	if pad:
-		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT\nCamera LB/RB, D-pad up/down · Back: debug overlay"
-	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB\nCamera Q/E, wheel · F3: debug overlay"
+		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT · Grenade type B\nCamera LB/RB, D-pad up/down · Back: debug overlay"
+	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB · Grenade type G\nCamera Q/E, wheel · F3: debug overlay"
 
 
 func _build_level_meshes() -> void:
