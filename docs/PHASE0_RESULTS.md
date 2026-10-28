@@ -169,7 +169,7 @@ Checked by Claude (desktop RTX 4080):
 | J's machine (not stated) | Chrome, live URL `7e2ba96 · #39` | save spike checks in Chrome | ✅ "no problems" (J, 2026-10-27) |
 | J's machine (not stated) | Chrome → Edge/Firefox, live URL `7e2ba96 · #39` | export file → import → same day and stock | ✅ same day and stock (J, 2026-10-27) |
 
-## 0.7 Spike E — Animated horde, corpses and blood — 🟡 part 1 (animated horde) built
+## 0.7 Spike E — Animated horde, corpses and blood — ✅ pass at 200 on Arc (web, Claude pane, 2026-10-28); 300 at the primitive budget edge
 
 Live: `?spike=style` and `?spike=twinstick` use the animated horde; `?spike=horde` keeps the box placeholder
 for comparison. The default URL is still the save spike.
@@ -250,8 +250,15 @@ timers now clamp it like the horde does, or every corpse sank at once.
 | Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 (Godot 4.7.2 editor binary) | style + 200, `--auto-shoot`, 20 s: corpses 160, limb bodies 16, up to 47 burning, 12 fire cells, 96 flames | 60 (vsync) | 73–77 | 222–249k | worst frame 17–24 ms outside screenshot frames; horde update 0.5–0.8 ms |
-| Laptop Intel Arc | Chrome | style + 200 / 300, `&autoshoot=1` | — | — | — | **J** after merge: the PHASE0 0.7 pass test |
+| Laptop Intel Arc 140V | Claude pane (Chromium) 800×673, live build `cdc2193 · #56` | style + 200, `&autoshoot=1`, ~60 s: corpses 160, limb bodies 16, 9 burning, 10 fire cells, 39 flames | 60 (vsync) | 73 | 243k | horde update 0.64 ms, render sync 0.31 ms, flow field 0.30 ms |
+| Laptop Intel Arc 140V | same | style + 300, `&autoshoot=1`, ~60 s: corpses 160, limb bodies 16, **80 burning**, 10 fire cells, 90 flames | 60 (vsync) | 73 | **297k** | horde update 1.70 ms; 1 % under the 300k budget |
 
-Not checked: the web build. `VatModel.part_bounds` reads the VAT image on the CPU (`Texture2D.get_image()`); if
-that fails on the web, limbs fall back to boxes at the wrong size, not a crash, but it should be looked at in the
-Arc run.
+Arc web run 2026-10-28 (Claude in the Claude app's browser pane, visible; calibrated first with `?spike=horde`
+at 59 FPS, because an earlier attempt read 1 FPS in every scene while the pane was throttled):
+- **0.7 passes at 200** with blasts, burning, ground fire and the limb cap all live: 60 FPS, 73 draws, 243k.
+- **300 is at the budget edge** (297k primitives) with 80 burning; take the levers above before 300 is a target.
+- `VatModel.part_bounds` works on the web: no fallback warning in the console, limbs have their real size.
+- The new effects add no draw calls in steady state (73 at 200 and at 300): every one is a MultiMesh or a
+  shared emitter.
+- Still not done: a run in full-screen Chrome (fill rate), and J's look at whether the blasts, limbs and fire
+  read well.

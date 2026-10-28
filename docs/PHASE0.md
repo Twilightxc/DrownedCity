@@ -81,6 +81,9 @@ budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J'
   < 300k tris on screen, **also during a grenade blast into the pack with ~50 zombies burning and the limb cap
   full**; J judges the motion reads as real enough. **Fallback:** fewer variants, lower corpse cap / faster fade,
   lower limb cap, burning shown by shader only; then 100 zombies.
+  → **Measured 2026-10-28** (web, Claude pane on the Arc): 200 + blasts + 9–80 burning + limb cap full = 60 FPS,
+  73 draws, 243k; 300 = 60 FPS, 297k (at the edge). Motion verdict from J: reads well (part 2). Open: full-screen
+  Chrome run and J's look at the part 3 effects.
 
 ## 0.8 Spike F — Building interiors with a cutaway camera
 Added 2026-10-27 (J): interior exploration (GDD §5). New risk: a readable cutaway in iso, multi-floor nav, and
