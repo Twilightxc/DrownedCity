@@ -12,3 +12,5 @@ arc_height = 2.5
 min_range = 2.0
 max_range = 12.0
 carry = 3
+fire_radius = 5.0
+fire_cells = 6

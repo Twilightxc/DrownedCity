@@ -25,7 +25,9 @@ func _init(nav: NavGrid) -> void:
 	_queue.resize(nav.cell_count())
 
 
-func compute(targets: Array[Vector2i]) -> void:
+## `extra_cost` (optional, one byte per cell): extra steps to enter that cell, e.g. ground fire.
+## Empty = plain BFS, the fast path.
+func compute(targets: Array[Vector2i], extra_cost: PackedByteArray = PackedByteArray()) -> void:
 	var w: int = grid.width
 	var h: int = grid.height
 	var blocked: PackedByteArray = grid.blocked
@@ -40,6 +42,11 @@ func compute(targets: Array[Vector2i]) -> void:
 			distance[ti] = 0
 			_queue[tail] = ti
 			tail += 1
+
+	if not extra_cost.is_empty():
+		_relax_weighted(head, tail, extra_cost)
+		_generation += 1
+		return
 
 	# 4-neighbour BFS: integer steps are enough for a crowd heading to one spot.
 	while head < tail:
@@ -66,6 +73,51 @@ func compute(targets: Array[Vector2i]) -> void:
 			tail += 1
 
 	_generation += 1
+
+
+## Weighted 4-neighbour search: a FIFO that re-queues a cell when its distance improves (SPFA).
+## Costs are 1 almost everywhere, so it does close to BFS work; the few costly cells re-queue a little.
+func _relax_weighted(head: int, tail: int, extra_cost: PackedByteArray) -> void:
+	var w: int = grid.width
+	var h: int = grid.height
+	var n: int = grid.cell_count()
+	var blocked: PackedByteArray = grid.blocked
+	var queued: PackedByteArray = PackedByteArray()
+	queued.resize(n)
+	for k: int in range(head, tail):
+		queued[_queue[k]] = 1
+	var size: int = tail - head
+	while size > 0:
+		var i: int = _queue[head]
+		head = (head + 1) % n
+		size -= 1
+		queued[i] = 0
+		var x: int = i % w
+		var y: int = i / w
+		var d: int = distance[i]
+		for k: int in 4:
+			var j: int
+			if k == 0:
+				if x == 0: continue
+				j = i - 1
+			elif k == 1:
+				if x == w - 1: continue
+				j = i + 1
+			elif k == 2:
+				if y == 0: continue
+				j = i - w
+			else:
+				if y == h - 1: continue
+				j = i + w
+			if blocked[j] != 0:
+				continue
+			var nd: int = d + 1 + extra_cost[j]
+			if nd < distance[j]:
+				distance[j] = nd
+				if queued[j] == 0:
+					queued[j] = 1
+					_queue[(head + size) % n] = j
+					size += 1
 
 
 ## Direction to steer at world position p; ZERO on a target cell, unreachable cell or off-grid.

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FireConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/fire_config.gd" id="1_fire"]
+
+[resource]
+script = ExtResource("1_fire")
+burn_sec = 4.0
+burn_tick_sec = 0.5
+burn_damage = 1
+spread_radius = 0.7
+spread_chance_per_sec = 0.6
+burn_speed_mul = 1.25
+cell_cap = 12
+cell_life_sec = 6.0
+cell_cost = 6

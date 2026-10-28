@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://game/spikes/horde_spike.gd" id="1_spike"]
 [ext_resource type="Resource" path="res://data/combat/horde_spike.tres" id="2_horde"]
@@ -13,6 +13,8 @@
 [ext_resource type="Resource" path="res://assets/vat/zombie_female.tres" id="11_female"]
 [ext_resource type="Script" path="res://combat/vat_model.gd" id="12_vatmodel"]
 [ext_resource type="Resource" path="res://data/fx/gore.tres" id="13_gore"]
+[ext_resource type="Resource" path="res://data/combat/fire.tres" id="14_fire"]
+[ext_resource type="Resource" path="res://data/weapons/spike_grenade.tres" id="15_grenade"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_player"]
 albedo_color = Color(0.92, 0.55, 0.2, 1)
@@ -31,6 +33,7 @@ script = ExtResource("1_spike")
 horde_config = ExtResource("2_horde")
 level_scene = ExtResource("8_level")
 gore_config = ExtResource("13_gore")
+fire_config = ExtResource("14_fire")
 roof_size = Vector2i(25, 21)
 
 [node name="IsoCameraRig" type="Node3D" parent="."]
@@ -46,6 +49,7 @@ far = 300.0
 script = ExtResource("4_player")
 weapon = ExtResource("5_rifle")
 controls = ExtResource("9_controls")
+throwable = ExtResource("15_grenade")
 
 [node name="Body" type="MeshInstance3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)

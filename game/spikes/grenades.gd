@@ -24,12 +24,14 @@ class Flash:
 
 
 var horde: Horde
+var ground_fire: GroundFire  ## optional: incendiary blasts set cells burning
 
 var _flying: Array[Flight] = []
 var _flashes: Array[Flash] = []
 var _hits: PackedInt32Array = PackedInt32Array()
 var _ball_mesh: SphereMesh
 var _flash_mesh: SphereMesh
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -86,6 +88,8 @@ func _explode(cfg: ThrowableConfig, at: Vector3) -> void:
 		_hits.clear()
 		horde.spatial.query_radius(horde.positions, Vector2(at.x, at.z), cfg.blast_radius, _hits)
 		killed = horde.apply_damage(_hits, cfg.damage, Vector2(at.x, at.z), true)
+		if cfg.fire_radius > 0.0:
+			_ignite(cfg, Vector2(at.x, at.z))
 	var fl: Flash = Flash.new()
 	fl.radius = cfg.blast_radius
 	fl.material = StandardMaterial3D.new()
@@ -100,6 +104,17 @@ func _explode(cfg: ThrowableConfig, at: Vector3) -> void:
 	add_child(fl.node)
 	_flashes.append(fl)
 	exploded.emit(at, killed)
+
+
+## Incendiary: the survivors inside fire_radius catch fire, and a few ground cells start burning.
+func _ignite(cfg: ThrowableConfig, at: Vector2) -> void:
+	horde.spatial.rebuild(horde.positions, horde.count)  # the blast just swap-removed its kills
+	_hits.clear()
+	horde.spatial.query_radius(horde.positions, at, cfg.fire_radius, _hits)
+	for a: int in _hits:
+		horde.ignite(a)
+	if ground_fire != null and cfg.fire_cells > 0:
+		ground_fire.ignite_area(at, cfg.fire_radius * 0.5, cfg.fire_cells, _rng)
 
 
 func _update_flashes(delta: float) -> void:

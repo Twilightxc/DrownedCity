@@ -70,7 +70,7 @@ budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J'
       → oldest sink through the floor instead of a transparent fade; the limb lies where it landed (it flies in
       part 3); no decals (Compatibility has none), flat pools.
 - [x] Gore toggle (blood + dismemberment on/off).
-- [ ] Added 2026-10-27 (J): fake ragdoll, fire and explosion effects (GDD §6):
+- [x] Added 2026-10-27 (J): fake ragdoll, fire and explosion effects (GDD §6): → part 3, see PHASE0_RESULTS
   - Explosion: "blown back" death clip + corpse slides along an arc away from the blast; one short flash light,
     debris/smoke particles, scorch mark, water column when it lands in water.
   - Flying limbs as real rigid bodies, capped (start at 16 at once, oldest freezes).

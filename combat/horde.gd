@@ -18,9 +18,12 @@ class Death:
 	var tint: Color
 	var push: Vector2  ## unit, away from the shooter or the blast
 	var blast: bool
+	var burned: bool  ## died burning: charred corpse
 
 
 var config: HordeConfig
+var fire: FireConfig  ## optional: null = nothing burns
+var ground_fire: GroundFire  ## optional: burning NavGrid cells (flow-field cost, ignites zombies)
 var grid: NavGrid
 var flow: FlowField
 var spatial: SpatialHash
@@ -37,6 +40,7 @@ var variant: PackedByteArray
 var anim: PackedByteArray  ## Anim
 var anim_time: PackedFloat32Array  ## walk: cycles (by distance walked); others: seconds
 var slow_left: PackedFloat32Array  ## s of hit slow remaining (GDD §6)
+var burn_left: PackedFloat32Array  ## s of burning remaining, 0 = not burning
 
 ## Event queues (drained by game/fx): hit point + direction per bullet/blast hit, deaths.
 var hit_points: PackedVector2Array = PackedVector2Array()
@@ -48,6 +52,7 @@ var kills: int = 0
 var hits_on_target: int = 0
 
 var _attack_cooldown: PackedFloat32Array
+var _burn_tick: PackedFloat32Array
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -67,6 +72,8 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	anim.resize(max_agents)
 	anim_time.resize(max_agents)
 	slow_left.resize(max_agents)
+	burn_left.resize(max_agents)
+	_burn_tick.resize(max_agents)
 	_attack_cooldown.resize(max_agents)
 	_rng.seed = rng_seed
 
@@ -86,6 +93,8 @@ func spawn(p: Vector2) -> bool:
 	anim[a] = Anim.WALK
 	anim_time[a] = _rng.randf()  # walk phase offset, so the crowd doesn't step in sync
 	slow_left[a] = 0.0
+	burn_left[a] = 0.0
+	_burn_tick[a] = 0.0
 	_attack_cooldown[a] = _rng.randf() * config.attack_interval
 	count += 1
 	return true
@@ -105,6 +114,8 @@ func kill(a: int) -> void:
 		anim[a] = anim[last]
 		anim_time[a] = anim_time[last]
 		slow_left[a] = slow_left[last]
+		burn_left[a] = burn_left[last]
+		_burn_tick[a] = _burn_tick[last]
 		_attack_cooldown[a] = _attack_cooldown[last]
 	count = last
 
@@ -155,7 +166,7 @@ func _queue_hit(p: Vector2, dir: Vector2) -> void:
 	hit_dirs.append(dir)
 
 
-func _queue_death(a: int, push: Vector2, blast: bool) -> void:
+func _queue_death(a: int, push: Vector2, blast: bool, burned: bool = false) -> void:
 	if deaths.size() >= MAX_EVENTS:
 		return
 	var d: Death = Death.new()
@@ -165,11 +176,88 @@ func _queue_death(a: int, push: Vector2, blast: bool) -> void:
 	d.tint = tint[a]
 	d.push = push
 	d.blast = blast
+	d.burned = burned
 	deaths.append(d)
 
 
 func recompute_flow(targets: Array[Vector2i]) -> void:
-	flow.compute(targets)
+	if ground_fire != null and ground_fire.active_count() > 0:
+		flow.compute(targets, ground_fire.cost)
+	else:
+		flow.compute(targets)
+
+
+## Sets agent `a` on fire (or refreshes it). Nothing burns without a FireConfig.
+func ignite(a: int) -> void:
+	if fire == null:
+		return
+	if burn_left[a] <= 0.0:
+		_burn_tick[a] = fire.burn_tick_sec
+	burn_left[a] = fire.burn_sec
+
+
+func burning_count() -> int:
+	var n: int = 0
+	for a: int in count:
+		if burn_left[a] > 0.0:
+			n += 1
+	return n
+
+
+## Burning step, after update(): ground fire lights zombies standing in it, water (off-grid) puts
+## them out, burning ones spread to neighbours and take damage per tick. Burn deaths queue a charred
+## corpse and no blood hit.
+func update_fire(delta: float) -> void:
+	if fire == null:
+		return
+	if ground_fire != null:
+		ground_fire.update(delta)
+	var heads: PackedInt32Array = spatial.heads()
+	var nexts: PackedInt32Array = spatial.nexts()
+	var w: int = grid.width
+	var h: int = grid.height
+	var r2: float = fire.spread_radius * fire.spread_radius
+	var spread_p: float = clampf(fire.spread_chance_per_sec * delta, 0.0, 1.0)
+	var victims: PackedInt32Array = PackedInt32Array()
+	var lit: PackedInt32Array = PackedInt32Array()
+	for a: int in count:
+		var cell: Vector2i = grid.world_to_cell(positions[a])
+		if not grid.in_bounds(cell):
+			burn_left[a] = 0.0  # in the water
+			continue
+		if ground_fire != null and ground_fire.is_burning(grid.index_of(cell)):
+			lit.append(a)
+		if burn_left[a] <= 0.0:
+			continue
+		burn_left[a] = maxf(burn_left[a] - delta, 0.0)
+		_burn_tick[a] -= delta
+		if _burn_tick[a] <= 0.0:
+			_burn_tick[a] += fire.burn_tick_sec
+			victims.append(a)
+		if spread_p > 0.0 and _rng.randf() < spread_p:
+			# The spatial hash is from this frame's update(); indices are still valid (no kills yet).
+			for ny: int in range(maxi(cell.y - 1, 0), mini(cell.y + 2, h)):
+				for nx: int in range(maxi(cell.x - 1, 0), mini(cell.x + 2, w)):
+					var b: int = heads[ny * w + nx]
+					while b != -1:
+						if b != a and b < count and burn_left[b] <= 0.0 and positions[b].distance_squared_to(positions[a]) <= r2:
+							lit.append(b)
+						b = nexts[b]
+	for a: int in lit:
+		ignite(a)
+	if victims.is_empty():
+		return
+	var dead: PackedInt32Array = PackedInt32Array()
+	for a: int in victims:
+		hp[a] -= fire.burn_damage
+		if hp[a] <= 0:
+			dead.append(a)
+	dead.sort()
+	for i: int in range(dead.size() - 1, -1, -1):
+		var a: int = dead[i]
+		_queue_death(a, -heading[a], false, true)
+		kill(a)
+	kills += dead.size()
 
 
 ## One crowd step toward `target` (world XZ). The flow field must be computed beforehand.
@@ -196,6 +284,8 @@ func update(delta: float, target: Vector2) -> void:
 	var flinch_len: float = config.flinch_anim_sec
 	var slow: PackedFloat32Array = slow_left
 	var slow_mul: float = 1.0 - config.hit_slow
+	var burn: PackedFloat32Array = burn_left
+	var burn_mul: float = fire.burn_speed_mul if fire != null else 1.0
 
 	var sep_dist: float = config.radius * 2.0
 	var sep_dist2: float = sep_dist * sep_dist
@@ -221,7 +311,7 @@ func update(delta: float, target: Vector2) -> void:
 				desired = flow.direction_at(cy * w + cx)
 			if desired == Vector2.ZERO:
 				desired = to_target / sqrt(dist2)
-			desired *= config.speed * speed_scale[a] * (slow_mul if slow[a] > 0.0 else 1.0)
+			desired *= config.speed * speed_scale[a] * (slow_mul if slow[a] > 0.0 else 1.0) 				* (burn_mul if burn[a] > 0.0 else 1.0)
 		slow[a] = maxf(slow[a] - delta, 0.0)
 
 		# Separation from neighbours in the 3x3 cells around.

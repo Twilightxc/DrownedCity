@@ -65,7 +65,52 @@ func test_dismember_hides_a_group_and_throws_the_limb() -> void:
 	assert_eq(_corpses.live_count(), 2, "corpse + severed limb")
 	assert_eq(_corpses._hide[0], hide, "corpse misses the group")
 	assert_eq(_corpses._hide[1], CorpseLayer.ALL_PARTS & ~hide, "limb shows only the group")
-	assert_gt(_corpses._pos[1].x, _corpses._pos[0].x, "limb thrown along the push")
+	assert_eq(_corpses.body_count(), 1, "in the tree the limb flies as a rigid body")
+	assert_gt(_corpses._body[1].linear_velocity.x, 0.0, "thrown along the push")
+
+
+func test_limb_bodies_are_capped_oldest_freezes() -> void:
+	_config.dismember_chance = 1.0
+	_config.limb_body_cap = 2
+	for i: int in 4:
+		_corpses.add_death(_death())
+	assert_eq(_corpses.body_count(), 2)
+	assert_eq(_corpses.live_count(), 8, "frozen limbs stay as corpse parts")
+
+
+func test_blast_corpse_slides_away_and_stops_at_a_wall() -> void:
+	_config.dismember_chance_blast = 0.0
+	_config.blast_slide = Vector2(2.0, 2.0)
+	var grid: NavGrid = NavGrid.new(10, 10, 1.0, Vector2.ZERO)
+	_corpses.grid = grid
+	_corpses.add_death(_death(true))  # at (1, 2), push +x
+	_advance(_config.blast_slide_sec + 0.1)
+	assert_almost_eq(_corpses._pos[0].x, 3.0, 0.01, "slid 2 m")
+	grid.set_blocked_rect(Rect2i(4, 0, 1, 10))  # wall at x 4..5
+	_config.blast_slide = Vector2(5.0, 5.0)
+	_corpses.add_death(_death(true))
+	_advance(_config.blast_slide_sec + 0.1)
+	assert_lt(_corpses._pos[1].x, 4.0, "stops short of the wall")
+
+
+func test_blast_slide_off_the_roof_lands_in_water() -> void:
+	_config.dismember_chance_blast = 0.0
+	_config.blast_slide = Vector2(3.0, 3.0)
+	_corpses.grid = NavGrid.new(2, 4, 1.0, Vector2.ZERO)  # roof ends at x = 2
+	_corpses.water_y = -5.0
+	_corpses.add_death(_death(true))
+	_advance(_config.blast_slide_sec + 0.1)
+	assert_eq(_corpses._in_water[0], 1)
+	assert_eq(_corpses._y[0], -5.0)
+
+
+func test_burned_corpse_is_charred() -> void:
+	_config.dismember_chance = 0.0
+	var d: Horde.Death = _death()
+	d.tint = Color(1, 1, 1)
+	d.burned = true
+	_corpses.add_death(d)
+	assert_almost_eq(_corpses._tint[0].r, _config.charred_tint, 0.001)
 
 
 func test_gore_off_keeps_corpses_whole_and_no_blood() -> void:
