@@ -99,7 +99,7 @@ Tris: base 20.2k, brick 9.4k, concrete 15.5k (were 11.9k / 4.4k / 7.1k).
 | --- | --- | --- | --- | --- | --- | --- |
 | Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200 zombies | 144 (vsync) | 49 | 131k | capture for `06` |
 | Desktop RTX 4080 | Claude pane (Chromium), local web export | style + 200 zombies | 144 (vsync) | 58 | 129k | horde update 2.0 ms, no console errors |
-| Laptop Intel Arc | Chrome | style + 200 / 300 zombies | — | — | — | **skipped by J (2026-10-27)** |
+| Laptop Intel Arc | Chrome | style + 200 / 300 zombies | — | — | — | skipped by J (2026-10-27); covered by the 0.7 Arc runs (2026-10-28, 60 FPS) |
 
 Arc for 0.4b skipped by J: low risk. Draw calls are unchanged (~59 of 250), and primitives rose ~47% to
 ~131k of 300k; the PR #4 look ran at the 60 FPS vsync cap on Arc. The default scene carries this look, so
@@ -193,7 +193,7 @@ same way, so the building palette may be darker than authored; not changed here 
 | Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200, box placeholder (before) | 144 (vsync) | 50 | 136k | from the 2026-10-27 Forward+ comparison |
 | Desktop RTX 4080 | desktop GL Compatibility 1080p | style + 200, animated | 144 (vsync) | 53 | 215k | horde casts animated shadows |
 | Desktop RTX 4080 | Claude pane (Chromium), local web export | style + 200, animated | not valid (pane hidden, throttled) | 63 | 209k | horde update 2.5 ms, render sync 0.2 ms, no console errors |
-| Laptop Intel Arc | Chrome | style + 200 / 300, animated | — | — | — | **J** (also covers the 0.4b look) |
+| Laptop Intel Arc 140V | Claude pane (Chromium) 800×673, live build `097bd56 · #52` | style + 200, animated, no shooting, packed on the player | 60 (vsync) | 63 | 209k | horde update 4.89 ms (crowd packed: separation), flow field 1.00 ms; also covers the 0.4b look |
 
 Budget note: +80k primitives for 200 zombies (180 tris × main + shadow pass). 300 zombies should land near
 255k of 300k; if Arc or the corpse cap pushes past budget, the first levers are no horde shadows on the far
@@ -217,7 +217,18 @@ split, then a coarser mesh for distant zombies.
 | Desktop RTX 4080 | desktop GL Compatibility 1440p | style + 200, auto-shoot, corpse shadows off | 144 (vsync) | 56 | 240k | |
 | Desktop RTX 4080 | ANGLE (GLES3 on D3D11) 1080p | style + 200, auto-shoot | 143 | 59 | 233k | corpses + pools draw as on desktop GL |
 | Desktop RTX 4080 | Claude pane (Chromium), local web export | style + 200, `&autoshoot=1`, 145 corpses, 160 pools | 140–144 | 70 | 239k | no console errors; horde update 1.3 ms |
-| Laptop Intel Arc | Chrome | style + 200, `&autoshoot=1` | — | — | — | **J** after part 3 |
+| Laptop Intel Arc 140V | Claude pane (Chromium) 800×673, live build `097bd56 · #52` | style + 200, `&autoshoot=1`, ~60 s, 143 corpses, 160 pools | 60 (vsync) | 70 | 239k | horde update 2.80 ms, render sync 0.39 ms, flow field 0.50 ms |
+| Laptop Intel Arc 140V | same | style + 300, `&autoshoot=1`, ~60 s, 141 corpses, 160 pools | 60 (vsync) | 70 | **292k** | horde update 5.67 ms, render sync 0.57 ms; 3 % under the 300k budget |
+
+Arc run 2026-10-28 (Claude in the Claude app's browser pane on the laptop, pane visible; not full-screen
+Chrome, so fill rate is lighter than the real target):
+- **Pass at 200** with margin on draw calls; primitives 239k of 300k.
+- **300 is at the edge:** 292k primitives. Before 300 is a real target, take the levers above (no horde
+  shadows on the far split, lower corpse cap in `data/fx/gore.tres`, coarser distant mesh).
+- The overlay's ms value (`TIME_PROCESS`) read 10.9–31.5 ms while FPS held 60, so on web it is not the
+  frame time; use it only to compare runs.
+- J's verdict on `?spike=twinstick` (D): the zombie motion and the gore read well (2026-10-28).
+- Still to do: one run in full-screen Chrome to confirm fill rate.
 
 Found on the way: a resumed background tab hands the next frame a multi-second delta; the corpse and blood
 timers now clamp it like the horde does, or every corpse sank at once.
