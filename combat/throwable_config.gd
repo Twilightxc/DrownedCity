@@ -10,3 +10,7 @@ extends Resource
 @export var min_range: float = 2.0  ## m
 @export var max_range: float = 12.0  ## m
 @export var carry: int = 3  ## how many the player holds after a restock
+
+@export_group("Fire (incendiary)")
+@export var fire_radius: float = 0.0  ## m: zombies left alive inside catch fire; 0 = no fire
+@export var fire_cells: int = 0  ## ground cells set burning around the blast

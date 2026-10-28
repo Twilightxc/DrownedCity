@@ -15,6 +15,7 @@ const WATER_Y: float = -4.0
 @export var level_scene: PackedScene
 ## Spike E (0.7): corpses, blood and dismemberment; needs the animated horde (HordeRenderer.models).
 @export var gore_config: GoreConfig
+@export var fire_config: FireConfig  ## optional: burning zombies + ground fire (0.7 part 3)
 @export var roof_size: Vector2i = Vector2i(40, 40)
 ## Obstacles in roof cells: stair house, AC units, water tanks, low walls.
 @export var obstacles: Array[Rect2i] = [
@@ -48,6 +49,11 @@ var _help_label: Label
 var _grenades: Grenades
 var _corpses: CorpseLayer
 var _blood: BloodFx
+var _ground_fire: GroundFire
+var _fire_fx: FireFx
+var _explosions: ExplosionFx
+var _fire_rev: int = -1
+var _water_y: float = WATER_Y
 ## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
 ## so captures and measurements see a repeatable gore load without hands on the keyboard.
 var _auto_shoot: bool = false
@@ -68,6 +74,8 @@ func _ready() -> void:
 	if level_scene != null:
 		var level: Node = level_scene.instantiate()
 		add_child(level)
+		if level is Style15Level:
+			_water_y = (level as Style15Level).water_level
 		rects = (level as Style15Level).nav_obstacle_rects(_grid) if level is Style15Level else []
 	for rect: Rect2i in rects:
 		_grid.set_blocked_rect(rect)
@@ -83,6 +91,7 @@ func _ready() -> void:
 		_corpses = CorpseLayer.new()
 		_corpses.grid = _grid
 		_corpses.ground_y = GROUND_Y
+		_corpses.water_y = _water_y
 		add_child(_corpses)
 		_corpses.setup(gore_config, _renderer.models)
 		_blood = BloodFx.new()
@@ -100,11 +109,31 @@ func _ready() -> void:
 		_grenades.horde = _horde
 		add_child(_grenades)
 		_player.grenades = _grenades
+		_explosions = ExplosionFx.new()
+		_explosions.ground_y = GROUND_Y
+		_explosions.water_y = _water_y
+		add_child(_explosions)
+		_grenades.exploded.connect(_on_blast)
+	if fire_config != null:
+		_ground_fire = GroundFire.new(fire_config, _grid)
+		_horde.fire = fire_config
+		_horde.ground_fire = _ground_fire
+		_fire_fx = FireFx.new()
+		_fire_fx.ground_y = GROUND_Y
+		add_child(_fire_fx)
+		if _grenades != null:
+			_grenades.ground_fire = _ground_fire
 	_rig.position = _player.position
 
 	_auto_shoot = "--auto-shoot" in OS.get_cmdline_user_args()
 	if OS.has_feature("web"):
 		_auto_shoot = str(JavaScriptBridge.eval("window.location.search", true)).contains("autoshoot=1")
+	# Compile the fx shaders at load, not on the first blast (a seconds-long hitch on the web).
+	if _explosions != null:
+		# Inside the building under the player: drawn (no occlusion culling), but not seen.
+		_explosions.warm_up(Vector3(_player.position.x, GROUND_Y - 2.0, _player.position.z))
+	if _fire_fx != null:
+		_fire_fx.warm_up(_player.position + Vector3(0, -2.0, 0))
 	_build_ui()
 	_set_count_index(horde_config.default_count_index)
 	_player.device_changed.connect(func(_pad: bool) -> void: _update_help())
@@ -124,11 +153,14 @@ func _process(delta: float) -> void:
 
 	_flow_timer -= delta
 	var cell: Vector2i = _grid.world_to_cell(target)
-	if cell != _flow_cell and _flow_timer <= 0.0:
+	var fire_changed: bool = _ground_fire != null and _ground_fire.revision != _fire_rev
+	if (cell != _flow_cell or fire_changed) and _flow_timer <= 0.0:
 		var t0: int = Time.get_ticks_usec()
 		_horde.recompute_flow([cell] as Array[Vector2i])
 		_flow_ms = (Time.get_ticks_usec() - t0) / 1000.0
 		_flow_cell = cell
+		if _ground_fire != null:
+			_fire_rev = _ground_fire.revision
 		_flow_timer = horde_config.flow_recompute_sec
 
 	_spawn(delta, target)
@@ -137,9 +169,12 @@ func _process(delta: float) -> void:
 
 	var t1: int = Time.get_ticks_usec()
 	_horde.update(delta, target)
+	_horde.update_fire(delta)
 	var t2: int = Time.get_ticks_usec()
 	_renderer.sync(_horde, GROUND_Y)
 	_drain_horde_events()
+	if _fire_fx != null:
+		_fire_fx.sync(delta, _horde, _ground_fire)
 	var t3: int = Time.get_ticks_usec()
 	_horde_ms = lerpf(_horde_ms, (t2 - t1) / 1000.0, 0.1)
 	_render_ms = lerpf(_render_ms, (t3 - t2) / 1000.0, 0.1)
@@ -169,6 +204,11 @@ func _auto_attack(delta: float, from: Vector2) -> void:
 	if _auto_throw_left <= 0.0 and _grenades != null and _player.throwable != null:
 		_auto_throw_left = 4.0
 		_grenades.throw(_player.throwable, _player.position + Vector3(0, 1.2, 0), Vector3(at.x, GROUND_Y, at.y))
+
+
+func _on_blast(at: Vector3, _killed: int) -> void:
+	var in_water: bool = not _grid.in_bounds(_grid.world_to_cell(Vector2(at.x, at.z)))
+	_explosions.blast(at, _player.throwable.blast_radius, in_water)
 
 
 ## Hits and deaths since the last frame → blood and corpses.
@@ -237,6 +277,11 @@ func _publish_stats(delta: float) -> void:
 		DebugOverlay.set_stat("corpses", "%d / %d" % [_corpses.live_count(), gore_config.corpse_cap])
 		DebugOverlay.set_stat("gore", "on" if gore_config.enabled else "off")
 		DebugOverlay.set_stat("blood_pools", "%d / %d" % [_blood.pool_count(), gore_config.pool_cap])
+		DebugOverlay.set_stat("limb_bodies", "%d / %d" % [_corpses.body_count(), gore_config.limb_body_cap])
+	if _ground_fire != null:
+		DebugOverlay.set_stat("burning", str(_horde.burning_count()))
+		DebugOverlay.set_stat("fire_cells", "%d / %d" % [_ground_fire.active_count(), fire_config.cell_cap])
+		DebugOverlay.set_stat("flames", str(_fire_fx.flame_count()))
 		if _auto_shoot and Engine.get_process_frames() % 240 == 0:
 			print("gore: corpses %d pools %d kills %d" % [_corpses.live_count(), _blood.pool_count(), _horde.kills])
 	DebugOverlay.set_stat("hits_taken", str(_horde.hits_on_target))

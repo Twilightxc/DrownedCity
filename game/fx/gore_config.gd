@@ -17,6 +17,18 @@ extends Resource
 @export var dismember_chance_blast: float = 0.6
 @export var limb_throw: Vector2 = Vector2(0.5, 1.3)  ## m from the corpse, along the push
 
+@export_group("Blast (fake ragdoll)")
+@export var blast_slide: Vector2 = Vector2(1.0, 2.5)  ## m a blast corpse slides away from the centre
+@export var blast_slide_sec: float = 0.45
+@export var blast_arc_height: float = 0.6  ## m above the floor at mid-slide
+@export var charred_tint: float = 0.35  ## burn deaths: corpse colour multiplier
+
+@export_group("Flying limbs")
+@export var limb_body_cap: int = 16  ## rigid bodies at once; the oldest freezes where it lies
+@export var limb_speed: Vector2 = Vector2(3.0, 6.0)  ## m/s along the push
+@export var limb_lift: Vector2 = Vector2(2.0, 4.5)  ## m/s up
+@export var limb_body_sec: float = 4.0  ## then the body freezes (the limb stays as a corpse part)
+
 @export_group("Blood")
 @export var droplet_cap: int = 256
 @export var droplets_per_hit: int = 6

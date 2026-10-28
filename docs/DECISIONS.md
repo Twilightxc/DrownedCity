@@ -2,6 +2,9 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-28 | 0.7 part 3: limbs are `RigidBody3D`s capped at 16 but drawn by the corpse MultiMesh from the body transform; blast corpses slide on a scripted arc; burning = per-agent timer + shader flag + one shared flame MultiMesh; ground fire = NavGrid cell cost | Physics only where it shows (few limbs), the crowd stays struct-of-arrays; no node per zombie |
+| 2026-10-28 | Fx shaders are warmed at load (an invisible blast + flame inside the building) | First blast froze the frame ~1 s while Compatibility compiled the light, emitter and flame shaders |
+| 2026-10-28 | `?spike=style` player carries the incendiary spike grenade | `&autoshoot=1` must exercise blasts, fire and limbs for the Arc pass test |
 | 2026-10-27 | Horde zombie = rigid-part figure posed by forward kinematics in `kit_zombie.py`; clips baked to half-float EXR VATs, one column per mesh corner (index in UV.x); hand-keyed stand-in clips until J's Mixamo clips, which only need to supply per-part rotations | No skinning on the GPU path, import-order proof, and spike 0.7 could start without the Mixamo login |
 | 2026-10-27 | Gamepad feel test (0.5) deferred indefinitely; it no longer blocks the Phase 0 exit. Pad support stays a requirement: every new input and UI keeps a pad path, checked with scripted input until J tests by hand | J has no pad; "gamepad from day one" (CLAUDE.md) is about the code, which is in place |
 | 2026-10-27 | Save format: JSON envelope `{game, schema, build, saved_unix, state}` with one-step migrations; write via temp file + rename and keep the previous save as `.bak` | Readable and diffable for bug reports; the same file is what web players export and the Steam build imports; a cut-off write on web never loses the last good day |

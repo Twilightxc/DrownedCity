@@ -11,15 +11,24 @@ uniform highp sampler2D vat_position : filter_nearest, repeat_disable;
 uniform highp sampler2D vat_normal : filter_nearest, repeat_disable;
 uniform float ao_light_affect : hint_range(0.0, 1.0) = 0.35;
 uniform float roughness : hint_range(0.0, 1.0) = 0.95;
+uniform vec3 burn_color : source_color = vec3(1.0, 0.42, 0.08);
+uniform float burn_energy = 2.2;
+
+// INSTANCE_CUSTOM.w bit 11 (above the 11 part bits) = burning: emissive flicker, darker albedo.
+varying float v_burn;
+varying float v_seed;
 
 void vertex() {
+	int flags = int(INSTANCE_CUSTOM.w);
+	v_burn = float((flags >> 11) & 1);
+	v_seed = MODEL_MATRIX[3].x * 1.7 + MODEL_MATRIX[3].z * 2.3;
 	int column = int(UV.x);
 	ivec2 a = ivec2(column, int(INSTANCE_CUSTOM.x));
 	ivec2 b = ivec2(column, int(INSTANCE_CUSTOM.y));
 	float k = INSTANCE_CUSTOM.z;
 	VERTEX = mix(texelFetch(vat_position, a, 0).xyz, texelFetch(vat_position, b, 0).xyz, k);
 	NORMAL = normalize(mix(texelFetch(vat_normal, a, 0).xyz, texelFetch(vat_normal, b, 0).xyz, k));
-	if (((int(INSTANCE_CUSTOM.w) >> int(UV.y)) & 1) != 0) {
+	if (((flags >> int(UV.y)) & 1) != 0) {
 		VERTEX = vec3(0.0);
 	}
 }
@@ -32,4 +41,9 @@ void fragment() {
 	AO_LIGHT_AFFECT = ao_light_affect;
 	ROUGHNESS = roughness;
 	SPECULAR = 0.2;
+	if (v_burn > 0.5) {
+		float flicker = 0.55 + 0.45 * sin(TIME * 17.0 + v_seed) * sin(TIME * 6.3 + v_seed * 0.7);
+		ALBEDO *= 0.45;
+		EMISSION = burn_color * burn_energy * flicker;
+	}
 }

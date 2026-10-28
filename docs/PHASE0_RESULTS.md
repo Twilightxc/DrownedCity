@@ -221,3 +221,26 @@ split, then a coarser mesh for distant zombies.
 
 Found on the way: a resumed background tab hands the next frame a multi-second delta; the corpse and blood
 timers now clamp it like the horde does, or every corpse sank at once.
+
+### 0.7 part 3 — fake ragdoll, flying limbs, burning, ground fire, blast effects
+
+| Item | How |
+| --- | --- |
+| Fake ragdoll | Blast corpses slide 1–2.5 m away from the centre along an arc (0.45 s, 0.6 m high) while `death_blown` plays; `NavGrid.ray_distance` stops them 0.35 m short of walls; sliding off the roof lands them in the water (float, then sink) |
+| Flying limbs | A severed limb is a `RigidBody3D` (box from `VatModel.part_bounds` of that part group, read once from the VAT image) thrown along the push; the corpse MultiMesh draws it from the body's transform. Cap 16 bodies (`limb_body_cap`): the oldest freezes as a still corpse part; bodies also stop after 4 s or when they fall in the water. Collision = roof slab + one box per run of blocked cells |
+| Burning | `Horde.burn_left` per agent: tick damage (1 per 0.5 s for 4 s), spreads to touching zombies, faster lurch, water puts it out; burn deaths leave a charred corpse and no blood. Shader: bit 11 of `INSTANCE_CUSTOM.w` → darker albedo + emissive flicker. Flames: one shared additive billboard MultiMesh (`game/fx/fire_fx.gd`, cap 96), no node per zombie |
+| Ground fire | `combat/ground_fire.gd`: timed NavGrid cells (cap 12, 6 s) with a flow-field cost (+6 steps; `FlowField.compute` takes a cost array and switches to a re-queueing FIFO search); zombies standing in a cell catch fire |
+| Incendiary | `ThrowableConfig.fire_radius` / `fire_cells`: survivors within 5 m of the spike grenade catch fire, 6 cells start burning. `?spike=style` now carries the grenade too, so `&autoshoot=1` exercises everything |
+| Blast fx | `game/fx/explosion_fx.gd`: one reused omni flash (0.18 s), debris boxes + low-poly smoke puffs from 3 CPU emitters per kind, scorch marks (ring of 24, one MultiMesh), water column instead when the blast lands in water |
+| Warm-up | The first blast froze the frame for about 1 s (shader compiles: light, emitters, flames). The harness fires an invisible warm-up blast and flame inside the building at load; the first real blast now costs 24 ms at worst |
+| Tunables | `data/fx/gore.tres` (slide, limb bodies, charred tint), `data/combat/fire.tres`, `data/weapons/spike_grenade.tres` |
+| Tests | ground fire cap / burn-out / water / blocked, flow detour around fire, burn kill + charred + no blood, water, spread, fire under feet, no config; blast slide + wall stop + into water, limb body cap, charred corpse: 12 new, 90 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 (Godot 4.7.2 editor binary) | style + 200, `--auto-shoot`, 20 s: corpses 160, limb bodies 16, up to 47 burning, 12 fire cells, 96 flames | 60 (vsync) | 73–77 | 222–249k | worst frame 17–24 ms outside screenshot frames; horde update 0.5–0.8 ms |
+| Laptop Intel Arc | Chrome | style + 200 / 300, `&autoshoot=1` | — | — | — | **J** after merge: the PHASE0 0.7 pass test |
+
+Not checked: the web build. `VatModel.part_bounds` reads the VAT image on the CPU (`Texture2D.get_image()`); if
+that fails on the web, limbs fall back to boxes at the wrong size, not a crash, but it should be looked at in the
+Arc run.
