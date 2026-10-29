@@ -74,3 +74,22 @@ func test_cut_follows_the_player_and_camera() -> void:
 	_ctl._process(0.016)
 	back = _camera.global_basis.z
 	assert_almost_eq(_ctl.cut_toward.dot(Vector2(back.x, back.z).normalized()), 1.0, 0.001)
+
+
+func test_water_level_window_on_the_lowest_dry_storey() -> void:
+	assert_eq(_ctl.window_storey, 1, "storey 0 is flooded")
+	var l: InteriorLayout = _ctl.layout
+	assert_eq(l.cell(1, _ctl.window_cell), InteriorLayout.Cell.WINDOW)
+	assert_eq(_ctl.window_cell.y, l.depth - 1, "south outer wall")
+	assert_true(_ctl.grids[1].is_walkable_world(_ctl.window_inside), "room to stand inside it")
+	assert_true(_roof.is_walkable_world(_ctl.window_roof), "rope starts on walkable roof")
+	assert_gt(l.floor_y(1), _ctl.water_y, "the window's floor is above the water")
+	assert_lt(l.floor_y(1) - _ctl.water_y, InteriorLayout.STOREY, "and within a storey of it")
+
+
+func test_window_hatch_shows_only_on_its_storey() -> void:
+	_ctl._enter_storey(1)
+	assert_true(_ctl._window_hatch.visible)
+	assert_false(_ctl._rope_hatch.visible)
+	_ctl._enter_storey(2)
+	assert_false(_ctl._window_hatch.visible)

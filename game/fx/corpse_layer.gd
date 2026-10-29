@@ -357,6 +357,20 @@ func _sync_look(v: int) -> void:
 	mm.visible_instance_count = n
 
 
+## Drops every corpse and limb body, and the limb collision; set `grid` / `ground_y` for the new floor
+## after this (a storey change inside a building, PHASE0 0.8).
+func clear() -> void:
+	for i: int in _cap:
+		if _body[i] != null:
+			_body[i].queue_free()
+			_body[i] = null
+	_body_order.clear()
+	_alive.fill(0)
+	if _floor != null:
+		_floor.queue_free()
+		_floor = null
+
+
 ## Roof slab + blocked cells as static collision for flying limbs; built on the first limb.
 func _ensure_floor() -> void:
 	if _floor != null:

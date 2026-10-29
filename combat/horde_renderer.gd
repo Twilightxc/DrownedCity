@@ -74,6 +74,7 @@ func _sync_look(horde: Horde, v: int, ground_y: float) -> void:
 	var clip: PackedByteArray = horde.anim
 	var clip_t: PackedFloat32Array = horde.anim_time
 	var burn: PackedFloat32Array = horde.burn_left
+	var lift: PackedFloat32Array = horde.lift
 	var spot: PackedByteArray = horde.burn_spot
 	var clips: VatClips = models[v].clips if not models.is_empty() else null
 	var rows_of: PackedInt32Array = _clip_index[v] if clips != null else PackedInt32Array()
@@ -94,7 +95,7 @@ func _sync_look(horde: Horde, v: int, ground_y: float) -> void:
 		buf[o + 4] = 0.0
 		buf[o + 5] = 1.0
 		buf[o + 6] = 0.0
-		buf[o + 7] = ground_y
+		buf[o + 7] = ground_y + lift[a]
 		buf[o + 8] = -s
 		buf[o + 9] = 0.0
 		buf[o + 10] = c

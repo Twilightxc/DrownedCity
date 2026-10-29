@@ -17,6 +17,12 @@ uniform float burn_energy = 2.2;
 // INSTANCE_CUSTOM.w bit 11 (above the 11 part bits) = burning: emissive flicker, darker albedo.
 // Bits 12..15 = a spot fire's part index + 1: only that part flickers (frag blasts).
 varying float v_burn;
+varying vec3 v_world;
+// Dark rooms inside buildings (0.8 part 2), same texture as interior_cutaway; fire still glows in the dark.
+global uniform sampler2D interior_light;
+global uniform vec4 interior_light_rect;
+global uniform float interior_light_on;
+global uniform vec3 cut_origin;  // the player's position + floor y (interior_cutaway)
 varying float v_seed;
 
 void vertex() {
@@ -34,12 +40,16 @@ void vertex() {
 	if (((flags >> int(UV.y)) & 1) != 0) {
 		VERTEX = vec3(0.0);
 	}
+	v_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
 void fragment() {
 	// The glTF vertex colour arrives here one sRGB decode darker than the palette (dark clothes went
 	// black); re-encode so the horde matches the StandardMaterial placeholder it replaces.
 	ALBEDO = pow(COLOR.rgb, vec3(1.0 / 2.2));
+	if (interior_light_on > 0.5 && v_world.y > cut_origin.y - 0.3) {
+		ALBEDO *= texture(interior_light, (v_world.xz - interior_light_rect.xy) / interior_light_rect.zw).r;
+	}
 	AO = COLOR.a;
 	AO_LIGHT_AFFECT = ao_light_affect;
 	ROUGHNESS = roughness;

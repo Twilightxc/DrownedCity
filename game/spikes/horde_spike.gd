@@ -32,6 +32,10 @@ const WARM_UP_Y: float = -14.0
 
 var _grid: NavGrid
 var _horde: Horde
+## The horde whose hits and deaths feed blood, corpses and flames: the roof horde, or (0.8) the zombies on the
+## player's storey inside a building.
+var _fx_horde: Horde
+var _roof_paused: bool = false  ## the roof horde waits (not simulated, not drawn) while the player is inside
 var _target_count: int = 0
 var _count_index: int = 0
 var _flow_timer: float = 0.0
@@ -89,6 +93,7 @@ func _ready() -> void:
 	for n: int in horde_config.spawn_counts:
 		capacity = maxi(capacity, n)
 	_horde = Horde.new(horde_config, _grid, capacity, _rng.randi())
+	_fx_horde = _horde
 	_renderer.setup(capacity)
 	if gore_config != null and not _renderer.models.is_empty():
 		_corpses = CorpseLayer.new()
@@ -154,7 +159,18 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	delta = minf(delta, 1.0 / 20.0)  # a hitch must not teleport the crowd through walls
 	var target: Vector2 = _player.ground_position()
+	if not _roof_paused:
+		_step_roof_horde(delta, target)
+	_drain_horde_events()
+	if _fire_fx != null:
+		_fire_fx.sync(delta, _fx_horde, _ground_fire if _fx_horde == _horde else null)
 
+	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
+	_update_status()
+	_publish_stats(delta)
+
+
+func _step_roof_horde(delta: float, target: Vector2) -> void:
 	_flow_timer -= delta
 	var cell: Vector2i = _grid.world_to_cell(target)
 	var fire_changed: bool = _ground_fire != null and _ground_fire.revision != _fire_rev
@@ -176,16 +192,9 @@ func _process(delta: float) -> void:
 	_horde.update_fire(delta)
 	var t2: int = Time.get_ticks_usec()
 	_renderer.sync(_horde, GROUND_Y)
-	_drain_horde_events()
-	if _fire_fx != null:
-		_fire_fx.sync(delta, _horde, _ground_fire)
 	var t3: int = Time.get_ticks_usec()
 	_horde_ms = lerpf(_horde_ms, (t2 - t1) / 1000.0, 0.1)
 	_render_ms = lerpf(_render_ms, (t3 - t2) / 1000.0, 0.1)
-
-	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
-	_update_status()
-	_publish_stats(delta)
 
 
 func _auto_attack(delta: float, from: Vector2) -> void:
@@ -218,17 +227,18 @@ func _on_blast(at: Vector3, _killed: int, cfg: ThrowableConfig) -> void:
 
 ## Hits and deaths since the last frame → blood and corpses.
 func _drain_horde_events() -> void:
+	var h: Horde = _fx_horde
 	if _blood != null:
-		for i: int in _horde.hit_points.size():
-			_blood.hit(_horde.hit_points[i], _horde.hit_dirs[i])
+		for i: int in h.hit_points.size():
+			_blood.hit(h.hit_points[i], h.hit_dirs[i])
 	if _corpses != null:
-		for d: Horde.Death in _horde.deaths:
+		for d: Horde.Death in h.deaths:
 			_corpses.add_death(d)
 			if _blood != null:
 				var size: float = randf_range(gore_config.death_pool_size.x, gore_config.death_pool_size.y)
 				# Under the body: it falls forward, or backwards away from a blast.
 				_blood.pool(d.position + (d.push if d.blast else d.heading) * 0.5, size)
-	_horde.clear_events()
+	h.clear_events()
 
 
 func _spawn(delta: float, target: Vector2) -> void:

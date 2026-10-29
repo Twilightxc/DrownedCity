@@ -181,3 +181,15 @@ cut_height={
 "type": "float",
 "value": 1.1
 }
+interior_light={
+"type": "sampler2D",
+"value": ""
+}
+interior_light_rect={
+"type": "vec4",
+"value": Vector4(0, 0, 1, 1)
+}
+interior_light_on={
+"type": "float",
+"value": 0.0
+}

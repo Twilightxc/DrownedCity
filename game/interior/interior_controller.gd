@@ -1,9 +1,11 @@
 class_name InteriorController
 extends Node3D
 ## One enterable building for spike 0.8: builds the seeded interior, moves the player between the roof
-## and the storeys (roof hatch, stairs), and drives the cutaway.
+## and the storeys (roof hatch, stairs, a rope to the window at water level), and drives the cutaway.
 ## While the player is inside, the building's own exterior mesh and the roof props only cast shadows,
 ## storeys above the player do the same, and the walls on the camera side drop to waist height.
+
+signal storey_changed(storey: int)  ## -1 = back on the roof
 
 const FADE_SEC: float = 0.25
 
@@ -32,6 +34,14 @@ var _roof_y: float
 var _exterior: Array[GeometryInstance3D] = []
 var _inner_hatch: Hatch
 var _roof_hatch: Hatch
+## The water-level entrance (part 2): a window on the lowest dry storey, reached by a rope from the roof
+## edge above it (a boat that stops at the window comes later).
+var window_storey: int = -1
+var window_cell: Vector2i = Vector2i(-1, -1)  ## the outer-wall window
+var window_inside: Vector2  ## where the player stands inside it
+var window_roof: Vector2  ## where the rope starts on the roof
+var _window_hatch: Hatch
+var _rope_hatch: Hatch
 var _fade: ColorRect
 var _busy: bool = false
 
@@ -69,6 +79,8 @@ func setup(player: SpikePlayer, camera: Camera3D, roof_grid: NavGrid, roof_y: fl
 	_inner_hatch.used.connect(func(_p: SpikePlayer) -> void: _go(-1, roof_hatch_at + Vector2(0, 0.6)))
 	_inner_hatch.visible = false
 	add_child(_inner_hatch)
+
+	_setup_window()
 
 	var layer: CanvasLayer = CanvasLayer.new()
 	layer.layer = 70
@@ -118,6 +130,7 @@ func _go(to_storey: int, at: Vector2) -> void:
 			_set_exterior(true)
 			_set_cut(false)
 			_show_hatches()
+			storey_changed.emit(-1)
 		else:
 			_set_exterior(false)
 			_enter_storey(to_storey))
@@ -132,12 +145,54 @@ func _enter_storey(s: int) -> void:
 	_builder.show_storey(s)
 	_show_hatches()
 	_update_cut()
+	storey_changed.emit(s)
 
 
 ## Each hatch shows only on its own storey (the roof one while outside).
 func _show_hatches() -> void:
 	_roof_hatch.visible = storey < 0
 	_inner_hatch.visible = storey == storeys - 1
+	if _window_hatch != null:
+		_rope_hatch.visible = storey < 0
+		_window_hatch.visible = storey == window_storey
+
+
+## Picks the south-wall window of the lowest dry storey closest to the middle whose inside cell is free,
+## and the roof cell above it for the rope.
+func _setup_window() -> void:
+	window_storey = layout.flooded + 1
+	if window_storey >= storeys:
+		return
+	var grid: NavGrid = grids[window_storey]
+	var y: int = layout.depth - 1
+	var best: int = -1
+	for x: int in layout.width:
+		if layout.cell(window_storey, Vector2i(x, y)) != InteriorLayout.Cell.WINDOW:
+			continue
+		if not grid.is_walkable(Vector2i(x, y - 1)):
+			continue
+		if best < 0 or absi(x - layout.width / 2) < absi(best - layout.width / 2):
+			best = x
+	if best < 0:
+		return
+	window_cell = Vector2i(best, y)
+	window_inside = layout.cell_center(Vector2i(best, y - 1))
+	window_roof = window_inside
+	for step: int in range(1, 6):  # the roof edge may be blocked by the parapet: step inward
+		window_roof = layout.cell_center(Vector2i(best, y - step))
+		if _roof_grid.is_walkable_world(window_roof):
+			break
+	_rope_hatch = Hatch.new()
+	_rope_hatch.prompt = "Rope down to the window"
+	_rope_hatch.position = Vector3(window_roof.x, _roof_y, window_roof.y)
+	_rope_hatch.used.connect(func(_p: SpikePlayer) -> void: _go(window_storey, window_inside))
+	add_child(_rope_hatch)
+	_window_hatch = Hatch.new()
+	_window_hatch.prompt = "Climb up to the roof"
+	_window_hatch.position = Vector3(window_inside.x, layout.floor_y(window_storey), window_inside.y)
+	_window_hatch.used.connect(func(_p: SpikePlayer) -> void: _go(-1, window_roof))
+	_window_hatch.visible = false
+	add_child(_window_hatch)
 
 
 func _set_exterior(drawn: bool) -> void:
