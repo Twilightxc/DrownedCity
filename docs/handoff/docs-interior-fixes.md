@@ -11,13 +11,16 @@
 ## Done
 - PHASE0_RESULTS 0.8: the two fixes (cause, fix) and the desktop GL numbers.
 
+## Done (2nd commit)
+- J's web check of #26 (build `ff77131 · #71`): 60 FPS, 102 draws, 145k with 30 swarming; zombies visible across
+  the storey at every angle. The one stop J hit was the closed flight to the flooded storey (by design, no cue).
+
 ## Not done / next
-- J's web check of PR #26 (the build was still deploying when this was written): zombies visible across the
-  whole storey at every Q/E angle; the stairs never stick. Add a line to PHASE0_RESULTS 0.8 when J reports.
+- A cue for closed flights (J to pick: "Flooded" prompt, water in the stairwell, or a railing).
 - Then the Phase 0 exit review and Phase 1 planning.
 
 ## J must test
-`https://twilightxc.github.io/DrownedCity/?spike=interior&storey=2&wake=1` (Ctrl+Shift+R; build `ff77131` or newer).
+Nothing for this branch (docs only).
 
 ## Next session must know
 - `docs/arc-handoff` is obsolete; delete it.

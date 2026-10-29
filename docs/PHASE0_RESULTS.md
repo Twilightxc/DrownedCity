@@ -357,5 +357,9 @@ J: "กำแพงบังศัตรูจนมองเห็นได้�
 | Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 (Godot 4.7.2) | `--storey=2 --wake=1`, 30 awake | 60 | 120–123 | 157–159k | no extra draw calls; correct after a 90° turn |
+| Laptop Intel Arc 140V | Chrome, maximised window, live build `ff77131 · #71` (J) | `?spike=interior&storey=2&wake=1`, storey 1, all 30 awake swarming the player | 60 (5.4 ms) | 102 | 145k | inside update 0.52 ms |
 
-Still to check on the web (J): zombies visible across the whole storey at every Q/E angle; the stairs never stick.
+Arc web check 2026-10-29 (J): **zombies are visible across the whole storey at every camera angle**; 60 FPS with all
+30 swarming. J was stopped once on storey 1's landing: that was the flight down to the flooded storey 0, which is
+closed by design, but nothing on screen says so. Open: a cue for closed flights (a "Flooded" prompt, water drawn
+in the stairwell, or a railing instead of the flight), J to pick.
