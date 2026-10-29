@@ -8,6 +8,7 @@ extends Node3D
 signal storey_changed(storey: int)  ## -1 = back on the roof
 
 const FADE_SEC: float = 0.25
+const FLOOD_SIGN_RANGE: float = 3.0  ## m: a "Flooded" sign shows when the player is this close
 
 @export var footprint: Vector2i = Vector2i(26, 22)  ## the base building (style15_level)
 @export var center: Vector2 = Vector2.ZERO
@@ -40,6 +41,9 @@ var window_cell: Vector2i = Vector2i(-1, -1)  ## the outer-wall window
 var window_inside: Vector2  ## where the player stands inside it
 var window_roof: Vector2  ## where the rope starts on the roof
 var _window_hatch: Hatch
+## "Flooded" signs at the top of closed flights (down to a storey under water): [storey, label]. Without one,
+## the drawn flight looks walkable and the player reads the stop as a bug (J, 2026-10-29).
+var flood_signs: Array = []
 var _rope_hatch: Hatch
 var _fade: ColorRect
 var _busy: bool = false
@@ -80,6 +84,7 @@ func setup(player: SpikePlayer, camera: Camera3D, roof_grid: NavGrid, roof_y: fl
 	add_child(_inner_hatch)
 
 	_setup_window()
+	_setup_flood_signs()
 
 	var layer: CanvasLayer = CanvasLayer.new()
 	layer.layer = 70
@@ -115,7 +120,37 @@ func _process(_delta: float) -> void:
 			_enter_storey(s)
 	elif not is_equal_approx(_player.ground_y, layout.floor_y(storey)):
 		_player.set_height(layout.floor_y(storey))
+	_update_flood_signs(p)
 	_update_cut()
+
+
+## One sign over the top cell of every closed flight whose top storey is dry.
+func _setup_flood_signs() -> void:
+	for top: int in range(1, storeys):
+		if layout.flight_open(top) or top <= layout.flooded:
+			continue
+		var x: int = InteriorLayout.STAIR_X0 + InteriorLayout.FLIGHT_LEN - 1 if layout.flight_top_east(top) else InteriorLayout.STAIR_X0
+		var at: Vector2 = layout.cell_center(Vector2i(x, layout.flight_row(top)))
+		var label: Label3D = Label3D.new()
+		label.text = tr("Flooded")
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.no_depth_test = true
+		label.fixed_size = true
+		label.pixel_size = 0.002
+		label.font_size = 24
+		label.outline_size = 6
+		label.modulate = Color(0.75, 0.9, 1.0)
+		label.position = Vector3(at.x, layout.floor_y(top) + 1.2, at.y)
+		label.visible = false
+		add_child(label)
+		flood_signs.append([top, label])
+
+
+func _update_flood_signs(p: Vector2) -> void:
+	var r2: float = FLOOD_SIGN_RANGE * FLOOD_SIGN_RANGE
+	for entry: Array in flood_signs:
+		var label: Label3D = entry[1]
+		label.visible = entry[0] == storey and Vector2(label.position.x, label.position.z).distance_squared_to(p) <= r2
 
 
 func _go(to_storey: int, at: Vector2) -> void:
@@ -156,6 +191,8 @@ func _enter_storey(s: int) -> void:
 ## Each hatch shows only on its own storey (the roof one while outside).
 func _show_hatches() -> void:
 	_roof_hatch.visible = storey < 0
+	for entry: Array in flood_signs:
+		(entry[1] as Label3D).visible = false  # _process shows the near one again
 	_inner_hatch.visible = storey == storeys - 1
 	if _window_hatch != null:
 		_rope_hatch.visible = storey < 0
