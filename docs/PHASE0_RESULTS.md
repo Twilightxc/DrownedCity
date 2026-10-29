@@ -2,6 +2,59 @@
 
 Measured numbers per spike. Device/browser on every row; J's Arc laptop is the pass/fail reference.
 
+## Exit review — ✅ Phase 0 passes (2026-10-29)
+
+Every spike passed on J's min-spec laptop (Intel Arc 140V, Chrome); the only open item is the gamepad feel
+test, which J deferred and which doesn't block the exit (2026-10-27). Calendar: 2026-10-25 → 2026-10-29
+(5 days), against the 3-week / 39 h estimate in GDD §17, with Claude writing the code and assets.
+
+| Spike | Verdict | Arc web (Chrome) | What it proved |
+| --- | --- | --- | --- |
+| 0.1 Skeleton | ✅ | — | Godot 4.7.2 Compatibility, GUT, build label, F3 overlay |
+| 0.2 CI → Pages | ✅ | — | push → live in ~2 min; JUnit guard against a false green |
+| 0.3 Horde on web | ✅ 200 | 60 FPS, 59 draws, 89k | MultiMesh + shared flow field + spatial hash; worst case is CPU (separation), not GPU |
+| 0.4 Style 1.5 look | ✅ look + perf | 60 FPS, 59 draws, 89k | one draw call per building, vertex AO baked in Blender, desolate mood accepted by J |
+| 0.5 Twin-stick | ✅ mouse + keyboard | — | iso aim plane at body height, aim assist, camera-relative controls; **pad feel deferred by J** |
+| 0.6 Save on web | ✅ | — | versioned JSON + migrations, IndexedDB, `.bak` fallback, export → import across browsers |
+| 0.7 Animated horde + gore | ✅ 200 | 60 FPS, 73–78 draws, 243–251k | VAT on MultiMesh, corpses, blood, limbs, fake ragdoll, burning, ground fire, two grenade types |
+| 0.8 Interiors | ✅ | 59–60 FPS, 102–114 draws, 133–145k | cutaway, storeys + stairs, a horde per storey, dark rooms + flashlight, water-level window |
+
+### Budget (CLAUDE.md, web on the Arc)
+
+| Budget | Target | Phase 0 worst measured | Status |
+| --- | --- | --- | --- |
+| FPS | 60 (≥ 50) | 59–60 (vsync cap) in every scene | ✅ |
+| Draw calls | < 250 | 114 (interior), 79 (roof + both grenades) | ✅ ~2× headroom |
+| Primitives on screen | < 300k | 251k at 200 zombies; ~297–301k at 300 | ✅ at 200; **300 is at the edge** |
+| Zombies | 200+ | 200 with every effect live (300 runs at 60 FPS but at the primitive edge) | ✅ |
+| First download | < 50 MB | `index.wasm` 39.5 MB + `index.pck` 2.6 MB + js 0.3 MB = 42.4 MB (uncompressed) | ✅ 7.6 MB left |
+| Dynamic lights per object | ≤ 4 | sun + blast flash + flashlight | ✅ |
+
+### Accepted fallbacks and deviations
+- Gamepad feel (0.5): deferred by J; every input and UI keeps a pad path, checked by scripted input.
+- 300 zombies sit at the primitive budget; 200 is the target. Levers if needed: no horde shadows on the far
+  split, lower corpse cap, two limbs → one.
+- Baked lighting = vertex AO from Blender, not LightmapGI (baking needs RenderingDevice and an editor step).
+- Zombie clips are hand-keyed stand-ins until J's Mixamo download.
+- The water-level window is reached by a rope; boats stopping at windows come with boats.
+- Stairs: full-storey flights + a lobby door on every other storey (J's pick over half-flights).
+- Inside a building the roof horde waits, and corpses/blood are cleared on each storey change (one shared layer).
+
+### Carry into Phase 1
+- **Spike code is a harness, not the game.** Keep the modules (`sim/`, `combat/`, `game/fx/`, `game/interior/`,
+  `platform/`), rebuild the scene flow (`game/spikes/*` stays as test scenes).
+- Unexplained once-per-session 49–62 ms frame ~1 s after the first incendiary blast (desktop GL, 2 of 3 runs);
+  not seen on the web screenshots. Watch for it.
+- Download headroom is 7.6 MB: new assets (survivors, outfits, more buildings, audio) need a size check per PR.
+- GPU time is not measured (the overlay's ms is CPU process time); measure it if a scene gets near the budget.
+
+### Decisions J needs to make before Phase 1
+1. **Demo cut list** (GDD §17): the 2026-10-27 additions (+80–100 h) aren't in the ~700 h demo estimate. Proposal
+   there: interiors, one barricade + bridge type, 4 gun classes, 4 attachments, 12 traits, 2 occupant types.
+2. **Phase 1 order of work**: GDD §16 says combat fun first ("prototype combat before everything, test within
+   3 weeks"); the base loop (SimCore day, rooms, utility AI) is the other half of the demo loop.
+3. Mixamo clips for the zombie and survivors (J's login), when the survivor bodies start.
+
 ## 0.1 Project skeleton — ✅ done (PR #1, merged 2026-10-25)
 
 | Item | Result |
