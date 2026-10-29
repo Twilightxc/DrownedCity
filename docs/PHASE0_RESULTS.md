@@ -292,7 +292,7 @@ zoom spot fires and embers are small; zoom in to see them. The single 49–62 ms
 first incendiary was not checked on the web (two screenshots only).
 
 
-## 0.8 Spike F — Building interiors with a cutaway camera — 🟡 parts 1–2 built; waiting for J's Arc run
+## 0.8 Spike F — Building interiors with a cutaway camera — ✅ pass (J on Arc, Chrome, 2026-10-29)
 
 Live: default URL (`?spike=interior`); `&storey=2` starts inside on the top storey (0 = lowest). The base
 building's roof has a hatch by the hut ([F] / A); the stairs are at the corridor's west end.
@@ -313,7 +313,7 @@ building's roof has a hatch by the hut ([F] / A); the stairs are at the corridor
 | Desktop RTX 4080 | same | top storey (`--storey=2`) | 144 (vsync) | 103 | 146k | |
 | Desktop RTX 4080 | same | middle storey (`--storey=1`) | 144 (vsync) | 89 | 137k | |
 | Desktop RTX 4080 | Claude pane (Chromium), local web export | `&storey=2` | 141 | 112 | 129k | no console errors |
-| Laptop Intel Arc | Chrome | `?spike=interior&storey=2&wake=1` | — | — | — | **J** after part 2 (zombies inside) |
+| Laptop Intel Arc 140V | Chrome, maximised window, live build `4af4bee · #67` (J) | `?spike=interior&storey=2&wake=1`, top storey after shooting 25 of the 30 (5 awake left, 32 corpses, 41 pools) | 59 (8.8 ms) | 114 | 133k | inside update 0.36 ms |
 
 Found on the way: the fx warm-up drew one blast and flame 2 m under the player "inside the building"; with the
 interior open it showed as a smoke puff in the corridor. It now runs under the flood water (`WARM_UP_Y`).
@@ -337,4 +337,10 @@ interior open it showed as a smoke puff in the corridor. It now runs under the f
 | Laptop Intel Arc 140V | same | `--storey=2`, asleep, dark rooms | 60 | 116–125 | 129–160k | |
 | Laptop Intel Arc 140V | same | rope to the window (storey 1) | 50–60 | 109 | 142k | 6 woke on arrival (sight) |
 
-Not measured on the web yet.
+Arc web run 2026-10-29 (J, Chrome): **0.8 passes**. 59 FPS (8.8 ms), 114 draws, 133k with the outside block
+drawn. The screenshot came after J had shot 25 of the 30, so it isn't the peak (all 30 awake); at 8.8 ms per
+frame there is a lot of headroom. J's verdicts, all yes: rooms stay dark until seen; the flashlight follows the
+mouse well; going down to storey 1 through the lobby room door feels natural; the rope at the south edge goes
+down to the window and back up; the cutaway reads clearly at every camera angle.
+
+Found on the way: the overlay's Kills and Hits Taken counted the roof horde only; they now add the zombies inside.
