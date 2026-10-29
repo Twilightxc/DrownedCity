@@ -111,6 +111,9 @@ staying in the draw-call budget with an interior loaded next to the outside bloc
 - **Pass (J on Arc, Chrome):** inside the building with 30 zombies awake and the outside block still drawn
   ≥ 50 FPS, draw calls < 250; J says the cutaway reads clearly at every camera angle and moving between floors
   feels right. **Fallback:** hide the outside block while inside; simpler cutaway (hide whole near walls).
+  → **✅ Pass 2026-10-29** (J, Chrome on the Arc, build `4af4bee · #67`): 59 FPS, 114 draws, 133k inside with the
+  outside drawn; the cutaway reads at every angle; stairs (via the lobby door), rope and window, dark rooms and
+  flashlight all feel right.
 
 ## Exit criteria
 All spikes pass (or have an accepted fallback) and results are logged in `docs/PHASE0_RESULTS.md`

@@ -76,6 +76,15 @@ func _process(delta: float) -> void:
 	DebugOverlay.set_stat("storey", "roof" if _interior.storey < 0 else "%d of %d" % [_interior.storey + 1, _interior.storeys])
 	DebugOverlay.set_stat("zombies_inside", "%d (%d awake)" % [_inside.total_count(), _inside.awake_count()])
 	DebugOverlay.set_stat("inside_update", "%.2f ms" % _inside_ms)
+	# The base overlay counts the roof horde only; add the zombies inside.
+	var kills: int = _horde.kills
+	var hits: int = _horde.hits_on_target
+	for h: Horde in _inside.hordes:
+		if h != null:
+			kills += h.kills
+			hits += h.hits_on_target
+	DebugOverlay.set_stat("kills", str(kills))
+	DebugOverlay.set_stat("hits_taken", str(hits))
 	if _interior.storey >= 0:
 		DebugOverlay.set_stat("rooms_seen", "%d / %d" % [_lighting.seen_count(_interior.storey), _lighting.region_total(_interior.storey)])
 
