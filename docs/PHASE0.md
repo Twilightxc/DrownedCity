@@ -95,13 +95,15 @@ budget, so it is measured before Phase 1. Needs the **desktop** (Blender) and J'
 Added 2026-10-27 (J): interior exploration (GDD §5). New risk: a readable cutaway in iso, multi-floor nav, and
 staying in the draw-call budget with an interior loaded next to the outside block. Needs the **desktop**
 (Blender) for the kit.
-- [ ] Interior kit in `tools/blender` (wall, wall with door / window, floor, stair, door, furniture/containers ×4)
+- [x] Interior kit in `tools/blender` (wall, wall with door / window, floor, stair, door, furniture/containers ×4)
       + a seeded layout generator in Godot for one 3-floor building (rooms, corridor, stairwell). Pieces are
       instanced per type (MultiMesh or merged per floor at load), not one node per wall.
-- [ ] Cutaway: floors above the player and the roof hide; walls facing the camera cut to waist height (one plane
+- [x] Cutaway: floors above the player and the roof hide; walls facing the camera cut to waist height (one plane
       uniform in the wall shader), correct after each 90° camera turn; smooth fade in/out at the entrance.
 - [ ] Entrances: roof hatch, stairs between floors, a window at water level (boat stops at the window).
+      → part 1 (2026-10-29): roof hatch + stairs done; the water-level window is part 2.
 - [ ] NavGrid + flow field per floor, linked through the stair cells; hitscan and LOS inside.
+      → part 1: a NavGrid per storey for the player (hitscan/LOS on it); flow fields per storey come with the zombies.
 - [ ] Unseen rooms stay dark until the player has line of sight; interior dark by default + flashlight
       (one shadowless spot light).
 - [ ] ~30 dormant zombies inside that wake by noise and follow across floors.

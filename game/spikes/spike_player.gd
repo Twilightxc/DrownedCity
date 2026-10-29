@@ -33,7 +33,7 @@ var using_pad: bool = false
 var aim_locked: bool = false  ## radial menu open: sticks/mouse pick a command instead
 var assist_target: int = -1  ## agent index this frame; may go stale once a shot swap-removes agents
 var assist_point: Vector2 = Vector2.ZERO  ## that agent's position when it was picked
-var interact_target: SupplyCrate
+var interact_target: Node3D  ## any node in group "interactable" with interact(player) and show_prompt(on, pad)
 var shots_fired: int = 0
 var ammo: int = 0
 var reload_left: float = 0.0
@@ -98,6 +98,20 @@ func _ready() -> void:
 	add_child(_throw_ring)
 
 
+## Move onto another walk plane (a storey inside a building, or back to the roof).
+func set_floor(nav: NavGrid, y: float) -> void:
+	grid = nav
+	_hitscan = Hitscan.new(nav)
+	_assist = AimAssist.new(nav)
+	set_height(y)
+
+
+## Height of the walk plane under the player (stairs change it every frame).
+func set_height(y: float) -> void:
+	ground_y = y
+	position.y = y
+
+
 func ground_position() -> Vector2:
 	return Vector2(position.x, position.z)
 
@@ -152,7 +166,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("throwable_next"):
 		next_throwable()
 	elif event.is_action_pressed("interact") and interact_target != null:
-		interact_target.interact(self)
+		interact_target.call("interact", self)
 
 
 func _process(delta: float) -> void:
@@ -295,21 +309,21 @@ func _compute_throw_target() -> Vector3:
 
 
 func _update_interact() -> void:
-	var best: SupplyCrate = null
+	var best: Node3D = null
 	var best_d2: float = controls.interact_radius * controls.interact_radius
 	for node: Node in get_tree().get_nodes_in_group("interactable"):
-		var crate: SupplyCrate = node as SupplyCrate
-		if crate == null:
-			continue
-		var d2: float = Vector2(crate.global_position.x, crate.global_position.z).distance_squared_to(ground_position())
+		var target: Node3D = node as Node3D
+		if target == null or not target.is_visible_in_tree() or absf(target.global_position.y - ground_y) > 1.5:
+			continue  # hidden, or on another storey
+		var d2: float = Vector2(target.global_position.x, target.global_position.z).distance_squared_to(ground_position())
 		if d2 <= best_d2:
-			best = crate
+			best = target
 			best_d2 = d2
 	if best != interact_target and interact_target != null:
-		interact_target.show_prompt(false, using_pad)
+		interact_target.call("show_prompt", false, using_pad)
 	interact_target = best
 	if interact_target != null:
-		interact_target.show_prompt(true, using_pad)
+		interact_target.call("show_prompt", true, using_pad)
 
 
 ## Flat laser from the muzzle to the first wall or max range; green while assist holds a target.

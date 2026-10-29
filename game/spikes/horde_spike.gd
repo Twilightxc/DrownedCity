@@ -10,6 +10,9 @@ extends Node3D
 const GROUND_Y: float = 0.0
 const BUILDING_DEPTH: float = 6.0
 const WATER_Y: float = -4.0
+## Fx shaders are compiled by drawing one blast + flame here at load: under the flood water, out of sight even
+## when a building's interior is open (0.8).
+const WARM_UP_Y: float = -14.0
 
 @export var horde_config: HordeConfig
 @export var level_scene: PackedScene
@@ -132,9 +135,9 @@ func _ready() -> void:
 	# Compile the fx shaders at load, not on the first blast (a seconds-long hitch on the web).
 	if _explosions != null:
 		# Inside the building under the player: drawn (no occlusion culling), but not seen.
-		_explosions.warm_up(Vector3(_player.position.x, GROUND_Y - 2.0, _player.position.z))
+		_explosions.warm_up(Vector3(_player.position.x, WARM_UP_Y, _player.position.z))
 	if _fire_fx != null:
-		_fire_fx.warm_up(_player.position + Vector3(0, -2.0, 0))
+		_fire_fx.warm_up(Vector3(_player.position.x, WARM_UP_Y, _player.position.z))
 	_build_ui()
 	_set_count_index(horde_config.default_count_index)
 	_player.device_changed.connect(func(_pad: bool) -> void: _update_help())

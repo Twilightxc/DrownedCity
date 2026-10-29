@@ -36,6 +36,7 @@ Notes for turning these into game assets:
 blender -b --factory-startup --python tools/blender/kit_building.py -- assets/models [name ...]
 blender -b --factory-startup --python tools/blender/kit_props.py -- assets/models [name ...]
 blender -b --factory-startup --python tools/blender/kit_zombie.py -- assets/models assets/vat
+blender -b --factory-startup --python tools/blender/kit_interior.py -- assets/models [name ...]
 ```
 
 | Script | Output |
@@ -43,6 +44,7 @@ blender -b --factory-startup --python tools/blender/kit_zombie.py -- assets/mode
 | `kit_common.py` | palette, `MeshBuilder` (boxes/cylinders with per-corner colour + material slot, nested `transform()` frames, per-quad `face_color`, `aging`), Cycles AO → vertex alpha, glTF export |
 | `kit_building.py` | `building_base_3f` (playable roof 25×21 inside the parapet), `building_brick_2f` (roof hole), `building_concrete_5f` (collapsed corner); `decay` drives weathering, broken windows, vines; origin = water surface |
 | `kit_props.py` | `prop_water_tower`, `prop_ac_unit`, `prop_sandbag_wall` (origin = roof surface); `prop_flood_debris_a/b` (origin = water surface) |
+| `kit_interior.py` | `interior_*`: wall post + arm, window cell, doorway, floor, stair flight, bed, table, shelf, sofa, crate (1 m grid, 3.2 m storey; drawn by `game/interior/interior_builder.gd`) |
 | `kit_zombie.py` | `zombie_male`, `zombie_female` (.glb, UV.x = VAT column) + `assets/vat/*_pos.exr`, `*_nrm.exr`, `*_clips.tres` (walk, attack, flinch, death, death_blown); origin = feet |
 
 Vertex RGB = palette colour (linear), vertex alpha = baked AO; material slot `surface` / `emissive` is swapped

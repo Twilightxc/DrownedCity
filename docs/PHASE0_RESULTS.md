@@ -290,3 +290,30 @@ Arc web run 2026-10-28 (J, in Chrome): **part 4 passes at 200**, with a large wi
 (4.7–5.9 ms per frame). Spot fires and embers work on the web. J: the look is good ("พอใจแล้ว"). At the default
 zoom spot fires and embers are small; zoom in to see them. The single 49–62 ms frame seen on desktop GL after the
 first incendiary was not checked on the web (two screenshots only).
+
+
+## 0.8 Spike F — Building interiors with a cutaway camera — 🟡 part 1 (enter, storeys, cutaway) built
+
+Live: default URL (`?spike=interior`); `&storey=2` starts inside on the top storey (0 = lowest). The base
+building's roof has a hatch by the hut ([F] / A); the stairs are at the corridor's west end.
+
+| Item | How | Result |
+| --- | --- | --- |
+| Kit | `tools/blender/kit_interior.py`: wall post + half-cell arm, window cell, doorway, floor tile, 4 m stair flight, bed, table, shelf, sofa, crate; 1 m grid, 3.2 m storey | 12–204 tris per piece |
+| Layout | `game/interior/interior_layout.gd` (pure data, seeded): outer ring with windows, 2-cell corridor, rooms north and south with one door each, furniture against walls; switchback stairwell at the corridor's west end (flights alternate rows and ends) | 26 × 22 cells × 3 storeys for the base building |
+| Water | storey 0 sits 1 m under the flood (kit_building waterline): drawn, not walkable; the flight down to it is closed | storeys 1–2 walkable |
+| Builder | `game/interior/interior_builder.gd`: one MultiMesh per piece type per storey; storeys above the player and the building's exterior mesh + roof props switch to shadows-only, so the inside stays in the roof's shade | 89–112 draw calls inside, 49 on the roof |
+| Cutaway | `game/shaders/interior_cutaway.gdshader`: discard above waist height (1.1 m) on the camera's side of the player (global uniforms, follow every 90° turn); cut back faces draw a dark cap | |
+| Moves | roof hatch / inner hatch with a 0.25 s fade; stairs set the player's height every frame and switch the storey's NavGrid past half way (`InteriorController`); `SpikePlayer.set_floor` / `set_height` | |
+| Tests | layout (seed, ring, reachability of every door, flooded storey, flights, stair height, furniture) + controller (storey switch both ways, cut follows player and camera turn): 11 new, 106 total | |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Desktop RTX 4080 | desktop GL Compatibility 1080p | interior spike on the roof | 144 (vsync) | 49 | 113k | |
+| Desktop RTX 4080 | same | top storey (`--storey=2`) | 144 (vsync) | 103 | 146k | |
+| Desktop RTX 4080 | same | middle storey (`--storey=1`) | 144 (vsync) | 89 | 137k | |
+| Desktop RTX 4080 | Claude pane (Chromium), local web export | `&storey=2` | 141 | 112 | 129k | no console errors |
+| Laptop Intel Arc | Chrome | `?spike=interior&storey=2` | — | — | — | **J** after part 2 (zombies inside) |
+
+Found on the way: the fx warm-up drew one blast and flame 2 m under the player "inside the building"; with the
+interior open it showed as a smoke puff in the corridor. It now runs under the flood water (`WARM_UP_Y`).

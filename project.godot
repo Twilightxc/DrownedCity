@@ -165,3 +165,19 @@ water_level={
 "type": "float",
 "value": -8.6
 }
+cut_on={
+"type": "float",
+"value": 0.0
+}
+cut_origin={
+"type": "vec3",
+"value": Vector3(0, 0, 0)
+}
+cut_toward_camera={
+"type": "vec2",
+"value": Vector2(0, 1)
+}
+cut_height={
+"type": "float",
+"value": 1.1
+}
