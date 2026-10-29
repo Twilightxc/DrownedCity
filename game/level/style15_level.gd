@@ -11,6 +11,7 @@ const SURFACE_MATERIAL: Material = preload("res://game/level/style15_surface.tre
 const EMISSIVE_MATERIAL: Material = preload("res://game/level/style15_emissive.tres")
 const FLOATING_MATERIAL: Material = preload("res://game/level/style15_surface_floating.tres")
 const MAX_FOOTPRINTS: int = 16
+const OBSTACLE_MARGIN: float = 0.2  ## m a nav obstacle's footprint grows before it blocks a cell centre
 
 @export var water_level: float = -8.6
 @export var water: MeshInstance3D
@@ -67,8 +68,23 @@ func nav_obstacle_rects(grid: NavGrid) -> Array[Rect2i]:
 		var yaw: float = wrapf(n3.global_rotation.y, 0.0, PI)
 		if absf(yaw - PI * 0.5) < 0.4:
 			fp = Vector2(fp.y, fp.x)
-		var center: Vector2 = Vector2(n3.global_position.x, n3.global_position.z)
-		var c0: Vector2i = grid.world_to_cell(center - fp * 0.5)
-		var c1: Vector2i = grid.world_to_cell(center + fp * 0.5 - Vector2(0.001, 0.001))
-		rects.append(Rect2i(c0, c1 - c0 + Vector2i.ONE))
+		rects.append(footprint_cells(grid, Vector2(n3.global_position.x, n3.global_position.z), fp))
 	return rects
+
+
+## Cells whose centre lies inside the footprint grown by OBSTACLE_MARGIN; at least the centre's cell.
+## Blocking every cell the footprint merely touches closed visible gaps (J, 2026-10-29: two 1.3 m AC units
+## 1.7 m apart became one 6-cell wall). The player's 0.3 m radius keeps its body out of the prop.
+static func footprint_cells(grid: NavGrid, center: Vector2, fp: Vector2) -> Rect2i:
+	var lo: Vector2 = (center - fp * 0.5 - Vector2.ONE * OBSTACLE_MARGIN - grid.origin) / grid.cell_size
+	var hi: Vector2 = (center + fp * 0.5 + Vector2.ONE * OBSTACLE_MARGIN - grid.origin) / grid.cell_size
+	var mid: Vector2i = grid.world_to_cell(center)
+	var c0: Vector2i = Vector2i(ceili(lo.x - 0.5), ceili(lo.y - 0.5))
+	var c1: Vector2i = Vector2i(floori(hi.x - 0.5), floori(hi.y - 0.5))
+	if c1.x < c0.x:
+		c0.x = mid.x
+		c1.x = mid.x
+	if c1.y < c0.y:
+		c0.y = mid.y
+		c1.y = mid.y
+	return Rect2i(c0, c1 - c0 + Vector2i.ONE)
