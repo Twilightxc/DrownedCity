@@ -62,18 +62,12 @@ func test_walking_back_up() -> void:
 	assert_eq(_ctl.storey, 2)
 
 
-func test_cut_follows_the_player_and_camera() -> void:
+func test_cut_follows_the_player() -> void:
 	_ctl._enter_storey(2)
 	_stand(Vector2(3.0, 4.0))
 	assert_true(_ctl.cut_active)
 	assert_almost_eq(_ctl.cut_origin.x, 3.0, 0.001)
 	assert_almost_eq(_ctl.cut_origin.y, _ctl.layout.floor_y(2), 0.001)
-	var back: Vector3 = _camera.global_basis.z
-	assert_almost_eq(_ctl.cut_toward.dot(Vector2(back.x, back.z).normalized()), 1.0, 0.001)
-	_camera.rotation_degrees.y += 90.0  # a camera turn moves the cut with it
-	_ctl._process(0.016)
-	back = _camera.global_basis.z
-	assert_almost_eq(_ctl.cut_toward.dot(Vector2(back.x, back.z).normalized()), 1.0, 0.001)
 
 
 func test_water_level_window_on_the_lowest_dry_storey() -> void:
@@ -93,3 +87,13 @@ func test_window_hatch_shows_only_on_its_storey() -> void:
 	assert_false(_ctl._rope_hatch.visible)
 	_ctl._enter_storey(2)
 	assert_false(_ctl._window_hatch.visible)
+
+
+## J, 2026-10-29: "ทางลงบันไดเดินแล้วติด". Off-centre on the 1-cell flight, the player switched to the storey below
+## (whose cell beside the flight is the closed flight down) and could no longer stand anywhere.
+func test_off_centre_on_a_flight_is_pulled_in_and_never_stuck_after_the_switch() -> void:
+	_ctl._enter_storey(2)
+	for t: float in [0.2, 0.4, 0.6, 0.8]:
+		_stand(_flight_point(2, t) + Vector2(0, 0.28))
+		assert_true(_player._can_stand(_player.ground_position()), "t %.1f storey %d" % [t, _ctl.storey])
+	assert_eq(_ctl.storey, 1)

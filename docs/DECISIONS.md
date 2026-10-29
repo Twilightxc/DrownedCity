@@ -2,6 +2,8 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | Cutaway inside: every wall of the player's storey drops to waist height (not only the camera's side); each storey's pieces get their own material with `storey_floor`, so the cut never touches the storey above | J: far walls hid the zombies behind them; dark rooms already show what the player can't see. A height band left wall tops (3.2 m = the next floor) floating |
+| 2026-10-29 | On a stair flight the player is held inside the 1-cell flight row | J: walking down got stuck; past half way the lower storey's grid has the closed flight beside it |
 | 2026-10-29 | Stairs fix: a door from the west landing into the first north room, and the first room on each side always wide enough for a corridor door | J's pick over half-flights with a mid landing (needs new stair meshes) or leaving it; every other storey's corridor was unreachable from the stairs |
 | 2026-10-29 | Zombies inside: a Horde + flow field per storey; dormant until noise / sight / a neighbour / a hit wakes them; they change storey through the flights like the player (transfer past half way). Roof zombies wait while the player is inside | Reuses the struct-of-arrays crowd per floor; no 3D pathfinding; the roof horde would otherwise crowd above the player |
 | 2026-10-29 | Dark rooms = one small light texture (a texel per cell) sampled by the interior and horde shaders, room regions split by walls and doors, lit by line of sight to doors; flashlight = one shadowless spot light | No light per room (web budget: ≤ 4 dynamic lights per object); fire still glows in the dark |
