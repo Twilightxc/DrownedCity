@@ -2,6 +2,9 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | Interiors are cell-based on the 1 m NavGrid: a wall is a blocked cell drawn as a post plus arms toward wall neighbours; one MultiMesh per piece type per storey; storeys above the player and the exterior mesh go shadows-only (the inside stays in shade) instead of being hidden | Nav, hitscan and art share one grid; ~12 draw calls a storey; dark interiors for free |
+| 2026-10-29 | Cutaway = discard above 1.1 m on the camera's side of the player, from global shader uniforms updated each frame; back faces draw a dark cap | One shader for every interior piece; follows the 90° camera turns; works in Compatibility |
+| 2026-10-29 | Spike 0.8 is split: part 1 enter + storeys + cutaway, part 2 dark rooms + flashlight, zombies inside, water-level window | Same split as 0.7 so each PR stays reviewable |
 | 2026-10-28 | Two grenade types: frag (shrapnel, floor embers that are look-only, spot fires on one body part: tick damage, no spread, no lurch, no charred corpse) and incendiary (whole-body burning + ground fire). Spot part = bits 12–15 of `INSTANCE_CUSTOM.w`; player switches with G / pad B; autoshoot alternates | J: a normal blast shouldn't set a whole body alight; whole-body fire belongs to the fire grenade |
 | 2026-10-28 | Fire quads use a soft radial-gradient texture (flame-shaped) instead of a flat colour; embers are alpha-blended, not additive | Flat additive quads read as yellow squares; additive orange vanished on the light roof |
 | 2026-10-28 | 0.7 part 3: limbs are `RigidBody3D`s capped at 16 but drawn by the corpse MultiMesh from the body transform; blast corpses slide on a scripted arc; burning = per-agent timer + shader flag + one shared flame MultiMesh; ground fire = NavGrid cell cost | Physics only where it shows (few limbs), the crowd stays struct-of-arrays; no node per zombie |
