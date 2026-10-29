@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="InteriorLightConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/interior/interior_light_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+dark = 0.06
+remembered = 0.4
+fade_per_sec = 3.0
+view_range = 18.0
+check_sec = 0.15
+flashlight_energy = 2.5
+flashlight_range = 12.0
+flashlight_angle = 32.0
+flashlight_height = 1.4
+flashlight_tilt = 0.25
+flashlight_color = Color(1, 0.93, 0.8, 1)

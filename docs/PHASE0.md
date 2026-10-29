@@ -100,13 +100,14 @@ staying in the draw-call budget with an interior loaded next to the outside bloc
       instanced per type (MultiMesh or merged per floor at load), not one node per wall.
 - [x] Cutaway: floors above the player and the roof hide; walls facing the camera cut to waist height (one plane
       uniform in the wall shader), correct after each 90° camera turn; smooth fade in/out at the entrance.
-- [ ] Entrances: roof hatch, stairs between floors, a window at water level (boat stops at the window).
-      → part 1 (2026-10-29): roof hatch + stairs done; the water-level window is part 2.
-- [ ] NavGrid + flow field per floor, linked through the stair cells; hitscan and LOS inside.
-      → part 1: a NavGrid per storey for the player (hitscan/LOS on it); flow fields per storey come with the zombies.
-- [ ] Unseen rooms stay dark until the player has line of sight; interior dark by default + flashlight
-      (one shadowless spot light).
-- [ ] ~30 dormant zombies inside that wake by noise and follow across floors.
+- [x] Entrances: roof hatch, stairs between floors, a window at water level (boat stops at the window).
+      → part 1 (2026-10-29): roof hatch + stairs done; part 2: the window, reached by a rope from the roof (the
+      boat comes later). Part 2 also fixed the stairs: storey 1's corridor wasn't reachable (see PHASE0_RESULTS).
+- [x] NavGrid + flow field per floor, linked through the stair cells; hitscan and LOS inside.
+      → part 1: a NavGrid per storey for the player; part 2: a horde + flow field per storey, linked by the flights.
+- [x] Unseen rooms stay dark until the player has line of sight; interior dark by default + flashlight
+      (one shadowless spot light). → part 2: a light texture per building, no node per room.
+- [x] ~30 dormant zombies inside that wake by noise and follow across floors. → part 2: 15 per dry storey.
 - **Pass (J on Arc, Chrome):** inside the building with 30 zombies awake and the outside block still drawn
   ≥ 50 FPS, draw calls < 250; J says the cutaway reads clearly at every camera angle and moving between floors
   feels right. **Fallback:** hide the outside block while inside; simpler cutaway (hide whole near walls).

@@ -93,3 +93,36 @@ func test_furniture_stays_inside_rooms_on_floor_cells() -> void:
 			for c: Vector2i in item.cells:
 				assert_eq(_layout.cell(s, c), InteriorLayout.Cell.FLOOR)
 				assert_true(c.y < _layout.corridor_row - 1 or c.y > _layout.corridor_row + 2, "not in the corridor")
+
+
+## Walking on a flight changes height, so a floor walk must reach the stairs without crossing one: from
+## the corridor, every walkable storey reaches the landing beside each open flight end at its own height.
+func test_corridor_reaches_the_flight_ends_at_its_own_height_without_crossing_a_flight() -> void:
+	for s: int in [1, 2]:
+		var grid: NavGrid = _layout.nav_grid(s)
+		for y: int in D:
+			for x: int in W:
+				if _layout.cell(s, Vector2i(x, y)) == InteriorLayout.Cell.STAIR:
+					grid.blocked[_layout.index(Vector2i(x, y))] = 1
+		var corridor: Vector2i = Vector2i(InteriorLayout.STAIR_X0 + InteriorLayout.FLIGHT_LEN + 2, _layout.corridor_row)
+		var seen: Dictionary[Vector2i, bool] = _reachable(grid, corridor)
+		var west: Vector2i = Vector2i(InteriorLayout.STAIR_X0 - 1, 0)
+		var east: Vector2i = Vector2i(InteriorLayout.STAIR_X0 + InteriorLayout.FLIGHT_LEN, 0)
+		for top: int in [s, s + 1]:
+			if not _layout.flight_open(top):
+				continue
+			# This storey's end of the flight: its top for the flight down, its foot for the flight up.
+			var at_east: bool = _layout.flight_top_east(top) == (top == s)
+			var landing: Vector2i = (east if at_east else west) + Vector2i(0, _layout.flight_row(top))
+			assert_true(seen.has(landing), "storey %d reaches flight %d at %s" % [s, top, landing])
+
+
+func test_no_sealed_rooms_every_floor_cell_is_reachable() -> void:
+	for s: int in [1, 2]:
+		var grid: NavGrid = _layout.nav_grid(s)
+		var seen: Dictionary[Vector2i, bool] = _reachable(grid, Vector2i(InteriorLayout.STAIR_X0 - 1, _layout.corridor_row))
+		for y: int in D:
+			for x: int in W:
+				var c: Vector2i = Vector2i(x, y)
+				if grid.is_walkable(c):
+					assert_true(seen.has(c), "storey %d cell %s is sealed off" % [s, c])

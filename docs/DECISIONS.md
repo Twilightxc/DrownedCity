@@ -2,6 +2,10 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | Stairs fix: a door from the west landing into the first north room, and the first room on each side always wide enough for a corridor door | J's pick over half-flights with a mid landing (needs new stair meshes) or leaving it; every other storey's corridor was unreachable from the stairs |
+| 2026-10-29 | Zombies inside: a Horde + flow field per storey; dormant until noise / sight / a neighbour / a hit wakes them; they change storey through the flights like the player (transfer past half way). Roof zombies wait while the player is inside | Reuses the struct-of-arrays crowd per floor; no 3D pathfinding; the roof horde would otherwise crowd above the player |
+| 2026-10-29 | Dark rooms = one small light texture (a texel per cell) sampled by the interior and horde shaders, room regions split by walls and doors, lit by line of sight to doors; flashlight = one shadowless spot light | No light per room (web budget: ≤ 4 dynamic lights per object); fire still glows in the dark |
+| 2026-10-29 | Water-level window reached by a rope from the roof edge for now; the boat that stops at the window comes with boats | Tests the third entrance without a boat system |
 | 2026-10-29 | Interiors are cell-based on the 1 m NavGrid: a wall is a blocked cell drawn as a post plus arms toward wall neighbours; one MultiMesh per piece type per storey; storeys above the player and the exterior mesh go shadows-only (the inside stays in shade) instead of being hidden | Nav, hitscan and art share one grid; ~12 draw calls a storey; dark interiors for free |
 | 2026-10-29 | Cutaway = discard above 1.1 m on the camera's side of the player, from global shader uniforms updated each frame; back faces draw a dark cap | One shader for every interior piece; follows the 90° camera turns; works in Compatibility |
 | 2026-10-29 | Spike 0.8 is split: part 1 enter + storeys + cutaway, part 2 dark rooms + flashlight, zombies inside, water-level window | Same split as 0.7 so each PR stays reviewable |

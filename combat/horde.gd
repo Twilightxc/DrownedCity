@@ -43,6 +43,8 @@ var anim_time: PackedFloat32Array  ## walk: cycles (by distance walked); others:
 var slow_left: PackedFloat32Array  ## s of hit slow remaining (GDD §6)
 var burn_left: PackedFloat32Array  ## s of burning remaining, 0 = not burning
 var burn_spot: PackedByteArray  ## 0 = the whole body burns; else part index + 1 of a small spot fire
+var dormant: PackedByteArray  ## 1 = asleep: stands still, no flow, no attack (zombies inside buildings)
+var lift: PackedFloat32Array  ## m above the horde's floor (stair flights inside buildings); drawn, not simulated
 
 ## Event queues (drained by game/fx): hit point + direction per bullet/blast hit, deaths.
 var hit_points: PackedVector2Array = PackedVector2Array()
@@ -76,6 +78,8 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	slow_left.resize(max_agents)
 	burn_left.resize(max_agents)
 	burn_spot.resize(max_agents)
+	dormant.resize(max_agents)
+	lift.resize(max_agents)
 	_burn_tick.resize(max_agents)
 	_attack_cooldown.resize(max_agents)
 	_rng.seed = rng_seed
@@ -98,6 +102,8 @@ func spawn(p: Vector2) -> bool:
 	slow_left[a] = 0.0
 	burn_left[a] = 0.0
 	burn_spot[a] = 0
+	dormant[a] = 0
+	lift[a] = 0.0
 	_burn_tick[a] = 0.0
 	_attack_cooldown[a] = _rng.randf() * config.attack_interval
 	count += 1
@@ -120,9 +126,41 @@ func kill(a: int) -> void:
 		slow_left[a] = slow_left[last]
 		burn_left[a] = burn_left[last]
 		burn_spot[a] = burn_spot[last]
+		dormant[a] = dormant[last]
+		lift[a] = lift[last]
 		_burn_tick[a] = _burn_tick[last]
 		_attack_cooldown[a] = _attack_cooldown[last]
 	count = last
+
+
+## Moves live agent `a` into `other` (same position, look, hp and fire), e.g. up a stair flight into the
+## next storey's horde. Silent: no death event. Returns false if `other` is full or `a`'s spot is blocked there.
+func transfer(a: int, other: Horde) -> bool:
+	if not other.spawn(positions[a]):
+		return false
+	var b: int = other.count - 1
+	other.velocities[b] = velocities[a]
+	other.hp[b] = hp[a]
+	other.speed_scale[b] = speed_scale[a]
+	other.tint[b] = tint[a]
+	other.heading[b] = heading[a]
+	other.variant[b] = variant[a]
+	other.anim[b] = anim[a]
+	other.anim_time[b] = anim_time[a]
+	other.slow_left[b] = slow_left[a]
+	other.burn_left[b] = burn_left[a]
+	other.burn_spot[b] = burn_spot[a]
+	other._burn_tick[b] = _burn_tick[a]
+	kill(a)
+	return true
+
+
+func awake_count() -> int:
+	var n: int = 0
+	for a: int in count:
+		if dormant[a] == 0:
+			n += 1
+	return n
 
 
 ## Applies damage to the given agents (each listed once). Returns how many died.
@@ -138,6 +176,7 @@ func apply_damage(agents: PackedInt32Array, damage: int, source: Vector2 = Vecto
 			dead.append(a)
 			continue
 		slow_left[a] = minf(slow_left[a] + config.hit_slow_sec, config.hit_slow_cap_sec)
+		dormant[a] = 0  # a hit wakes it
 		if anim[a] != Anim.ATTACK:
 			anim[a] = Anim.FLINCH
 			anim_time[a] = 0.0
@@ -288,7 +327,8 @@ func update_fire(delta: float) -> void:
 
 
 ## One crowd step toward `target` (world XZ). The flow field must be computed beforehand.
-func update(delta: float, target: Vector2) -> void:
+## `attack` = false: the target is only a waypoint (a stair flight toward the player on another storey).
+func update(delta: float, target: Vector2, attack: bool = true) -> void:
 	spatial.rebuild(positions, count)
 
 	var heads: PackedInt32Array = spatial.heads()
@@ -325,7 +365,10 @@ func update(delta: float, target: Vector2) -> void:
 	var max_step2: float = max_step * max_step
 	var target_cell: Vector2i = Vector2i(floori((target.x - ox) * inv), floori((target.y - oy) * inv))
 
+	var sleep: PackedByteArray = dormant
 	for a: int in count:
+		if sleep[a] != 0:
+			continue  # asleep: stands where it is (still in the spatial hash, so others walk around it)
 		var p: Vector2 = pos[a]
 		var cx: int = floori((p.x - ox) * inv)
 		var cy: int = floori((p.y - oy) * inv)
@@ -387,7 +430,7 @@ func update(delta: float, target: Vector2) -> void:
 			head[a] = head[a].lerp(to_target / sqrt(dist2), turn).normalized()
 
 		cooldown[a] -= delta
-		var attacking: bool = dist2 <= attack_r2 and cooldown[a] <= 0.0
+		var attacking: bool = attack and dist2 <= attack_r2 and cooldown[a] <= 0.0
 		if attacking:
 			cooldown[a] = config.attack_interval
 			hits_on_target += 1

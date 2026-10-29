@@ -1,42 +1,39 @@
 # phase0/spike-f-part2
 
-- **PR:** not opened (pushed: yes; only this note so far)
-- **Machine:** written on the desktop (RTX 4080) for whichever machine picks it up; the laptop can do it
+- **PR:** opened with this commit (pushed: yes); J merges
+- **Machine:** plan written on the desktop (RTX 4080); built on the laptop (ASUS, Intel Arc 140V)
 - **Base:** main @ `b82c81a` (0.8 part 1 merged as PR #23, live build `b82c81a · #65`)
 - **Updated:** 2026-10-29
 
 ## J asked
-"เริ่ม 0.8" (2026-10-29), then "merge แล้วเดียวจะสลับเครื่องไปทำงานข้างนอก". Part 1 (enter, storeys,
-cutaway) is merged; this branch is for part 2 of PHASE0 0.8.
+"เริ่ม 0.8" (2026-10-29), then "merge แล้วเดียวจะสลับเครื่องไปทำงานข้างนอก". On the laptop: "สลับเครื่องแล้วมาเริ่มงาน
+กันต่อ". Stair fix: J picked "ประตูจากชานบันได".
 
-## Done
-- Nothing yet on this branch.
+## Done (laptop, 2026-10-29; details in PHASE0_RESULTS 0.8 part 2)
+- **Stair bug from part 1 fixed:** storey 1's corridor couldn't be reached from the stairs (full-storey flights
+  leave every other storey at the cut-off west landing). Door from that landing into the first north room;
+  first rooms always get a corridor door. Height-aware tests added.
+- **Zombies inside:** `InteriorHordes`, 15 dormant per dry storey; wake by shot / blast noise, sight, a
+  neighbour or a hit; follow across storeys via the flights. Roof zombies wait while the player is inside.
+- **Dark rooms + flashlight:** `InteriorLighting`, one light texture read by the interior and horde shaders.
+- **Water-level window:** rope from the roof's south edge to a storey-1 window, and back.
+- 122 GUT tests pass (16 new). Desktop GL on the Arc: 30 awake inside = 60 FPS, ~125 draws, 160k.
 
-## Not done / next (0.8 part 2, PHASE0.md 0.8 unchecked items)
-1. **Zombies inside:** ~30 dormant zombies per walkable storey that wake by noise (shots) and follow across
-   storeys. Plan: one `Horde` + flow field per storey on `InteriorController.grids[s]`, stair cells as the link
-   (an agent on a flight cell past half way moves to the other storey's horde); the player's hitscan uses the
-   current storey's horde (today `SpikePlayer` keeps the roof horde, so shots inside can hit roof zombies
-   through the floor). Roof zombies should go down the hatch or stay out; decide in the PR.
-   Corpses, blood and fire layers take the storey's floor height (`ground_y` per storey).
-2. **Dark rooms:** rooms the player has no line of sight into stay dark (per-room dim via a global or per-room
-   uniform; `NavGrid.line_of_sight` from the player to room cells); a flashlight = one shadowless SpotLight3D on
-   the player, on while inside.
-3. **Water-level window:** an entrance on storey 1's outer wall above the flood line (storey 0 is 1 m under
-   water and not walkable); a boat is out of scope, a ledge/plank from the water side is enough for the spike.
-4. Then J's Arc run in Chrome: `?spike=interior&storey=2` with zombies awake (pass: ≥ 50 FPS, < 250 draws).
+## Not done / next
+1. J's Arc run in Chrome after merge (below), then the 0.8 verdict and the Phase 0 exit review.
+2. Later, not this spike: a boat that stops at the window; half-flight stairs if the lobby door feels wrong.
 
-Code only, no Blender (unless the window needs a new kit piece, which can wait for the desktop). On the laptop:
-download Godot 4.7.2 into the session scratchpad first (ask J, per CLAUDE.md).
-
-## J must test
-Part 1 on the live URL (default page): ring by the roof hut → F → inside; Q/E camera turns; stairs at the
-corridor's west end; ring on the top landing → roof. Is the cutaway readable at every angle?
+## J must test (after merge, Chrome on the Arc, Ctrl+Shift+R, F3)
+1. `https://twilightxc.github.io/DrownedCity/?spike=interior&storey=2&wake=1`: all 30 awake come up the stairs
+   (storey 1 ones through the lobby room). Write down FPS, Draw calls, Primitives (pass ≥ 50 FPS, < 250 draws).
+2. Default page: roof hatch → walk the storeys. Rooms dark until you see in? Flashlight follows the aim?
+   Shoot: sleepers nearby wake. Storey 1 is reached from the west landing through the lobby room door.
+3. Rope at the roof's south edge (ring near the middle of the south parapet) → storey 1 window, and back up.
+4. Is the cutaway readable at every angle (part 1 question, still open)?
 
 ## Next session must know
-- Interior code: `game/interior/` (`InteriorLayout` pure data + 7 tests, `InteriorBuilder`, `InteriorController`,
-  `Hatch`), shader `game/shaders/interior_cutaway.gdshader`, `cut_*` shader globals in `project.godot`.
-- `RenderingServer.global_shader_parameter_get` returns null under the headless dummy renderer (tests read
-  `InteriorController.cut_*`).
 - `docs/arc-handoff` is obsolete; delete it.
-- Desktop: the zombie kit and the interior kit need Blender; the laptop has none.
+- Corpses and blood are cleared on every storey change (one shared layer); roof corpses don't survive a visit inside.
+- `Horde.update(delta, target, attack)`: `attack = false` for waypoints (stair flights); `Horde.dormant`, `lift`,
+  `transfer` are new.
+- Shader globals added: `interior_light` (sampler2D), `interior_light_rect`, `interior_light_on`.

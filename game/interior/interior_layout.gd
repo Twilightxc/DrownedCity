@@ -7,6 +7,9 @@ extends RefCounted
 ## Plan per storey: outer wall ring with windows, a 2-cell corridor along X through the middle, rooms north
 ## and south of it split by partition walls, one door from each room into the corridor. The corridor's west
 ## end is the stairwell: two 1-cell flights side by side (a switchback), landings at x = 1 and x = 6.
+## Each flight spans a whole storey, so every other storey meets the stairs at the west landing, which
+## the flights cut off from the corridor: a door from that landing into the first north room (always wide
+## enough to have its own corridor door) is the way out.
 ## Storey 0 is the lowest; storeys at or below `flooded` are under water (drawn, not walkable).
 
 enum Cell { OUTSIDE, FLOOR, WALL, WINDOW, DOOR, STAIR }
@@ -126,6 +129,48 @@ func nav_grid(storey: int) -> NavGrid:
 	return grid
 
 
+## Walls and windows block sight; furniture and closed flights don't (dark rooms, PHASE0 0.8).
+func sight_grid(storey: int) -> NavGrid:
+	var grid: NavGrid = NavGrid.new(width, depth, 1.0, origin)
+	for i: int in width * depth:
+		var t: int = cells[storey][i]
+		grid.blocked[i] = 0 if t == Cell.FLOOR or t == Cell.DOOR or t == Cell.STAIR else 1
+	return grid
+
+
+## Rooms of a storey: a region id per cell for floor and stair cells joined without crossing a wall, window
+## or door (the corridor, its stairwell and the west landing are one region); -1 for every other cell.
+func regions(storey: int) -> PackedInt32Array:
+	var ids: PackedInt32Array = PackedInt32Array()
+	ids.resize(width * depth)
+	ids.fill(-1)
+	var next: int = 0
+	for start: int in width * depth:
+		if ids[start] != -1 or not _room_cell(storey, start):
+			continue
+		ids[start] = next
+		var stack: PackedInt32Array = PackedInt32Array([start])
+		while not stack.is_empty():
+			var i: int = stack[stack.size() - 1]
+			stack.resize(stack.size() - 1)
+			var c: Vector2i = Vector2i(i % width, i / width)
+			for n: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var m: Vector2i = c + n
+				if m.x < 0 or m.y < 0 or m.x >= width or m.y >= depth:
+					continue
+				var j: int = index(m)
+				if ids[j] == -1 and _room_cell(storey, j):
+					ids[j] = next
+					stack.append(j)
+		next += 1
+	return ids
+
+
+func _room_cell(storey: int, i: int) -> bool:
+	var t: int = cells[storey][i]
+	return t == Cell.FLOOR or t == Cell.STAIR
+
+
 func _plan_storey() -> void:
 	var g: PackedByteArray = PackedByteArray()
 	g.resize(width * depth)
@@ -153,6 +198,9 @@ func _plan_storey() -> void:
 		var x: int = 1
 		while x < width - 1:
 			var room_w: int = _rng.randi_range(ROOM_MIN, ROOM_MAX)
+			var lobby: bool = side < 0 and x == 1
+			if x == 1:  # first rooms reach past the stairwell, so they get a corridor door (else sealed)
+				room_w = maxi(room_w, STAIR_X0 + FLIGHT_LEN + 2 - x)
 			var x_end: int = mini(x + room_w, width - 1)  # partition column (or the outer wall)
 			if width - 1 - x_end < ROOM_MIN:
 				x_end = width - 1  # don't leave a sliver room at the east end
@@ -165,7 +213,11 @@ func _plan_storey() -> void:
 			if dx_lo <= dx_hi:
 				var dx: int = _rng.randi_range(dx_lo, dx_hi)
 				_put(s, Vector2i(dx, door_row), Cell.DOOR)
-				_furnish(s, Rect2i(x, y0, x_end - x, y1 - y0 + 1), Vector2i(dx, y0 if side > 0 else y1), items)
+				var clear: Array[Vector2i] = []
+				if lobby:
+					_put(s, Vector2i(STAIR_X0 - 1, door_row), Cell.DOOR)
+					clear.append(Vector2i(STAIR_X0 - 1, y1))
+				_furnish(s, Rect2i(x, y0, x_end - x, y1 - y0 + 1), Vector2i(dx, y0 if side > 0 else y1), items, clear)
 			x = x_end + 1
 	# Stairwell at the corridor's west end: both rows, between the landings.
 	for top: int in [s, s + 1]:
@@ -184,10 +236,11 @@ func _put(s: int, c: Vector2i, t: int) -> void:
 
 
 ## 1-3 pieces along the room's walls, never on the cell inside the door or on a corner run.
-func _furnish(s: int, room: Rect2i, door_inside: Vector2i, items: Array) -> void:
-	var taken: Dictionary[Vector2i, bool] = {door_inside: true}
-	for dx: int in [-1, 0, 1]:
-		taken[door_inside + Vector2i(dx, 0)] = true
+func _furnish(s: int, room: Rect2i, door_inside: Vector2i, items: Array, more_doors: Array[Vector2i] = []) -> void:
+	var taken: Dictionary[Vector2i, bool] = {}
+	for d: Vector2i in [door_inside] + more_doors:
+		for dx: int in [-1, 0, 1]:
+			taken[d + Vector2i(dx, 0)] = true
 	var count: int = _rng.randi_range(1, 3)
 	for attempt: int in 12:
 		if count <= 0:

@@ -10,6 +10,10 @@ global uniform float cut_on;
 global uniform vec3 cut_origin;  // player position: xz + floor y
 global uniform vec2 cut_toward_camera;  // unit, world XZ
 global uniform float cut_height;
+// Dark rooms (0.8 part 2): one texel per cell of the player's storey, 0 = black .. 1 = lit (InteriorLighting).
+global uniform sampler2D interior_light;
+global uniform vec4 interior_light_rect;  // origin x, z; size x, z (m)
+global uniform float interior_light_on;
 
 uniform vec3 cap_color : source_color = vec3(0.16, 0.14, 0.13);
 uniform float margin = 0.6;  // m behind the player that is still cut (walls the player stands against)
@@ -32,6 +36,10 @@ void fragment() {
 	}
 	// Same re-encode as horde_vat: the glTF vertex colour reaches COLOR one sRGB decode too dark.
 	ALBEDO = FRONT_FACING ? pow(COLOR.rgb, vec3(1.0 / 2.2)) : cap_color;
+	// Only the player's storey: the outside faces of the storeys below must not turn black.
+	if (interior_light_on > 0.5 && world_pos.y > cut_origin.y - 0.3) {
+		ALBEDO *= texture(interior_light, (world_pos.xz - interior_light_rect.xy) / interior_light_rect.zw).r;
+	}
 	AO = FRONT_FACING ? COLOR.a : 1.0;
 	AO_LIGHT_AFFECT = ao_light_affect;
 	ROUGHNESS = roughness;

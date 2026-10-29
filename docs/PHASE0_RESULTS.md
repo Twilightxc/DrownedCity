@@ -292,7 +292,7 @@ zoom spot fires and embers are small; zoom in to see them. The single 49–62 ms
 first incendiary was not checked on the web (two screenshots only).
 
 
-## 0.8 Spike F — Building interiors with a cutaway camera — 🟡 part 1 (enter, storeys, cutaway) built
+## 0.8 Spike F — Building interiors with a cutaway camera — 🟡 parts 1–2 built; waiting for J's Arc run
 
 Live: default URL (`?spike=interior`); `&storey=2` starts inside on the top storey (0 = lowest). The base
 building's roof has a hatch by the hut ([F] / A); the stairs are at the corridor's west end.
@@ -313,7 +313,28 @@ building's roof has a hatch by the hut ([F] / A); the stairs are at the corridor
 | Desktop RTX 4080 | same | top storey (`--storey=2`) | 144 (vsync) | 103 | 146k | |
 | Desktop RTX 4080 | same | middle storey (`--storey=1`) | 144 (vsync) | 89 | 137k | |
 | Desktop RTX 4080 | Claude pane (Chromium), local web export | `&storey=2` | 141 | 112 | 129k | no console errors |
-| Laptop Intel Arc | Chrome | `?spike=interior&storey=2` | — | — | — | **J** after part 2 (zombies inside) |
+| Laptop Intel Arc | Chrome | `?spike=interior&storey=2&wake=1` | — | — | — | **J** after part 2 (zombies inside) |
 
 Found on the way: the fx warm-up drew one blast and flame 2 m under the player "inside the building"; with the
 interior open it showed as a smoke puff in the corridor. It now runs under the flood water (`WARM_UP_Y`).
+
+### 0.8 part 2 — zombies inside, dark rooms + flashlight, water-level window (laptop, 2026-10-29)
+
+| Item | How |
+| --- | --- |
+| Stair fix (part 1 bug) | Each flight spans a whole storey, so every other storey (storey 1 here) meets the stairs at the west landing, which the two flights cut off from the corridor: that storey's corridor could only be reached by walking across a flight (the height jumps a storey half way). The part 1 reachability test walked the flight cells as flat floor, so it passed. Fix (J's pick): a door from the west landing into the first north room ("lobby"); the first room on each side is now always wide enough for its own corridor door (one south room was sealed). New tests walk floors without crossing a flight |
+| Zombies inside | `game/interior/interior_hordes.gd`: a `Horde` + flow field + `HordeRenderer` per walkable storey (15 each, `data/combat/interior_horde.tres`). Dormant (`Horde.dormant`: no flow, no attack, still in the spatial hash) until woken: a shot within 12 m or a blast within 20 m (half through one floor), line of sight within 6 m, an awake zombie within 2.5 m, or a hit. Awake ones on another storey walk to the flight toward the player; past half way they move into that storey's horde (`Horde.transfer`). Each flight's wrong end is blocked in the zombie grids, so they climb from its foot. `Horde.lift` draws them on the slope |
+| Roof zombies | Wait while the player is inside (not simulated, not drawn). Shots, grenades, blood, corpses and flames follow the player's storey (`horde_spike` `_fx_horde`); corpses and blood are cleared on a storey change (`CorpseLayer.clear`) |
+| Dark rooms | `game/interior/interior_lighting.gd`: rooms = regions of floor/stair cells split by walls and doors (`InteriorLayout.regions`). Lit: the player's room and both rooms beside every door in line of sight (walls and windows block, furniture doesn't). Seen before: 0.4; never seen: 0.06; fades at 3/s. One 26 × 22 L8 texture (a texel per cell) read by the interior and horde shaders through global uniforms, only on the player's storey (the facade of the storeys below stays normal). No light node per room |
+| Flashlight | One shadowless `SpotLight3D` (32°, 12 m) at 1.4 m, along the aim, tilted down; on while inside (`data/fx/interior_light.tres`) |
+| Window | South-wall window of the lowest dry storey (1, 2.2 m above the water) nearest the middle: a rope hatch on the roof edge above it and a "Climb up to the roof" hatch inside. A boat stopping at the window comes later |
+| Debug | `&wake=1` (`-- --wake=1`) wakes every zombie inside at load; overlay: Zombies Inside (awake), Inside Update, Rooms Seen |
+| Tests | stairs reached without crossing a flight, no sealed rooms; interior hordes (asleep, still, noise + floor damping, hit wakes, climb up with stair lift, come down, sight needs LOS); lighting (regions, dark/lit, door reveals + remembered, walls lit, flashlight); window: 16 new, 122 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 (Godot 4.7.2) | `--storey=2 --wake=1`: all 30 awake, climbing from storey 1 and swarming the player | 60 | 119–126 | 160k | inside update 0.3–1.3 ms; storey 1 → 2 took ~30 s through the lobby door |
+| Laptop Intel Arc 140V | same | `--storey=2`, asleep, dark rooms | 60 | 116–125 | 129–160k | |
+| Laptop Intel Arc 140V | same | rope to the window (storey 1) | 50–60 | 109 | 142k | 6 woke on arrival (sight) |
+
+Not measured on the web yet.
