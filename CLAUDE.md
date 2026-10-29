@@ -3,7 +3,7 @@
 Isometric survival-management + top-down action game. A post-outbreak city is flooded; the player runs a
 rooftop community (State of Decay–style management) by day and defends it from hordes by night
 (Boxhead-style action). Full design: `docs/GDD.md` (Thai). Decisions log: `docs/DECISIONS.md`.
-Current phase and tasks: `docs/PHASE0.md`.
+Current phase and tasks: `docs/PHASE1.md` (Phase 0 passed 2026-10-29: `docs/PHASE0_RESULTS.md`).
 
 ## Working with J (the developer)
 
@@ -121,5 +121,5 @@ the other machine.
   - The stash is shared by all worktrees: never a bare `git stash pop`.
 - GitHub Desktop may still switch the main checkout's branch and stash its changes. If files change on disk
   unexpectedly, check `git status -sb` and `git stash list` before editing.
-- Parallel branches collide in `docs/DECISIONS.md` / `docs/PHASE0_RESULTS.md` (rows added at the top).
+- Parallel branches collide in `docs/DECISIONS.md` / `docs/PHASE1_RESULTS.md` (rows added at the top).
   Resolve by keeping both sides, newest first.
