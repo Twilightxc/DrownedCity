@@ -118,3 +118,5 @@ staying in the draw-call budget with an interior loaded next to the outside bloc
 ## Exit criteria
 All spikes pass (or have an accepted fallback) and results are logged in `docs/PHASE0_RESULTS.md`
 with device, browser, FPS, draw calls. Then plan Phase 1 (web demo vertical slice, see GDD §15, §17).
+→ **✅ Met 2026-10-29**: every spike passed on the Arc (0.5 gamepad feel deferred by J). Exit review, budget
+table and the decisions J needs before Phase 1: top of `docs/PHASE0_RESULTS.md`.

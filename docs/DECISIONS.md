@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | Phase 0 passes: all spikes 0.1–0.8 pass on the Arc web build; 0.5 gamepad feel stays deferred; 200 zombies is the target (300 at the primitive edge) | Exit criteria in PHASE0.md met; review at the top of PHASE0_RESULTS |
 | 2026-10-29 | Cutaway inside: every wall of the player's storey drops to waist height (not only the camera's side); each storey's pieces get their own material with `storey_floor`, so the cut never touches the storey above | J: far walls hid the zombies behind them; dark rooms already show what the player can't see. A height band left wall tops (3.2 m = the next floor) floating |
 | 2026-10-29 | On a stair flight the player is held inside the 1-cell flight row | J: walking down got stuck; past half way the lower storey's grid has the closed flight beside it |
 | 2026-10-29 | Stairs fix: a door from the west landing into the first north room, and the first room on each side always wide enough for a corridor door | J's pick over half-flights with a mid landing (needs new stair meshes) or leaving it; every other storey's corridor was unreachable from the stairs |
