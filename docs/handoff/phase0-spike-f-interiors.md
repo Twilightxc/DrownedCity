@@ -1,6 +1,6 @@
 # phase0/spike-f-interiors
 
-- **PR:** not opened (pushed: yes)
+- **PR:** #23 (part 1), CI green (run #63), ready to merge
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ `dd57dd5`
 - **Updated:** 2026-10-29
