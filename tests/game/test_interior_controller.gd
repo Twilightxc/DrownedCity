@@ -97,3 +97,19 @@ func test_off_centre_on_a_flight_is_pulled_in_and_never_stuck_after_the_switch()
 		_stand(_flight_point(2, t) + Vector2(0, 0.28))
 		assert_true(_player._can_stand(_player.ground_position()), "t %.1f storey %d" % [t, _ctl.storey])
 	assert_eq(_ctl.storey, 1)
+
+
+## J, 2026-10-29: the closed flight to the flooded storey looked walkable; the stop read as a bug.
+func test_flooded_sign_over_the_closed_flight_shows_only_up_close() -> void:
+	assert_eq(_ctl.flood_signs.size(), 1, "only storey 1's flight down to storey 0 is closed")
+	var entry: Array = _ctl.flood_signs[0]
+	assert_eq(entry[0], 1)
+	var label: Label3D = entry[1]
+	_ctl._enter_storey(1)
+	_stand(Vector2(label.position.x + 1.0, label.position.z))
+	assert_true(label.visible, "1 m away")
+	_stand(Vector2(label.position.x + 8.0, label.position.z))
+	assert_false(label.visible, "8 m away")
+	_ctl._enter_storey(2)
+	_stand(Vector2(label.position.x, label.position.z))
+	assert_false(label.visible, "another storey")
