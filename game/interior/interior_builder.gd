@@ -17,6 +17,7 @@ var layout: InteriorLayout
 var _meshes: Dictionary[String, Mesh] = {}
 var _storey_nodes: Array[Node3D] = []
 var _material: ShaderMaterial
+var _storey_materials: Array[ShaderMaterial] = []  ## one per storey: the cutaway only cuts the player's own
 
 
 func build(p_layout: InteriorLayout) -> void:
@@ -34,6 +35,14 @@ func build(p_layout: InteriorLayout) -> void:
 
 
 ## Inside the building on `storey`: below and at it drawn, above shadow-only. -1 = player outside: hidden.
+func _storey_material(s: int) -> ShaderMaterial:
+	while _storey_materials.size() <= s:
+		var m: ShaderMaterial = _material.duplicate()
+		m.set_shader_parameter("storey_floor", layout.floor_y(_storey_materials.size()))
+		_storey_materials.append(m)
+	return _storey_materials[s]
+
+
 func show_storey(storey: int) -> void:
 	visible = storey >= 0
 	for s: int in _storey_nodes.size():
@@ -97,7 +106,7 @@ func _build_storey(s: int, node: Node3D) -> void:
 		var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		mmi.name = piece
 		mmi.multimesh = mm
-		mmi.material_override = _material
+		mmi.material_override = _storey_material(s)
 		node.add_child(mmi)
 
 

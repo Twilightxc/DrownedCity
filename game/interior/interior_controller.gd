@@ -3,7 +3,7 @@ extends Node3D
 ## One enterable building for spike 0.8: builds the seeded interior, moves the player between the roof
 ## and the storeys (roof hatch, stairs, a rope to the window at water level), and drives the cutaway.
 ## While the player is inside, the building's own exterior mesh and the roof props only cast shadows,
-## storeys above the player do the same, and the walls on the camera side drop to waist height.
+## storeys above the player do the same, and every wall of the player's storey drops to waist height.
 
 signal storey_changed(storey: int)  ## -1 = back on the roof
 
@@ -24,7 +24,6 @@ var grids: Array[NavGrid] = []
 ## Last values sent to the cutaway shader globals (also read by tests: the dummy renderer can't return them).
 var cut_active: bool = false
 var cut_origin: Vector3 = Vector3.ZERO
-var cut_toward: Vector2 = Vector2(0, 1)
 
 var _builder: InteriorBuilder
 var _player: SpikePlayer
@@ -104,6 +103,12 @@ func _process(_delta: float) -> void:
 	var p: Vector2 = _player.ground_position()
 	var on_stairs: Array = layout.stair_at(storey, p)
 	if not on_stairs.is_empty():
+		# Keep the player inside the 1-cell flight: past half way the other storey's grid takes over, and its
+		# cell beside the flight may be blocked (the closed flight down to a flooded storey) where this storey
+		# had floor; a player standing off-centre would then be stuck on the stairs.
+		var row: float = layout.origin.y + layout.world_to_cell(p).y
+		var r: float = _player.radius + 0.01
+		_player.position.z = clampf(_player.position.z, row + r, row + 1.0 - r)
 		_player.set_height(on_stairs[0])
 		var s: int = on_stairs[1]
 		if s != storey:
@@ -210,10 +215,5 @@ func _set_cut(on: bool) -> void:
 
 func _update_cut() -> void:
 	_set_cut(true)
-	var back: Vector3 = _camera.global_basis.z  # points from the scene toward the camera
-	var toward: Vector2 = Vector2(back.x, back.z)
-	if toward.length_squared() > 0.0001:
-		cut_toward = toward.normalized()
 	cut_origin = Vector3(_player.position.x, layout.floor_y(storey), _player.position.z)
-	RenderingServer.global_shader_parameter_set("cut_toward_camera", cut_toward)
 	RenderingServer.global_shader_parameter_set("cut_origin", cut_origin)
