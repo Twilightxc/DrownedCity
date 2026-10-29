@@ -344,3 +344,22 @@ mouse well; going down to storey 1 through the lobby room door feels natural; th
 down to the window and back up; the cutaway reads clearly at every camera angle.
 
 Found on the way: the overlay's Kills and Hits Taken counted the roof horde only; they now add the zombies inside.
+
+### 0.8 fixes after J's play (PR #26, merged 2026-10-29)
+
+J: "กำแพงบังศัตรูจนมองเห็นได้แค่ระยะสั้นๆ ทางลงบันไดเดินแล้วติด".
+
+| Problem | Cause | Fix |
+| --- | --- | --- |
+| Stuck walking down the stairs | The flight is 1 cell wide. On the top storey the row beside it is floor, so the player walks off-centre; past half way the lower storey's grid takes over, where that row is the closed flight to the flooded storey, and the 0.3 m player radius overlapped it, so no move was allowed | While on a flight the player is held inside its row (`InteriorController`); regression test |
+| Walls hide enemies, short sight range | The cutaway cut only the camera's side, so far walls hid the zombies behind them | J's pick: every wall of the player's storey drops to waist height; one cutaway material per storey (`storey_floor`) so the storey above still shades the interior. Rooms out of sight stay dark |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 (Godot 4.7.2) | `--storey=2 --wake=1`, 30 awake | 60 | 120–123 | 157–159k | no extra draw calls; correct after a 90° turn |
+| Laptop Intel Arc 140V | Chrome, maximised window, live build `ff77131 · #71` (J) | `?spike=interior&storey=2&wake=1`, storey 1, all 30 awake swarming the player | 60 (5.4 ms) | 102 | 145k | inside update 0.52 ms |
+
+Arc web check 2026-10-29 (J): **zombies are visible across the whole storey at every camera angle**; 60 FPS with all
+30 swarming. J was stopped once on storey 1's landing: that was the flight down to the flooded storey 0, which is
+closed by design, but nothing on screen says so. Open: a cue for closed flights (a "Flooded" prompt, water drawn
+in the stairwell, or a railing instead of the flight), J to pick.
