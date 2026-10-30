@@ -3,6 +3,8 @@
 | Date | Decision | Why |
 | --- | --- | --- |
 | 2026-10-29 | Level props block the NavGrid cells whose centre lies inside their footprint + 0.2 m (at least one cell), not every cell they touch | J couldn't walk through visible gaps on the roof (between two AC units, and between an AC unit and sandbags); the player's 0.3 m radius keeps it off the props |
+| 2026-10-29 | Demo zombie types: Walker, Runner, Armored, Bloater; the combat test arena is the real base roof | J accepted Claude's proposal; Swimmer and the others need boats or later systems; the roof carries over into the night horde |
+| 2026-10-29 | Phase 1: no cuts (the 2026-10-27 additions stay in the demo, ≈ 750 h left); combat fun first, nothing else starts before J's "combat is fun" gate (1.G); J downloads Mixamo clips when a milestone first needs them | J; GDD §16 says the biggest risk to the core is combat that isn't fun |
 | 2026-10-29 | Phase 0 passes: all spikes 0.1–0.8 pass on the Arc web build; 0.5 gamepad feel stays deferred; 200 zombies is the target (300 at the primitive edge) | Exit criteria in PHASE0.md met; review at the top of PHASE0_RESULTS |
 | 2026-10-29 | Cutaway inside: every wall of the player's storey drops to waist height (not only the camera's side); each storey's pieces get their own material with `storey_floor`, so the cut never touches the storey above | J: far walls hid the zombies behind them; dark rooms already show what the player can't see. A height band left wall tops (3.2 m = the next floor) floating |
 | 2026-10-29 | On a stair flight the player is held inside the 1-cell flight row | J: walking down got stuck; past half way the lower storey's grid has the closed flight beside it |
