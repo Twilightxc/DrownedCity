@@ -6,6 +6,7 @@
 script = ExtResource("1_cfg")
 display_name = "Armored"
 hp = 150
+hit_damage = 12
 speed_mul = 0.85
 armor = 2
 hit_slow_mul = 0.0

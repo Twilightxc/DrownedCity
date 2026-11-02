@@ -13,6 +13,7 @@ extends Resource
 @export var hp: int = 3
 @export var attack_range: float = 0.9  ## m
 @export var attack_interval: float = 1.0  ## s between hits per zombie
+@export var hit_damage: int = 10  ## per attack when the horde has no types
 
 @export_group("Hit reaction (GDD §6; 0 for armored types)")
 @export var hit_slow: float = 0.3  ## speed fraction lost while slowed

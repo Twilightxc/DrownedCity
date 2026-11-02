@@ -65,6 +65,7 @@ var deaths: Array[Death] = []
 ## Totals since start, read by the presentation layer and reported to SimCore later.
 var kills: int = 0
 var hits_on_target: int = 0
+var target_hits: PackedInt32Array = PackedInt32Array()  ## damage of each attack on the target since the last drain
 
 var _attack_cooldown: PackedFloat32Array
 var _burn_tick: PackedFloat32Array
@@ -587,6 +588,9 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 		if attacking:
 			cooldown[a] = config.attack_interval
 			hits_on_target += 1
+			var tk: EnemyConfig = type_of(a)
+			if target_hits.size() < MAX_EVENTS:
+				target_hits.append(tk.hit_damage if tk != null else config.hit_damage)
 
 		if attacking:
 			clip[a] = Anim.ATTACK

@@ -45,9 +45,15 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
 - [ ] Assets (desktop): Runner / Armored / Bloater meshes + VAT clips (hand-keyed or Mixamo when needed).
 
 ### 1.3 Player in danger
-- [ ] Player HP, hits from zombies (the horde already counts them), downed state, revive or restart.
-- [ ] Armor and weight for the player (GDD §7), stamina-free for now.
-- [ ] Damage feedback: screen edge, hit sound, short slow-mo on low HP (tunable, can be off).
+- [x] Player HP, hits from zombies (the horde already counts them), downed state, revive or restart.
+      → `FighterHealth`: hits by zombie type, bites counted (infection is SimCore, 1.6), downed 10 s (GDD §5)
+      → dead → R / X restarts; also gas, ground fire and your own grenade (×0.5). Revive by teammates: 1.9.
+- [x] Armor and weight for the player (GDD §7), stamina-free for now. → `ArmorConfig` (`data/armor/`): bite
+      vest, ballistic vest, heavy armor, filter mask; one per slot; speed and weight (water effects later).
+- [x] Damage feedback: screen edge, hit sound, short slow-mo on low HP (tunable, can be off).
+      → red edge + slow-mo; the hit sound moves to the 1.4 audio pass (no audio yet).
+- [x] Added: fire burns Bloater gas away (GDD §9): a burning cell, a zombie burning all over or an incendiary
+      blast sets a cloud alight; everyone inside catches fire.
 
 ### 1.4 Game feel (GDD §6 "Boxhead part")
 - [ ] Hit-stop, knock-back along the bullet, muzzle flash, shell casings, camera shake (tunable, off option).

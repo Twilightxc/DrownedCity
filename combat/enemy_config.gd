@@ -5,6 +5,7 @@ extends Resource
 
 @export var display_name: String = "Walker"
 @export var hp: int = 100
+@export var hit_damage: int = 10  ## per attack on the player (armor reduces it, FighterHealth)
 @export var speed_mul: float = 1.0  ## × HordeConfig.speed
 @export var armor: WeaponConfig.Armor = WeaponConfig.Armor.NONE
 @export var hit_slow_mul: float = 1.0  ## × the horde's hit slow (0: armored types don't slow)

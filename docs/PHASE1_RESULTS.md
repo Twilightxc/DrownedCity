@@ -3,6 +3,28 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.3 Player in danger — 🟡 built (2026-11-02), waiting for J's feel test
+
+Live: `?spike=twinstick` (F4: Invulnerable, Slow-mo on low HP, Self blast damage ×), `?spike=style`.
+`&autoshoot=1` makes the player invulnerable so measurements don't end in a death screen.
+
+| Item | How |
+| --- | --- |
+| Health | `combat/fighter_health.gd` (`FighterHealth`, no nodes): HP 100 (`data/combat/player_fighter.tres`), zombie hits by type (Walker 10, Runner 6, Armored 12, Bloater 15; `Horde.target_hits`), 15 % of hits are bites (`bites`, for infection in 1.6), gas 12 HP/s at a cloud's centre, ground fire 15 HP/s, your own grenade × 0.5 with distance falloff; fractions of damage-over-time carry over |
+| Downed | GDD §5: at 0 HP you're downed for 10 s (no moving, shooting or throwing), then dead; "YOU DIED · press R / X to restart" reloads the scene. `revive()` exists for teammates (1.9) |
+| Armor | `combat/armor_config.gd`, `data/armor/`: bite vest (hits ×0.85, bites ×0.3, 3 kg; the spike loadout wears it), ballistic vest (×0.8, bullet armor M, speed ×0.95, 6 kg), heavy armor (×0.55, bites ×0.15, speed ×0.8, 15 kg, sinks), filter mask (no gas damage). One piece per slot |
+| Feedback | `game/fx/damage_feedback.gd`: red screen edge that flashes per hit and pulses under 25 % HP; 0.5 s slow-mo (×0.45) the first time HP drops under 25 % (F4 toggle); HP on the HUD line |
+| Gas + fire | fire burns a Bloater cloud away: a burning cell, a zombie burning all over, or an incendiary blast reaching it; zombies inside catch fire, a small blast shows; 20 damage if you stand in it |
+| Tests | armor on hits, bite rate with and without a vest, downed → dead, revive, gas over time + mask, own blast, one piece per slot + heavy speed, invulnerable, zombie hit damage by type, cloud removal: 10 new, 162 total |
+
+| Device | Browser | Scene | Result |
+| --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 | style + 200, no autoshoot, standing still | HP 100 → 0 in ~1 s once the crowd closes in (200 packed is a lot); downed 10 s → dead; 60 FPS |
+
+Balance note: 200 zombies on an open roof kill a player standing still in about a second. That is what the
+1.5 arena (waves, barricades, entrances) is for; tune `hit_damage` and `attack_interval` there.
+Not measured on the web yet. No hit sound yet (1.4).
+
 ## 1.2 Enemy types and perception — 🟡 built (2026-11-02), waiting for J's look
 
 Live: `?spike=style` / `?spike=twinstick` (roof: the mix hunts), `?spike=interior&storey=2` (sleepers inside).

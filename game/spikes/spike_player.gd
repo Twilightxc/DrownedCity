@@ -9,6 +9,7 @@ extends Node3D
 signal fired(from: Vector3, to: Vector3)  ## one per pellet (tracers)
 signal noise(at: Vector2, radius: float)  ## one per shot: what sleepers can hear (GDD §9)
 signal device_changed(pad: bool)
+signal restart_requested  ## reload / X pressed while dead
 
 const MUZZLE_HEIGHT: float = 0.9
 const THROW_HEIGHT: float = 1.4
@@ -19,6 +20,7 @@ const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 
 @export var radius: float = 0.3
 @export var loadout: LoadoutConfig  ## null: one default gun with endless rounds (tests)
+@export var fighter: FighterConfig = preload("res://data/combat/player_fighter.tres")  ## HP, downed time (1.3)
 @export var throwable: ThrowableConfig
 @export var throwables: Array[ThrowableConfig] = []  ## more than one: "throwable_next" cycles them (shared count)
 @export var controls: TwinStickConfig
@@ -42,6 +44,7 @@ var guns: Array[Gun] = []
 var gun: Gun  ## the one in hand
 var pouch: AmmoPouch = AmmoPouch.new()
 var auto_trigger: bool = false  ## scripted fire (autoshoot captures); OR-ed with the fire button
+var health: FighterHealth  ## HP, worn pieces, downed (Phase 1 step 1.3)
 
 var _hitscan: Hitscan
 var _assist: AimAssist
@@ -80,6 +83,10 @@ func _arm() -> void:
 		for slot: WeaponSlot in loadout.slots:
 			guns.append(Gun.new(slot.weapon, slot.attachments, pouch))
 	gun = guns[0]
+	var worn: Array[ArmorConfig] = []
+	if loadout != null:
+		worn = loadout.wearing
+	health = FighterHealth.new(fighter, worn)
 
 
 ## Takes gun `i` (0-based) in hand; a reload in progress is dropped.
@@ -186,6 +193,10 @@ func next_throwable() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if health != null and health.state == FighterHealth.State.DEAD:
+		if event.is_action_pressed("reload"):
+			restart_requested.emit()
+		return
 	if event.is_action_pressed("reload"):
 		start_reload()
 	elif event.is_action_pressed("weapon_next"):
@@ -209,6 +220,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if grid == null:
 		return
+	health.step(delta)
+	if not health.is_alive():
+		velocity = Vector2.ZERO
+		auto_trigger = false
+		_throw_ring.visible = false
+		_aim_line.clear_surfaces()
+		return  # downed or dead: no moving, shooting or throwing
 	_move(delta)
 	if not aim_locked:
 		_update_aim()
@@ -220,7 +238,7 @@ func _process(delta: float) -> void:
 
 func _move(delta: float) -> void:
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
-	var desired: Vector2 = AimMath.screen_to_world(input, camera.global_basis) * controls.move_speed
+	var desired: Vector2 = AimMath.screen_to_world(input, camera.global_basis) * controls.move_speed * health.speed_mul()
 	var rate: float = controls.move_accel if desired != Vector2.ZERO else controls.move_decel
 	velocity = velocity.move_toward(desired, rate * delta)
 	if velocity == Vector2.ZERO:
