@@ -93,6 +93,15 @@ func _process(delta: float) -> void:
 		DebugOverlay.set_stat("rooms_seen", "%d / %d" % [_lighting.seen_count(_interior.storey), _lighting.region_total(_interior.storey)])
 
 
+func _total_kills() -> int:
+	var kills: int = _horde.kills
+	if _inside != null:
+		for h: Horde in _inside.hordes:
+			if h != null:
+				kills += h.kills
+	return kills
+
+
 ## Shots, grenades, blood, corpses and flames follow the player onto the storey's floor and horde.
 func _on_storey_changed(s: int) -> void:
 	var inside: bool = s >= 0

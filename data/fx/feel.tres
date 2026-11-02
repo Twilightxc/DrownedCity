@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FeelConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/fx/feel_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+hitstop = true
+hitstop_kills = 2
+hitstop_sec = 0.045
+hitstop_blast_sec = 0.07
+hitstop_scale = 0.05
+shake = true
+shake_max_m = 0.5
+shake_decay = 2.2
+shake_per_recoil_deg = 0.06
+shake_blast = 0.7
+shake_hit = 0.25
+muzzle_flash = true
+muzzle_light_energy = 1.6
+casings = true
+casing_life_sec = 6.0
+chain_window_sec = 2.0
+chain_score_cap = 10

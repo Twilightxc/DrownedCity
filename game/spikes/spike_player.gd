@@ -10,6 +10,8 @@ signal fired(from: Vector3, to: Vector3)  ## one per pellet (tracers)
 signal noise(at: Vector2, radius: float)  ## one per shot: what sleepers can hear (GDD §9)
 signal device_changed(pad: bool)
 signal restart_requested  ## reload / X pressed while dead
+signal shot(gun: Gun)  ## one per round fired (muzzle flash, casings, shake)
+signal hit_confirmed(kills: int)  ## a round that hit something; kills = how many it killed (hit markers, hit-stop)
 
 const MUZZLE_HEIGHT: float = 0.9
 const THROW_HEIGHT: float = 1.4
@@ -45,11 +47,14 @@ var gun: Gun  ## the one in hand
 var pouch: AmmoPouch = AmmoPouch.new()
 var auto_trigger: bool = false  ## scripted fire (autoshoot captures); OR-ed with the fire button
 var health: FighterHealth  ## HP, worn pieces, downed (Phase 1 step 1.3)
+var barricades: Barricades  ## optional: standing barricades block the player too (1.5)
+var kills_by_gun: Dictionary[String, int] = {}  ## for the arena's run summary and telemetry
 
 var _hitscan: Hitscan
 var _assist: AimAssist
 var _hits: PackedInt32Array = PackedInt32Array()
 var _shot_damage: Dictionary[int, int] = {}
+var _shot_knock: Dictionary[int, float] = {}
 var _aim_stick: Vector2 = Vector2.ZERO
 var _throw_held: bool = false
 var _throw_target: Vector3 = Vector3.ZERO
@@ -262,6 +267,8 @@ func _can_stand(p: Vector2) -> bool:
 	for offset: Vector2 in [Vector2(radius, 0), Vector2(-radius, 0), Vector2(0, radius), Vector2(0, -radius)]:
 		if not grid.is_walkable_world(p + offset):
 			return false
+		if barricades != null and barricades.solid_world(p + offset):
+			return false
 	return true
 
 
@@ -308,6 +315,7 @@ func _fire() -> void:
 	var cfg: WeaponConfig = gun.config
 	var muzzle_y: float = ground_y + MUZZLE_HEIGHT
 	_shot_damage.clear()
+	_shot_knock.clear()
 	for dir: Vector2 in gun.pellet_dirs(aim_dir, _rng):
 		var from: Vector2 = ground_position() + dir * radius
 		var travelled: float = _hitscan.cast(horde, from, dir, cfg.range_m, cfg.body_pen, _hits)
@@ -315,6 +323,7 @@ func _fire() -> void:
 			var a: int = _hits[i]
 			var armor: int = horde.armor[a]
 			_shot_damage[a] = _shot_damage.get(a, 0) + Ballistics.hit_damage(gun.damage, _hitscan.hit_t[i], i, armor, cfg)
+			_shot_knock[a] = _shot_knock.get(a, 0.0) + cfg.knockback
 			if Ballistics.stops_bullet(cfg.armor_pen, armor):
 				travelled = _hitscan.hit_t[i]
 				break
@@ -323,8 +332,14 @@ func _fire() -> void:
 	if not _shot_damage.is_empty():
 		var agents: PackedInt32Array = PackedInt32Array(_shot_damage.keys())
 		var damages: PackedInt32Array = PackedInt32Array(_shot_damage.values())
-		horde.apply_hits(agents, damages, ground_position(), false, cfg.stagger_sec)
+		var knocks: PackedFloat32Array = PackedFloat32Array()
+		for a: int in agents:
+			knocks.append(_shot_knock[a])
+		var kills: int = horde.apply_hits(agents, damages, ground_position(), false, cfg.stagger_sec, knocks)
+		kills_by_gun[cfg.display_name] = kills_by_gun.get(cfg.display_name, 0) + kills
+		hit_confirmed.emit(kills)
 	noise.emit(ground_position(), gun.noise_m)
+	shot.emit(gun)
 
 
 ## Hold to show the landing ring, release to throw.

@@ -5,6 +5,7 @@ extends Resource
 @export var display_name: String = "Grenade"
 @export var damage: int = 3
 @export var blast_radius: float = 3.0  ## m
+@export var knockback: float = 6.0  ## m/s outward shove on survivors at the centre, 0 at the edge
 @export var flight_time: float = 0.7  ## s from release to blast
 @export var arc_height: float = 2.5  ## m above the straight line at mid-flight
 @export var min_range: float = 2.0  ## m

@@ -11,6 +11,7 @@ speed_mul = 0.6
 armor = 0
 hit_slow_mul = 0.5
 stagger_mul = 0.5
+knockback_mul = 0.3
 sight_mul = 0.8
 gas_on_death = true
 gas_radius_m = 3.0

@@ -10,6 +10,7 @@ extends Resource
 @export var armor: WeaponConfig.Armor = WeaponConfig.Armor.NONE
 @export var hit_slow_mul: float = 1.0  ## × the horde's hit slow (0: armored types don't slow)
 @export var stagger_mul: float = 1.0  ## × a gun's stagger
+@export var knockback_mul: float = 1.0  ## × a gun's knock-back (heavy types barely move)
 @export var sight_mul: float = 1.0  ## × HordeConfig.sight_m
 @export var gas_on_death: bool = false  ## Bloater: leaves a toxic cloud
 @export var gas_radius_m: float = 3.0

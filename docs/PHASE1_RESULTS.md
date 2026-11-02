@@ -3,6 +3,50 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.5 Combat test arena — 🟡 built (2026-11-02), waiting for J's gate 1.G (3 runs on the Arc)
+
+Live: `?spike=arena` (also the default page). F4 still works (it's the twin-stick spike plus the arena).
+
+| Item | How |
+| --- | --- |
+| Waves | `combat/wave_director.gd` over `data/combat/arena_roof.tres` (`ArenaConfig` + `WaveConfig`): calm → wave → calm…; 6 waves of 25 / 46 / 65 / 83 / 112 / 156 zombies (Walker → Runner → Armored → Bloater mixed in), 3–6 spawns/s, 8–15 s calms, never more than 200 on the roof |
+| Entrances | 4 on the roof edge (N, E, S, W); zombies climb up into a 3-cell pocket there (12 waiting at most, the rest come later) |
+| Barricades | `combat/barricades.gd`: N and E pockets are boxed in by planks (2000 HP each). They block zombies and the player, not bullets; the flow field crosses them at a cost, so hunters pile up and tear them down (each hit = their type's hit damage). Planks sink as they lose HP and splinter when they fall |
+| Crates | the two supply crates restock once per calm (refilled when a calm starts) |
+| HUD | "Wave 3 / 6 · 31 to come · 25 on the roof", "Calm · wave 4 / 6 in 9 s", a WAVE n banner |
+| End | last wave cleared → NIGHT SURVIVED; dead → YOU DIED on wave n. Summary: time, kills, best chain, score, kills and rounds per gun, grenade kills, fire and other, hits taken, bites; R / X plays again |
+| Telemetry | `telemetry/run_log.gd`: the same numbers + build label as one JSON line in `user://telemetry/arena_runs.jsonl` (IndexedDB on the web); local only, nothing is sent |
+| Bug found by a test | the wave director counted the roof as clear on the frame that spawned a wave's last zombies, ending the wave early; fixed |
+| Tests | calm → wave → calm → won, alive cap + refunds, barricade block / break / flow cost, hunters tear a barricade down and walk through, arena data sane: 5 new, 172 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720, fixed 60 FPS | whole night, `--auto-shoot` (invulnerable bot) | — | ≤ 87 | ≤ 160k | 3:55, 487 kills, best chain ×136; barricades fell in waves 2–3 |
+
+Not measured on the web yet. The gate (1.G) is J's: 3 runs on the Arc in Chrome — is it fun, and ≥ 50 FPS at the biggest wave?
+
+## 1.4 Game feel — 🟡 built without audio (2026-11-02), waiting for J's feel test
+
+Live: `?spike=twinstick` (F4: Hit-stop, Camera shake + strength, Muzzle flash, Shell casings), `?spike=style`.
+
+| Item | How |
+| --- | --- |
+| Knock-back | `WeaponConfig.knockback` m/s per hit (pistol 1.5, AR 1.0, shotgun 0.8 per pellet so a full blast ~8, DMR 3) × `EnemyConfig.knockback_mul` (Runner 1.2, Armored 0.35, Bloater 0.3); grenades shove survivors outward (6 m/s at the centre). `Horde.knock` fades at 9/s, rides on the walk, slides along walls |
+| Hit-stop | ×0.05 for 45 ms when one round kills 2+, 70 ms for a blast that kills 2+ |
+| Time | `game/fx/time_control.gd`: the one owner of Engine.time_scale; the slowest active request wins (hit-stop, the 1.3 low-HP slow-mo), real-time so a freeze can't stretch itself |
+| Shake | `game/fx/screen_shake.gd`: trauma² (decays 2.2/s, max 0.5 m) via the camera's h/v offset; shots add recoil × 0.06, blasts 0.7 falling to 0 at 15 m, taking a hit 0.25 |
+| Muzzle | `game/fx/muzzle_fx.gd`: an additive flame billboard + a shadowless omni light for 50 ms; bigger for the shotgun, smaller with the silencer |
+| Casings | `game/fx/casing_fx.gd`: one MultiMesh ring (96): out to the right, tumble, one bounce, lie 6 s, shrink; brass, shotgun shells red |
+| Kill chain | `combat/kill_chain.gd`: kills within 2 s extend it; each kill scores the chain length up to ×10 (score → influence in 1.10); "x12 chain" on the right, fading with the window |
+| Crosshair | `game/fx/crosshair_hud.gd`: four ticks on the mouse (pad: 8 m along the aim) opening with the gun's spread + bloom; white X on a hit, red on a kill; the OS cursor hides while playing and comes back when paused or dead |
+| Tests | kill chain + cap, shake bounds + decay, time control, knock-back (direction, armored barely moves, fades): 5 new, 167 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 | style + 200, `--auto-shoot`, AR then shotgun | 60 | 71–89 | ≤ 251k | the muzzle light adds a few draws while it's on (+10 at most) |
+
+Not measured on the web yet. No audio yet: CC0 sounds need J's OK for each download.
+
 ## 1.3 Player in danger — 🟡 built (2026-11-02), waiting for J's feel test
 
 Live: `?spike=twinstick` (F4: Invulnerable, Slow-mo on low HP, Self blast damage ×), `?spike=style`.

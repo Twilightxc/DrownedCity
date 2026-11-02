@@ -8,6 +8,8 @@ const RESTOCKED_TIME: float = 1.2
 @export var size: Vector3 = Vector3(0.9, 0.55, 0.6)
 @export var color: Color = Color(0.45, 0.5, 0.25)  # olive military crate
 
+var uses_left: int = -1  ## -1 = endless; the arena gives each crate its uses per calm (1.5)
+
 var _label: Label3D
 var _restocked_left: float = 0.0
 
@@ -45,10 +47,16 @@ func show_prompt(on: bool, pad: bool) -> void:
 	_label.visible = on
 	if _restocked_left > 0.0:
 		_label.text = "Restocked"
+	elif uses_left == 0:
+		_label.text = "Empty: refills between waves"
 	else:
 		_label.text = "(A) Restock ammo + grenades" if pad else "[F] Restock ammo + grenades"
 
 
 func interact(player: SpikePlayer) -> void:
+	if uses_left == 0:
+		return
 	player.restock()
 	_restocked_left = RESTOCKED_TIME
+	if uses_left > 0:
+		uses_left -= 1

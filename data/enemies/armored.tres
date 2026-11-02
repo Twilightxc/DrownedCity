@@ -11,6 +11,7 @@ speed_mul = 0.85
 armor = 2
 hit_slow_mul = 0.0
 stagger_mul = 0.3
+knockback_mul = 0.35
 sight_mul = 1.0
 gas_on_death = false
 scale = Vector3(1.18, 1.04, 1.18)
