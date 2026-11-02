@@ -31,6 +31,7 @@ class Death:
 var config: HordeConfig
 var fire: FireConfig  ## optional: null = nothing burns
 var ground_fire: GroundFire  ## optional: burning NavGrid cells (flow-field cost, ignites zombies)
+var barricades: Barricades  ## optional: cells that block movement until hunters tear them down (1.5)
 var grid: NavGrid
 var flow: FlowField
 var spatial: SpatialHash
@@ -376,7 +377,15 @@ func _queue_death(a: int, push: Vector2, blast: bool, burned: bool = false) -> v
 
 
 func recompute_flow(targets: Array[Vector2i]) -> void:
-	if ground_fire != null and ground_fire.active_count() > 0:
+	var fire: bool = ground_fire != null and ground_fire.active_count() > 0
+	if barricades != null and fire:
+		var both: PackedByteArray = barricades.cost.duplicate()
+		for i: int in both.size():
+			both[i] = maxi(both[i], ground_fire.cost[i])
+		flow.compute(targets, both)
+	elif barricades != null:
+		flow.compute(targets, barricades.cost)
+	elif fire:
 		flow.compute(targets, ground_fire.cost)
 	else:
 		flow.compute(targets)
@@ -518,6 +527,7 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 
 	var st: PackedByteArray = state
 	var goals: PackedVector2Array = goal
+	var bars: Barricades = barricades
 	for a: int in count:
 		if st[a] == State.DORMANT:
 			continue  # stands where it is (still in the spatial hash, so others walk around it)
@@ -577,9 +587,16 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 			step = step.normalized() * max_step
 		var np: Vector2 = p + step
 
-		# Slide along blocked cells one axis at a time.
+		# Slide along blocked cells one axis at a time; a standing barricade blocks like a wall, and a hunter
+		# pushing into one hits it instead.
+		var bar_hit: int = -1
 		var nx_cell: int = floori((np.x - ox) * inv)
 		if nx_cell < 0 or nx_cell >= w or (in_grid and blocked[cy * w + nx_cell] != 0):
+			np.x = p.x
+			v.x = 0.0
+			nx_cell = cx
+		elif bars != null and in_grid and bars.solid(cy * w + nx_cell):
+			bar_hit = bars.owner[cy * w + nx_cell]
 			np.x = p.x
 			v.x = 0.0
 			nx_cell = cx
@@ -587,6 +604,16 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 		if ny_cell < 0 or ny_cell >= h or (nx_cell >= 0 and nx_cell < w and blocked[ny_cell * w + nx_cell] != 0):
 			np.y = p.y
 			v.y = 0.0
+		elif bars != null and nx_cell >= 0 and nx_cell < w and bars.solid(ny_cell * w + nx_cell):
+			bar_hit = bars.owner[ny_cell * w + nx_cell]
+			np.y = p.y
+			v.y = 0.0
+		if bar_hit >= 0 and hunting and cooldown[a] <= 0.0:
+			cooldown[a] = config.attack_interval
+			var tb: EnemyConfig = type_of(a)
+			bars.damage(bar_hit, tb.hit_damage if tb != null else config.hit_damage)
+			clip[a] = Anim.ATTACK
+			clip_t[a] = 0.0
 
 		pos[a] = np
 		vel[a] = v

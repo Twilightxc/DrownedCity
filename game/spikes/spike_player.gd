@@ -47,6 +47,8 @@ var gun: Gun  ## the one in hand
 var pouch: AmmoPouch = AmmoPouch.new()
 var auto_trigger: bool = false  ## scripted fire (autoshoot captures); OR-ed with the fire button
 var health: FighterHealth  ## HP, worn pieces, downed (Phase 1 step 1.3)
+var barricades: Barricades  ## optional: standing barricades block the player too (1.5)
+var kills_by_gun: Dictionary[String, int] = {}  ## for the arena's run summary and telemetry
 
 var _hitscan: Hitscan
 var _assist: AimAssist
@@ -265,6 +267,8 @@ func _can_stand(p: Vector2) -> bool:
 	for offset: Vector2 in [Vector2(radius, 0), Vector2(-radius, 0), Vector2(0, radius), Vector2(0, -radius)]:
 		if not grid.is_walkable_world(p + offset):
 			return false
+		if barricades != null and barricades.solid_world(p + offset):
+			return false
 	return true
 
 
@@ -332,6 +336,7 @@ func _fire() -> void:
 		for a: int in agents:
 			knocks.append(_shot_knock[a])
 		var kills: int = horde.apply_hits(agents, damages, ground_position(), false, cfg.stagger_sec, knocks)
+		kills_by_gun[cfg.display_name] = kills_by_gun.get(cfg.display_name, 0) + kills
 		hit_confirmed.emit(kills)
 	noise.emit(ground_position(), gun.noise_m)
 	shot.emit(gun)

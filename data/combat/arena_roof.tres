@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="ArenaConfig" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://combat/arena_config.gd" id="1_arena"]
+[ext_resource type="Script" path="res://combat/wave_config.gd" id="2_wave"]
+
+[sub_resource type="Resource" id="Resource_w1"]
+script = ExtResource("2_wave")
+counts = PackedInt32Array(25, 0, 0, 0)
+entrances = PackedInt32Array(2, 3)
+spawn_per_sec = 3.0
+break_before_sec = 8.0
+
+[sub_resource type="Resource" id="Resource_w2"]
+script = ExtResource("2_wave")
+counts = PackedInt32Array(40, 6, 0, 0)
+entrances = PackedInt32Array(0, 2, 3)
+spawn_per_sec = 4.0
+break_before_sec = 15.0
+
+[sub_resource type="Resource" id="Resource_w3"]
+script = ExtResource("2_wave")
+counts = PackedInt32Array(50, 10, 5, 0)
+entrances = PackedInt32Array(0, 1, 2)
+spawn_per_sec = 4.0
+break_before_sec = 15.0
+
+[sub_resource type="Resource" id="Resource_w4"]
+script = ExtResource("2_wave")
+counts = PackedInt32Array(60, 12, 8, 3)
+entrances = PackedInt32Array(0, 1, 2, 3)
+spawn_per_sec = 5.0
+break_before_sec = 15.0
+
+[sub_resource type="Resource" id="Resource_w5"]
+script = ExtResource("2_wave")
+counts = PackedInt32Array(80, 16, 12, 4)
+entrances = PackedInt32Array(0, 1, 2, 3)
+spawn_per_sec = 5.0
+break_before_sec = 15.0
+
+[sub_resource type="Resource" id="Resource_w6"]
+script = ExtResource("2_wave")
+counts = PackedInt32Array(110, 24, 16, 6)
+entrances = PackedInt32Array(0, 1, 2, 3)
+spawn_per_sec = 6.0
+break_before_sec = 15.0
+
+[resource]
+script = ExtResource("1_arena")
+entrance_cells = Array[Vector2i]([Vector2i(12, 0), Vector2i(24, 11), Vector2i(12, 20), Vector2i(0, 10)])
+entrance_names = PackedStringArray("North", "East", "South", "West")
+barricade_hp = PackedInt32Array(2000, 2000, 0, 0)
+barricade_cost = 8
+waves = Array[ExtResource("2_wave")]([SubResource("Resource_w1"), SubResource("Resource_w2"), SubResource("Resource_w3"), SubResource("Resource_w4"), SubResource("Resource_w5"), SubResource("Resource_w6")])
+alive_cap = 200
+crate_uses_per_break = 1

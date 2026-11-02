@@ -63,10 +63,14 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
       → needs CC0 sound downloads (J approves each); includes the 1.3 hit sound.
 
 ### 1.5 Combat test arena — "one night on the roof"
-- [ ] The arena **is** the base roof (J 2026-10-29), so it carries over into the night horde (1.10).
-- [ ] A 10-minute defence: waves from several entrances, ammo crates, a barricade that can be
+- [x] The arena **is** the base roof (J 2026-10-29), so it carries over into the night horde (1.10).
+      → `?spike=arena` (now the default page).
+- [x] A 10-minute defence: waves from several entrances, ammo crates, a barricade that can be
       broken, both grenades, the four zombie types mixed per wave (data-driven wave table).
-- [ ] Telemetry hooks (local only for now): time alive, kills per weapon, ammo used, hits taken.
+      → `data/combat/arena_roof.tres`: 6 waves, 487 zombies, 4 entrances (N and E barricaded), crates once per calm.
+      A bot clears it in ~4 min; a person will take longer. J tunes the length with the wave table.
+- [x] Telemetry hooks (local only for now): time alive, kills per weapon, ammo used, hits taken.
+      → `telemetry/run_log.gd`: one JSON line per run in `user://telemetry/arena_runs.jsonl` + the summary screen.
 
 ### 1.G Gate — "combat is fun"
 - **Pass (J):** J plays the arena at least 3 times on the Arc in Chrome and says it's fun; ≥ 50 FPS at the

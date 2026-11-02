@@ -1,15 +1,16 @@
 extends Node
-## Boots the requested Phase 0 spike: `?spike=horde` on the web URL, or `-- --spike=horde` on desktop.
+## Boots the requested spike (Phase 0, and the Phase 1 arena): `?spike=horde` on the web URL, or `-- --spike=horde` on desktop.
 ## Default is the newest spike, so the live URL always shows what is under test.
 
 const SPIKES: Dictionary[String, String] = {
+	"arena": "res://game/spikes/arena_spike.tscn",
 	"interior": "res://game/spikes/interior_spike.tscn",
 	"save": "res://game/spikes/save_spike.tscn",
 	"twinstick": "res://game/spikes/twin_stick_spike.tscn",
 	"style": "res://game/spikes/style_spike.tscn",
 	"horde": "res://game/spikes/horde_spike.tscn",
 }
-const DEFAULT_SPIKE: String = "interior"
+const DEFAULT_SPIKE: String = "arena"
 
 
 func _ready() -> void:

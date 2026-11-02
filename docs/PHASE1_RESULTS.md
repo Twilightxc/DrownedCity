@@ -3,6 +3,28 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.5 Combat test arena — 🟡 built (2026-11-02), waiting for J's gate 1.G (3 runs on the Arc)
+
+Live: `?spike=arena` (also the default page). F4 still works (it's the twin-stick spike plus the arena).
+
+| Item | How |
+| --- | --- |
+| Waves | `combat/wave_director.gd` over `data/combat/arena_roof.tres` (`ArenaConfig` + `WaveConfig`): calm → wave → calm…; 6 waves of 25 / 46 / 65 / 83 / 112 / 156 zombies (Walker → Runner → Armored → Bloater mixed in), 3–6 spawns/s, 8–15 s calms, never more than 200 on the roof |
+| Entrances | 4 on the roof edge (N, E, S, W); zombies climb up into a 3-cell pocket there (12 waiting at most, the rest come later) |
+| Barricades | `combat/barricades.gd`: N and E pockets are boxed in by planks (2000 HP each). They block zombies and the player, not bullets; the flow field crosses them at a cost, so hunters pile up and tear them down (each hit = their type's hit damage). Planks sink as they lose HP and splinter when they fall |
+| Crates | the two supply crates restock once per calm (refilled when a calm starts) |
+| HUD | "Wave 3 / 6 · 31 to come · 25 on the roof", "Calm · wave 4 / 6 in 9 s", a WAVE n banner |
+| End | last wave cleared → NIGHT SURVIVED; dead → YOU DIED on wave n. Summary: time, kills, best chain, score, kills and rounds per gun, grenade kills, fire and other, hits taken, bites; R / X plays again |
+| Telemetry | `telemetry/run_log.gd`: the same numbers + build label as one JSON line in `user://telemetry/arena_runs.jsonl` (IndexedDB on the web); local only, nothing is sent |
+| Bug found by a test | the wave director counted the roof as clear on the frame that spawned a wave's last zombies, ending the wave early; fixed |
+| Tests | calm → wave → calm → won, alive cap + refunds, barricade block / break / flow cost, hunters tear a barricade down and walk through, arena data sane: 5 new, 172 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720, fixed 60 FPS | whole night, `--auto-shoot` (invulnerable bot) | — | ≤ 87 | ≤ 160k | 3:55, 487 kills, best chain ×136; barricades fell in waves 2–3 |
+
+Not measured on the web yet. The gate (1.G) is J's: 3 runs on the Arc in Chrome — is it fun, and ≥ 50 FPS at the biggest wave?
+
 ## 1.4 Game feel — 🟡 built without audio (2026-11-02), waiting for J's feel test
 
 Live: `?spike=twinstick` (F4: Hit-stop, Camera shake + strength, Muzzle flash, Shell casings), `?spike=style`.
