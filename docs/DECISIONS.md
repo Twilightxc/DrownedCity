@@ -2,6 +2,8 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-02 | Player health is `FighterHealth` (RefCounted) over a `FighterConfig` and worn `ArmorConfig` pieces; downed 10 s then dead (GDD §5), restart reloads the spike scene | The same class serves survivors on expeditions (1.9) and moves into SimCore's survivor state in 1.6 |
+| 2026-11-02 | Your own grenade hurts you at ×0.5 with distance falloff (F4 tunable, 0 = off) | Pillar 3 "risk is chosen"; J to judge in the feel test |
 | 2026-11-02 | Perception lives in `Horde` (state per agent: dormant / suspicious / hunting; `hear`, `perceive`); suspicious agents share one noise flow field toward the latest noise | GDD §9; no per-agent pathfinding (web budget); the interior's old wake rules become calls to it |
 | 2026-11-02 | Until the desktop builds a mesh per type, types read by body scale + tint on the shared VAT models | Code and balance can go on now; the silhouette check (pillar 5) waits for the meshes |
 | 2026-11-02 | Combat runs on GDD numbers: Walker HP 100, guns from the GDD §6 table; fire, frag (150) and incendiary (60) damage scaled so kill times stay as tuned in 0.7 | One scale for guns, armor and enemy types (1.2); DPS per class is unit-tested against the GDD table |

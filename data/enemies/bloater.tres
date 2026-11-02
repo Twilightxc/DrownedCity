@@ -6,6 +6,7 @@
 script = ExtResource("1_cfg")
 display_name = "Bloater"
 hp = 250
+hit_damage = 15
 speed_mul = 0.6
 armor = 0
 hit_slow_mul = 0.5

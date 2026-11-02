@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ArmorConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/armor_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+display_name = "Heavy armor"
+slot = "armor"
+melee_mul = 0.55
+bite_mul = 0.15
+blast_mul = 0.6
+fire_mul = 0.7
+bullet_armor = 3
+speed_mul = 0.8
+weight_kg = 15.0
+sinks = true

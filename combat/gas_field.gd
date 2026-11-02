@@ -45,6 +45,11 @@ func strength_at(p: Vector2) -> float:
 	return best
 
 
+## Cloud `i` burns away (fire reached it, GDD §9).
+func remove(i: int) -> void:
+	_remove(i)
+
+
 func _remove(i: int) -> void:
 	centers.remove_at(i)
 	radii.remove_at(i)

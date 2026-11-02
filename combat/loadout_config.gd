@@ -5,3 +5,4 @@ extends Resource
 
 @export var slots: Array[WeaponSlot] = []
 @export var ammo: Dictionary[String, int] = {}  ## loose rounds at the start; a supply crate tops up to this
+@export var wearing: Array[ArmorConfig] = []  ## GDD §7 pieces, one per slot

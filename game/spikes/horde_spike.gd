@@ -61,6 +61,7 @@ var _fire_fx: FireFx
 var _explosions: ExplosionFx
 var _gas: GasField = GasField.new()  ## Bloater clouds (1.2); the player's damage from them comes in 1.3
 var _gas_fx: GasFx
+var _feedback: DamageFeedback  ## red edge, downed / dead message, low-HP slow-mo (1.3)
 var _fire_rev: int = -1
 var _water_y: float = WATER_Y
 ## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
@@ -149,6 +150,13 @@ func _ready() -> void:
 	if _fire_fx != null:
 		_fire_fx.warm_up(Vector3(_player.position.x, WARM_UP_Y, _player.position.z))
 	_build_ui()
+	_player.health.invulnerable = _auto_shoot  # measurements must not end in a death screen
+	_feedback = DamageFeedback.new()
+	add_child(_feedback)
+	_feedback.bind(_player.health)
+	_player.restart_requested.connect(func() -> void:
+		Engine.time_scale = 1.0
+		get_tree().reload_current_scene())
 	_set_count_index(horde_config.default_count_index)
 	_player.device_changed.connect(func(_pad: bool) -> void: _update_help())
 	_update_help()
@@ -170,6 +178,8 @@ func _process(delta: float) -> void:
 	if _fire_fx != null:
 		_fire_fx.sync(delta, _fx_horde, _ground_fire if _fx_horde == _horde else null)
 	_gas.update(delta)
+	_hurt_player(delta)
+	_burn_gas()
 
 	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
 	_update_status()
@@ -231,6 +241,65 @@ func _auto_attack(delta: float, from: Vector2) -> void:
 func _on_blast(at: Vector3, _killed: int, cfg: ThrowableConfig) -> void:
 	var in_water: bool = not _grid.in_bounds(_grid.world_to_cell(Vector2(at.x, at.z)))
 	_explosions.blast(at, cfg.blast_radius, in_water, cfg.embers, cfg.shrapnel, cfg.fire_radius > 0.0)
+	# Your own grenade hurts you too (FighterConfig.self_blast_mul), less toward the edge of the blast.
+	var d: float = Vector2(at.x, at.z).distance_to(_player.ground_position())
+	if d < cfg.blast_radius:
+		_player.health.take_blast(roundi(cfg.damage * (1.0 - d / cfg.blast_radius)), true)
+	# An incendiary blast sets any gas cloud it reaches alight.
+	if cfg.fire_radius > 0.0:
+		for i: int in range(_gas.count() - 1, -1, -1):
+			if _gas.centers[i].distance_to(Vector2(at.x, at.z)) < _gas.radii[i] + cfg.blast_radius:
+				_ignite_gas(i)
+
+
+## Zombie hits, gas and fire on the player this frame (Phase 1 step 1.3).
+func _hurt_player(delta: float) -> void:
+	var health: FighterHealth = _player.health
+	for dmg: int in _fx_horde.target_hits:
+		health.take_hit(dmg, _rng)
+	_fx_horde.target_hits.clear()
+	_horde.target_hits.clear()
+	var p: Vector2 = _player.ground_position()
+	health.take_dot(health.config.gas_dps * _gas.strength_at(p), delta, &"gas")
+	if _ground_fire != null and _fx_horde == _horde:
+		var cell: Vector2i = _grid.world_to_cell(p)
+		if _grid.in_bounds(cell) and _ground_fire.is_burning(_grid.index_of(cell)):
+			health.take_dot(health.config.fire_dps, delta, &"fire")
+
+
+## Fire burns gas away (GDD §9): a burning cell or a zombie burning all over inside a cloud sets it alight.
+func _burn_gas() -> void:
+	for i: int in range(_gas.count() - 1, -1, -1):
+		var c: Vector2 = _gas.centers[i]
+		var r2: float = _gas.radii[i] * _gas.radii[i]
+		var lit: bool = false
+		if _ground_fire != null and _fx_horde == _horde:
+			for cell: int in _ground_fire.active_cells():
+				if _grid.cell_center(_grid.cell_of_index(cell)).distance_squared_to(c) <= r2:
+					lit = true
+					break
+		if not lit:
+			for a: int in _fx_horde.count:
+				if _fx_horde.burn_left[a] > 0.0 and _fx_horde.burn_spot[a] == 0 \
+						and _fx_horde.positions[a].distance_squared_to(c) <= r2:
+					lit = true
+					break
+		if lit:
+			_ignite_gas(i)
+
+
+## The cloud flashes into flame: everyone inside catches fire, and the cloud is gone.
+func _ignite_gas(i: int) -> void:
+	var c: Vector2 = _gas.centers[i]
+	var r: float = _gas.radii[i]
+	_gas.remove(i)
+	for a: int in _fx_horde.count:
+		if _fx_horde.positions[a].distance_squared_to(c) <= r * r:
+			_fx_horde.ignite(a)
+	if _explosions != null:
+		_explosions.blast(Vector3(c.x, _gas_fx.ground_y, c.y), r, false, 6, false, true)
+	if c.distance_to(_player.ground_position()) < r:
+		_player.health.take_blast(20, false)
 
 
 ## Hits and deaths since the last frame → blood and corpses.
@@ -331,9 +400,10 @@ func _publish_stats(delta: float) -> void:
 
 func _update_status() -> void:
 	var g: Gun = _player.gun
+	var hp_text: String = "HP %d" % _player.health.hp
 	var mode: String = ["semi", "auto", "burst"][g.mode()]
-	var text: String = "%s [%s]  %d / %d  · %d" % [tr(g.config.display_name), tr(mode), g.ammo, g.mag_size,
-		_player.pouch.count(g.config.caliber)]
+	var text: String = "%s   ·   %s [%s]  %d / %d  · %d" % [hp_text, tr(g.config.display_name), tr(mode), g.ammo,
+		g.mag_size, _player.pouch.count(g.config.caliber)]
 	if g.jammed and not g.is_reloading():
 		text += "  · " + tr("JAMMED: reload")
 	elif g.is_reloading():
