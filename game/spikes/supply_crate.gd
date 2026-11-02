@@ -1,6 +1,6 @@
 class_name SupplyCrate
 extends Node3D
-## Interact target for the 0.5 spike: walk up, press interact, grenades refill. Doesn't block
+## Interact target for the 0.5 spike: walk up, press interact, grenades and loose rounds refill. Doesn't block
 ## the NavGrid (spike placeholder). Shows a device-specific prompt while the player is in range.
 
 const RESTOCKED_TIME: float = 1.2
@@ -46,7 +46,7 @@ func show_prompt(on: bool, pad: bool) -> void:
 	if _restocked_left > 0.0:
 		_label.text = "Restocked"
 	else:
-		_label.text = "(A) Restock grenades" if pad else "[F] Restock grenades"
+		_label.text = "(A) Restock ammo + grenades" if pad else "[F] Restock ammo + grenades"
 
 
 func interact(player: SpikePlayer) -> void:

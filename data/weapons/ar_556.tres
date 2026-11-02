@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/weapon_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+display_name = "AR 5.56"
+weapon_class = "ar"
+caliber = "5.56"
+damage = 34
+pellets = 1
+body_pen = 2
+armor_pen = 2
+stagger_sec = 0.05
+range_m = 40.0
+falloff_start_m = 20.0
+falloff_min = 0.6
+rpm = 700.0
+modes = Array[int]([1, 2])
+spread_deg = 1.5
+recoil_deg = 0.35
+recoil_max_deg = 4.0
+recoil_recover_deg = 10.0
+mag = 30
+reload_sec = 2.4
+reload_per_round = false
+noise_m = 40.0
+weight_kg = 3.5
+wear_per_shot = 0.05
+attachment_slots = PackedStringArray("muzzle", "optic", "under", "mag")
+burst_count = 3
+burst_spread_mul = 0.7
+burst_pause_sec = 0.25
+jam_below = 50.0
+jam_chance_max = 0.08
+waterproof = false

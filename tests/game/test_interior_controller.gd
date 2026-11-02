@@ -14,7 +14,6 @@ func before_each() -> void:
 	var marker: Node3D = Node3D.new()
 	marker.name = "AimMarker"
 	_player.add_child(marker)
-	_player.weapon = WeaponConfig.new()
 	add_child_autofree(_player)
 	_roof = NavGrid.new(25, 21, 1.0, Vector2(-12.5, -10.5))
 	_player.setup(_roof, Horde.new(HordeConfig.new(), _roof, 4), _camera, 0.0)

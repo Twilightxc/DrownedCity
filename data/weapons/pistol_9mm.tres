@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/weapon_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+display_name = "Pistol 9mm"
+weapon_class = "pistol"
+caliber = "9mm"
+damage = 30
+pellets = 1
+body_pen = 1
+armor_pen = 1
+stagger_sec = 0.05
+range_m = 25.0
+falloff_start_m = 12.0
+falloff_min = 0.5
+rpm = 360.0
+modes = Array[int]([0])
+spread_deg = 2.0
+recoil_deg = 0.8
+recoil_max_deg = 5.0
+recoil_recover_deg = 12.0
+mag = 15
+reload_sec = 1.5
+reload_per_round = false
+noise_m = 25.0
+weight_kg = 1.0
+wear_per_shot = 0.04
+attachment_slots = PackedStringArray("muzzle", "optic", "under")
+burst_count = 3
+burst_spread_mul = 0.7
+burst_pause_sec = 0.25
+jam_below = 50.0
+jam_chance_max = 0.08
+waterproof = false

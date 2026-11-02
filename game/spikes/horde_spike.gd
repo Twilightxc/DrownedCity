@@ -64,7 +64,6 @@ var _water_y: float = WATER_Y
 ## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
 ## so captures and measurements see a repeatable gore load without hands on the keyboard.
 var _auto_shoot: bool = false
-var _auto_fire_left: float = 0.0
 var _auto_throw_left: float = 2.0
 
 @onready var _rig: IsoCameraRig = $IsoCameraRig
@@ -205,14 +204,16 @@ func _auto_attack(delta: float, from: Vector2) -> void:
 		if d2 < best:
 			best = d2
 			nearest = a
+	_player.auto_trigger = false
 	if nearest < 0:
 		return
 	var at: Vector2 = _horde.positions[nearest]
-	_auto_fire_left -= delta
-	if _auto_fire_left <= 0.0 and best < 15.0 * 15.0:
-		_auto_fire_left = 0.1
+	if best < 15.0 * 15.0:
 		_player.aim_dir = (at - from).normalized()
-		_player._fire()
+		# Pulsed, so semi-auto guns fire too; the gun's rpm still caps the rate.
+		_player.auto_trigger = Engine.get_process_frames() % 2 == 0
+	if _player.gun.ammo == 0 and _player.pouch.count(_player.gun.config.caliber) == 0:
+		_player.restock()  # endless rounds for measurements
 	_auto_throw_left -= delta
 	if _auto_throw_left <= 0.0 and _grenades != null and _player.throwable != null:
 		_auto_throw_left = 4.0
@@ -308,9 +309,16 @@ func _publish_stats(delta: float) -> void:
 
 
 func _update_status() -> void:
-	var text: String = "Ammo %d / %d" % [_player.ammo, _player.weapon.magazine_size]
-	if _player.reload_left > 0.0:
-		text = "Reloading %d%%" % int(_player.reload_progress() * 100.0)
+	var g: Gun = _player.gun
+	var mode: String = ["semi", "auto", "burst"][g.mode()]
+	var text: String = "%s [%s]  %d / %d  · %d" % [tr(g.config.display_name), tr(mode), g.ammo, g.mag_size,
+		_player.pouch.count(g.config.caliber)]
+	if g.jammed and not g.is_reloading():
+		text += "  · " + tr("JAMMED: reload")
+	elif g.is_reloading():
+		text += "  · " + tr("Reloading %d%%") % int(g.reload_progress() * 100.0)
+	if g.durability < g.config.jam_below:
+		text += "  · %d%%" % int(g.durability)
 	if _player.throwable != null:
 		text += "   ·   %s %d" % [_player.throwable.display_name, _player.grenade_count]
 	if _status_label.text != text:
@@ -324,8 +332,8 @@ func _update_help() -> void:
 ## Controls cheat sheet for the device in use; subclasses append their extras.
 func _help_text(pad: bool) -> String:
 	if pad:
-		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT · Grenade type B\nCamera LB/RB, D-pad up/down · Back: debug overlay"
-	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB · Grenade type G\nCamera Q/E, wheel · F3: debug overlay"
+		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT · Grenade type B\nNext gun R3 · Fire mode L3 · Camera LB/RB, D-pad up/down · Back: debug overlay"
+	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB · Grenade type G\nGuns 1–4 · Fire mode V · Camera Q/E, wheel · F3: debug overlay"
 
 
 func _build_level_meshes() -> void:

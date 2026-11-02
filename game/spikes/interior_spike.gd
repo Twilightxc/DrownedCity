@@ -40,9 +40,9 @@ func _ready() -> void:
 	add_child(_lighting)
 	_lighting.setup(_interior.layout, interior_light)
 	_interior.storey_changed.connect(_on_storey_changed)
-	_player.fired.connect(func(_from: Vector3, _to: Vector3) -> void:
+	_player.noise.connect(func(at: Vector2, radius: float) -> void:
 		if _interior.storey >= 0:
-			_inside.noise(_player.ground_position(), _interior.storey, interior_horde.shot_noise))
+			_inside.noise(at, _interior.storey, radius * interior_horde.indoor_noise_mul))
 	if _grenades != null:
 		_grenades.exploded.connect(func(at: Vector3, _k: int, _cfg: ThrowableConfig) -> void:
 			if _interior.storey >= 0:
@@ -66,7 +66,7 @@ func _process(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
 	_inside.step(dt, _interior.storey, _player.ground_position())
 	_inside.sync(_interior.storey)
-	_lighting.step(dt, _interior.storey, _player.position, _player.aim_dir)
+	_lighting.step(dt, _interior.storey, _player.position, _player.aim_dir, _player.gun.flashlight)
 	_inside_ms = lerpf(_inside_ms, (Time.get_ticks_usec() - t0) / 1000.0, 0.1)
 	super._process(delta)
 	# Only the player's storey feeds gore; zombies elsewhere can't be hit, and their events are dropped.

@@ -2,6 +2,9 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-02 | Combat runs on GDD numbers: Walker HP 100, guns from the GDD §6 table; fire, frag (150) and incendiary (60) damage scaled so kill times stay as tuned in 0.7 | One scale for guns, armor and enemy types (1.2); DPS per class is unit-tested against the GDD table |
+| 2026-11-02 | A carried gun is a `Gun` (RefCounted: magazine, mode, bloom, durability, jam, reload) over a `WeaponConfig`; attachments are multipliers read live, so F4 edits apply at once; loose rounds per caliber in an `AmmoPouch` | No nodes per gun; the same classes serve survivors in 1.6+ |
+| 2026-11-02 | Pad: R3 = next gun, L3 = fire mode (the radial wheel stays for orders); keys 1–4 and V | The only free pad buttons; every new input keeps a pad path |
 | 2026-10-29 | Level props block the NavGrid cells whose centre lies inside their footprint + 0.2 m (at least one cell), not every cell they touch | J couldn't walk through visible gaps on the roof (between two AC units, and between an AC unit and sandbags); the player's 0.3 m radius keeps it off the props |
 | 2026-10-29 | Demo zombie types: Walker, Runner, Armored, Bloater; the combat test arena is the real base roof | J accepted Claude's proposal; Swimmer and the others need boats or later systems; the roof carries over into the night horde |
 | 2026-10-29 | Phase 1: no cuts (the 2026-10-27 additions stay in the demo, ≈ 750 h left); combat fun first, nothing else starts before J's "combat is fun" gate (1.G); J downloads Mixamo clips when a milestone first needs them | J; GDD §16 says the biggest risk to the core is combat that isn't fun |

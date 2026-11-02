@@ -2,10 +2,12 @@ class_name SpikePlayer
 extends Node3D
 ## Twin-stick shooter for the Phase 0 spikes (0.5 = feel): camera-relative movement with
 ## acceleration, mouse aim on a body-height plane, right-stick aim with light assist (gamepad
-## only), magazine + reload, hold-to-aim grenade throw, interact. Moves on the NavGrid like the
-## zombies; no physics body.
+## only), guns from a LoadoutConfig (Phase 1 step 1.1: keys 1–4 switch, fire modes, magazines and loose rounds by
+## caliber, wear and jams), hold-to-aim grenade throw, interact. Moves on the NavGrid like the zombies; no
+## physics body.
 
-signal fired(from: Vector3, to: Vector3)
+signal fired(from: Vector3, to: Vector3)  ## one per pellet (tracers)
+signal noise(at: Vector2, radius: float)  ## one per shot: what sleepers can hear (GDD §9)
 signal device_changed(pad: bool)
 
 const MUZZLE_HEIGHT: float = 0.9
@@ -16,7 +18,7 @@ const AIM_LINE_COLOR: Color = Color(1.0, 0.45, 0.3, 0.6)
 const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 
 @export var radius: float = 0.3
-@export var weapon: WeaponConfig
+@export var loadout: LoadoutConfig  ## null: one default gun with endless rounds (tests)
 @export var throwable: ThrowableConfig
 @export var throwables: Array[ThrowableConfig] = []  ## more than one: "throwable_next" cycles them (shared count)
 @export var controls: TwinStickConfig
@@ -35,14 +37,16 @@ var assist_target: int = -1  ## agent index this frame; may go stale once a shot
 var assist_point: Vector2 = Vector2.ZERO  ## that agent's position when it was picked
 var interact_target: Node3D  ## any node in group "interactable" with interact(player) and show_prompt(on, pad)
 var shots_fired: int = 0
-var ammo: int = 0
-var reload_left: float = 0.0
 var grenade_count: int = 0
+var guns: Array[Gun] = []
+var gun: Gun  ## the one in hand
+var pouch: AmmoPouch = AmmoPouch.new()
+var auto_trigger: bool = false  ## scripted fire (autoshoot captures); OR-ed with the fire button
 
 var _hitscan: Hitscan
 var _assist: AimAssist
 var _hits: PackedInt32Array = PackedInt32Array()
-var _cooldown: float = 0.0
+var _shot_damage: Dictionary[int, int] = {}
 var _aim_stick: Vector2 = Vector2.ZERO
 var _throw_held: bool = false
 var _throw_target: Vector3 = Vector3.ZERO
@@ -61,8 +65,29 @@ func setup(nav: NavGrid, crowd: Horde, cam: Camera3D, y: float) -> void:
 	_hitscan = Hitscan.new(nav)
 	_assist = AimAssist.new(nav)
 	position.y = y
-	ammo = weapon.magazine_size
+	_arm()
 	grenade_count = throwable.carry if throwable != null else 0
+
+
+func _arm() -> void:
+	guns.clear()
+	pouch = AmmoPouch.new()
+	if loadout == null:
+		guns.append(Gun.new(WeaponConfig.new()))
+	else:
+		for caliber: String in loadout.ammo:
+			pouch.add(caliber, loadout.ammo[caliber])
+		for slot: WeaponSlot in loadout.slots:
+			guns.append(Gun.new(slot.weapon, slot.attachments, pouch))
+	gun = guns[0]
+
+
+## Takes gun `i` (0-based) in hand; a reload in progress is dropped.
+func select_gun(i: int) -> void:
+	if i < 0 or i >= guns.size() or guns[i] == gun:
+		return
+	gun.reload_left = 0.0
+	gun = guns[i]
 
 
 func _ready() -> void:
@@ -118,20 +143,20 @@ func ground_position() -> Vector2:
 
 ## 0..1 while reloading, 1 otherwise.
 func reload_progress() -> float:
-	if reload_left <= 0.0 or weapon.reload_time <= 0.0:
-		return 1.0
-	return 1.0 - reload_left / weapon.reload_time
+	return gun.reload_progress()
 
 
 func start_reload() -> void:
-	if reload_left > 0.0 or weapon.magazine_size <= 0 or ammo >= weapon.magazine_size:
-		return
-	reload_left = weapon.reload_time
+	gun.start_reload()
 
 
+## Supply crate: grenades back to full, loose rounds topped up to the loadout's amounts.
 func restock() -> void:
 	if throwable != null:
 		grenade_count = throwable.carry
+	if loadout != null:
+		for caliber: String in loadout.ammo:
+			pouch.add(caliber, maxi(loadout.ammo[caliber] - pouch.count(caliber), 0))
 
 
 func _input(event: InputEvent) -> void:
@@ -163,6 +188,18 @@ func next_throwable() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("reload"):
 		start_reload()
+	elif event.is_action_pressed("weapon_next"):
+		select_gun((guns.find(gun) + 1) % guns.size())
+	elif event.is_action_pressed("fire_mode"):
+		gun.next_mode()
+	elif event.is_action_pressed("weapon_1"):
+		select_gun(0)
+	elif event.is_action_pressed("weapon_2"):
+		select_gun(1)
+	elif event.is_action_pressed("weapon_3"):
+		select_gun(2)
+	elif event.is_action_pressed("weapon_4"):
+		select_gun(3)
 	elif event.is_action_pressed("throwable_next"):
 		next_throwable()
 	elif event.is_action_pressed("interact") and interact_target != null:
@@ -238,43 +275,38 @@ func _mouse_on_plane(plane_y: float) -> Variant:
 
 
 func _update_weapon(delta: float) -> void:
-	_cooldown -= delta
-	if reload_left > 0.0:
-		reload_left -= delta
-		if reload_left <= 0.0:
-			reload_left = 0.0
-			ammo = weapon.magazine_size
-		_cooldown = maxf(_cooldown, 0.0)
-		return
-	var trigger: bool = not aim_locked and Input.is_action_pressed("fire")
+	var trigger: bool = not aim_locked and (Input.is_action_pressed("fire") or auto_trigger)
 	if using_pad and controls.pad_auto_fire and not aim_locked and _aim_stick.length() >= controls.auto_fire_threshold:
 		trigger = true
-	if not trigger:
-		_cooldown = maxf(_cooldown, 0.0)
-		return
-	if _cooldown > 0.0:
-		return
-	if weapon.magazine_size > 0 and ammo <= 0:
-		start_reload()
-		return
-	_cooldown += 1.0 / weapon.fire_rate  # carry the remainder so the rate doesn't depend on FPS
-	ammo -= 1
-	_fire()
-	if weapon.magazine_size > 0 and ammo <= 0:
-		start_reload()
+	for i: int in gun.step(delta, trigger, _rng):
+		_fire()
 
 
+## One round: every pellet is cast first, then the summed damage is applied once (kills swap agent indices).
+## Damage per hit: falloff with distance, −20 % per body already passed, armor; armor that the round can't
+## pierce stops it in that body.
 func _fire() -> void:
 	shots_fired += 1
-	var spread: float = deg_to_rad(_rng.randf_range(-weapon.spread_deg, weapon.spread_deg))
-	var dir: Vector2 = aim_dir.rotated(spread)
-	var from: Vector2 = ground_position() + dir * radius
-	var travelled: float = _hitscan.cast(horde, from, dir, weapon.max_range, weapon.penetration, _hits)
-	if not _hits.is_empty():
-		horde.apply_damage(_hits, weapon.damage, from)
+	var cfg: WeaponConfig = gun.config
 	var muzzle_y: float = ground_y + MUZZLE_HEIGHT
-	var end: Vector2 = from + dir * travelled
-	fired.emit(Vector3(from.x, muzzle_y, from.y), Vector3(end.x, muzzle_y, end.y))
+	_shot_damage.clear()
+	for dir: Vector2 in gun.pellet_dirs(aim_dir, _rng):
+		var from: Vector2 = ground_position() + dir * radius
+		var travelled: float = _hitscan.cast(horde, from, dir, cfg.range_m, cfg.body_pen, _hits)
+		for i: int in _hits.size():
+			var a: int = _hits[i]
+			var armor: int = horde.armor[a]
+			_shot_damage[a] = _shot_damage.get(a, 0) + Ballistics.hit_damage(gun.damage, _hitscan.hit_t[i], i, armor, cfg)
+			if Ballistics.stops_bullet(cfg.armor_pen, armor):
+				travelled = _hitscan.hit_t[i]
+				break
+		var end: Vector2 = from + dir * travelled
+		fired.emit(Vector3(from.x, muzzle_y, from.y), Vector3(end.x, muzzle_y, end.y))
+	if not _shot_damage.is_empty():
+		var agents: PackedInt32Array = PackedInt32Array(_shot_damage.keys())
+		var damages: PackedInt32Array = PackedInt32Array(_shot_damage.values())
+		horde.apply_hits(agents, damages, ground_position(), false, cfg.stagger_sec)
+	noise.emit(ground_position(), gun.noise_m)
 
 
 ## Hold to show the landing ring, release to throw.
@@ -332,7 +364,7 @@ func _draw_aim_line() -> void:
 	if not controls.aim_line or aim_locked:
 		return
 	var from: Vector2 = ground_position() + aim_dir * radius
-	var length: float = grid.ray_distance(from, aim_dir, weapon.max_range)
+	var length: float = grid.ray_distance(from, aim_dir, gun.config.range_m)
 	if length <= 0.0:
 		return
 	var to: Vector2 = from + aim_dir * length

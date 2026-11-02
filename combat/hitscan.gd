@@ -5,6 +5,7 @@ extends RefCounted
 ## stops at the first blocked cell, and returns hits ordered along the ray.
 
 var grid: NavGrid
+var hit_t: PackedFloat32Array = PackedFloat32Array()  ## distance along the ray to each of the last cast's hits
 
 var _visit_stamp: PackedInt32Array
 var _stamp: int = 0
@@ -21,6 +22,7 @@ func _init(nav: NavGrid) -> void:
 ## Returns the distance the bullet travelled (to a wall or max_range).
 func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits: int, out_hits: PackedInt32Array) -> float:
 	out_hits.clear()
+	hit_t.clear()
 	_cand_agent.clear()
 	_cand_t.clear()
 	_stamp += 1
@@ -101,6 +103,7 @@ func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits:
 		if _cand_t[i] > end_t:
 			break
 		out_hits.append(_cand_agent[i])
+		hit_t.append(_cand_t[i])
 		if out_hits.size() >= max_hits:
 			return _cand_t[i]  # penetration used up: the bullet stops in this body
 	return end_t

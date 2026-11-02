@@ -6,7 +6,7 @@
 script = ExtResource("1_cfg")
 per_storey = 15
 hatch_clear = 5.0
-shot_noise = 12.0
+indoor_noise_mul = 0.3
 blast_noise = 20.0
 floor_damping = 0.5
 sight = 6.0

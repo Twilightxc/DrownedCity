@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="LoadoutConfig" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://combat/loadout_config.gd" id="1_loadout"]
+[ext_resource type="Script" path="res://combat/weapon_slot.gd" id="2_slot"]
+[ext_resource type="Resource" path="res://data/weapons/pistol_9mm.tres" id="3_pistol"]
+[ext_resource type="Resource" path="res://data/weapons/ar_556.tres" id="4_ar"]
+[ext_resource type="Resource" path="res://data/weapons/shotgun_12g.tres" id="5_shotgun"]
+[ext_resource type="Resource" path="res://data/weapons/dmr_308.tres" id="6_dmr"]
+[ext_resource type="Resource" path="res://data/weapons/attachments/silencer.tres" id="7_silencer"]
+[ext_resource type="Resource" path="res://data/weapons/attachments/red_dot.tres" id="8_red_dot"]
+[ext_resource type="Resource" path="res://data/weapons/attachments/extended_mag.tres" id="9_ext_mag"]
+[ext_resource type="Resource" path="res://data/weapons/attachments/flashlight.tres" id="10_flashlight"]
+[ext_resource type="Script" path="res://combat/attachment_config.gd" id="11_att"]
+
+[sub_resource type="Resource" id="Resource_pistol"]
+script = ExtResource("2_slot")
+weapon = ExtResource("3_pistol")
+attachments = Array[ExtResource("11_att")]([ExtResource("7_silencer"), ExtResource("10_flashlight")])
+
+[sub_resource type="Resource" id="Resource_ar"]
+script = ExtResource("2_slot")
+weapon = ExtResource("4_ar")
+attachments = Array[ExtResource("11_att")]([ExtResource("8_red_dot"), ExtResource("9_ext_mag"), ExtResource("10_flashlight")])
+
+[sub_resource type="Resource" id="Resource_shotgun"]
+script = ExtResource("2_slot")
+weapon = ExtResource("5_shotgun")
+
+[sub_resource type="Resource" id="Resource_dmr"]
+script = ExtResource("2_slot")
+weapon = ExtResource("6_dmr")
+
+[resource]
+script = ExtResource("1_loadout")
+slots = Array[ExtResource("2_slot")]([SubResource("Resource_ar"), SubResource("Resource_pistol"), SubResource("Resource_shotgun"), SubResource("Resource_dmr")])
+ammo = Dictionary[String, int]({
+"9mm": 90,
+"5.56": 180,
+"12g": 36,
+".308": 40
+})
