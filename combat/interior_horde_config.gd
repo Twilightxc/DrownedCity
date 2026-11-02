@@ -10,6 +10,6 @@ extends Resource
 @export var indoor_noise_mul: float = 0.3  ## a gun's noise_m indoors (walls damp it): AR 40 m → 12 m on the storey
 @export var blast_noise: float = 20.0  ## m, the same for a grenade blast
 @export var floor_damping: float = 0.5  ## noise radius on the storeys just above and below
-@export var sight: float = 6.0  ## m: a sleeper with line of sight to the player wakes
-@export var chain: float = 2.5  ## m: a sleeper next to an awake zombie wakes
-@export var check_sec: float = 0.2  ## sight and chain checks run this often
+@export var sight: float = 6.0  ## m: sight inside (dark); sets the player's storey horde sight_mul
+@export var chain: float = 2.5  ## m: a calm zombie next to a hunter hunts too
+@export var check_sec: float = 0.2  ## chain checks run this often

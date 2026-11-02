@@ -6,6 +6,9 @@ extends RefCounted
 ## Hits and deaths are queued as events for the presentation (blood, corpses), which drains them.
 
 enum Anim { WALK, ATTACK, FLINCH }
+## GDD §9 perception: dormant stands still; suspicious walks to the last noise it heard; hunting chases the
+## target (the player) on the main flow field.
+enum State { DORMANT, SUSPICIOUS, HUNTING }
 
 const MAX_EVENTS: int = 512  ## per queue; older events are dropped if nobody drains them
 const SPOT_PARTS: Vector2i = Vector2i(1, 10)  ## spot fires land on torso .. shin_r (kit_zombie SKELETON order)
@@ -20,6 +23,8 @@ class Death:
 	var push: Vector2  ## unit, away from the shooter or the blast
 	var blast: bool
 	var burned: bool  ## died burning: charred corpse
+	var type: int  ## index into config.types
+	var scale: Vector3 = Vector3.ONE  ## the type's body scale (the corpse keeps it)
 
 
 var config: HordeConfig
@@ -43,7 +48,11 @@ var anim_time: PackedFloat32Array  ## walk: cycles (by distance walked); others:
 var slow_left: PackedFloat32Array  ## s of hit slow remaining (GDD §6)
 var burn_left: PackedFloat32Array  ## s of burning remaining, 0 = not burning
 var burn_spot: PackedByteArray  ## 0 = the whole body burns; else part index + 1 of a small spot fire
-var dormant: PackedByteArray  ## 1 = asleep: stands still, no flow, no attack (zombies inside buildings)
+var state: PackedByteArray  ## State
+var goal: PackedVector2Array  ## suspicious: where the noise was; hunting: where the target was last seen
+var type: PackedByteArray  ## index into config.types (0 when there are none)
+var sight_mul: float = 1.0  ## fog, night, dark interiors shorten sight
+var noise_flow: FlowField  ## toward the latest noise, shared by every suspicious agent
 var lift: PackedFloat32Array  ## m above the horde's floor (stair flights inside buildings); drawn, not simulated
 var armor: PackedByteArray  ## WeaponConfig.Armor per agent (0 = none); set per enemy type
 var stagger_left: PackedFloat32Array  ## s a hit agent stands still (weapon stagger)
@@ -59,6 +68,9 @@ var hits_on_target: int = 0
 
 var _attack_cooldown: PackedFloat32Array
 var _burn_tick: PackedFloat32Array
+var _state_left: PackedFloat32Array  ## suspicious: s until it calms down; hunting: s of lost sight left
+var _noise_cell: Vector2i = Vector2i(-1, -1)
+var _perceive_left: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -67,6 +79,7 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	grid = nav
 	capacity = max_agents
 	flow = FlowField.new(nav)
+	noise_flow = FlowField.new(nav)
 	spatial = SpatialHash.new(nav, max_agents)
 	positions.resize(max_agents)
 	velocities.resize(max_agents)
@@ -80,7 +93,10 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	slow_left.resize(max_agents)
 	burn_left.resize(max_agents)
 	burn_spot.resize(max_agents)
-	dormant.resize(max_agents)
+	state.resize(max_agents)
+	goal.resize(max_agents)
+	type.resize(max_agents)
+	_state_left.resize(max_agents)
 	lift.resize(max_agents)
 	armor.resize(max_agents)
 	stagger_left.resize(max_agents)
@@ -89,16 +105,40 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	_rng.seed = rng_seed
 
 
-func spawn(p: Vector2) -> bool:
+## The type of agent `a`, or null when the horde has no types (plain numbers from HordeConfig).
+func type_of(a: int) -> EnemyConfig:
+	return config.types[type[a]] if not config.types.is_empty() else null
+
+
+## A type index drawn from config.spawn_mix (0 when there's no mix).
+func pick_type() -> int:
+	var mix: PackedFloat32Array = config.spawn_mix
+	if mix.is_empty() or config.types.is_empty():
+		return 0
+	var total: float = 0.0
+	for w: float in mix:
+		total += w
+	var r: float = _rng.randf() * total
+	for i: int in mix.size():
+		r -= mix[i]
+		if r <= 0.0:
+			return mini(i, config.types.size() - 1)
+	return 0
+
+
+func spawn(p: Vector2, enemy_type: int = 0, start: State = State.HUNTING) -> bool:
 	if count >= capacity or not grid.is_walkable_world(p):
 		return false
 	var a: int = count
 	positions[a] = p
 	velocities[a] = Vector2.ZERO
-	hp[a] = config.hp
-	speed_scale[a] = 1.0 + _rng.randf_range(-config.speed_jitter, config.speed_jitter)
+	type[a] = clampi(enemy_type, 0, maxi(config.types.size() - 1, 0))
+	var t: EnemyConfig = type_of(a)
+	hp[a] = t.hp if t != null else config.hp
+	speed_scale[a] = (1.0 + _rng.randf_range(-config.speed_jitter, config.speed_jitter)) * (t.speed_mul if t != null else 1.0)
 	var shade: float = _rng.randf_range(0.85, 1.1)
-	tint[a] = Color(shade, shade, shade)
+	var base: Color = t.tints[_rng.randi() % t.tints.size()] if t != null and not t.tints.is_empty() else Color.WHITE
+	tint[a] = Color(base.r * shade, base.g * shade, base.b * shade)
 	heading[a] = Vector2(0, 1)
 	variant[a] = _rng.randi() % maxi(config.variants, 1)
 	anim[a] = Anim.WALK
@@ -106,9 +146,11 @@ func spawn(p: Vector2) -> bool:
 	slow_left[a] = 0.0
 	burn_left[a] = 0.0
 	burn_spot[a] = 0
-	dormant[a] = 0
+	state[a] = start
+	goal[a] = p
+	_state_left[a] = config.lose_sec
 	lift[a] = 0.0
-	armor[a] = 0
+	armor[a] = t.armor if t != null else 0
 	stagger_left[a] = 0.0
 	_burn_tick[a] = 0.0
 	_attack_cooldown[a] = _rng.randf() * config.attack_interval
@@ -132,7 +174,10 @@ func kill(a: int) -> void:
 		slow_left[a] = slow_left[last]
 		burn_left[a] = burn_left[last]
 		burn_spot[a] = burn_spot[last]
-		dormant[a] = dormant[last]
+		state[a] = state[last]
+		goal[a] = goal[last]
+		type[a] = type[last]
+		_state_left[a] = _state_left[last]
 		lift[a] = lift[last]
 		armor[a] = armor[last]
 		stagger_left[a] = stagger_left[last]
@@ -141,12 +186,14 @@ func kill(a: int) -> void:
 	count = last
 
 
-## Moves live agent `a` into `other` (same position, look, hp and fire), e.g. up a stair flight into the
+## Moves live agent `a` into `other` (same position, type, look, hp, fire and state), e.g. up a stair flight into the
 ## next storey's horde. Silent: no death event. Returns false if `other` is full or `a`'s spot is blocked there.
 func transfer(a: int, other: Horde) -> bool:
-	if not other.spawn(positions[a]):
+	if not other.spawn(positions[a], type[a], state[a] as State):
 		return false
 	var b: int = other.count - 1
+	other.goal[b] = goal[a]
+	other._state_left[b] = config.lose_sec
 	other.velocities[b] = velocities[a]
 	other.hp[b] = hp[a]
 	other.speed_scale[b] = speed_scale[a]
@@ -165,12 +212,77 @@ func transfer(a: int, other: Horde) -> bool:
 	return true
 
 
+## Suspicious or hunting.
 func awake_count() -> int:
 	var n: int = 0
 	for a: int in count:
-		if dormant[a] == 0:
+		if state[a] != State.DORMANT:
 			n += 1
 	return n
+
+
+func hunting_count() -> int:
+	return state.slice(0, count).count(State.HUNTING)
+
+
+## A sound at `at` heard within `radius` (GDD §9): dormant and suspicious agents walk to it; close to it
+## (hunt_noise_frac × radius) they hunt at once. Hunters keep hunting.
+func hear(at: Vector2, radius: float) -> void:
+	var r2: float = radius * radius
+	var hunt2: float = r2 * config.hunt_noise_frac * config.hunt_noise_frac
+	var heard: bool = false
+	for a: int in count:
+		if state[a] == State.HUNTING:
+			continue
+		var d2: float = positions[a].distance_squared_to(at)
+		if d2 > r2:
+			continue
+		heard = true
+		goal[a] = at
+		if d2 <= hunt2:
+			state[a] = State.HUNTING
+			_state_left[a] = config.lose_sec
+		else:
+			state[a] = State.SUSPICIOUS
+			_state_left[a] = config.suspicious_sec
+	if heard:
+		_point_noise_flow(at)
+
+
+func _point_noise_flow(at: Vector2) -> void:
+	var cell: Vector2i = grid.world_to_cell(at)
+	if cell != _noise_cell:
+		_noise_cell = cell
+		noise_flow.compute([cell] as Array[Vector2i])
+
+
+## Sight and the state timers (GDD §9), once per frame before update(): a calm agent that sees `target`
+## (line of sight within sight_m × type × sight_mul) starts hunting; a hunter that hasn't seen it for
+## lose_sec turns suspicious at the last place it saw it; a suspicious agent calms down after suspicious_sec.
+func perceive(target: Vector2, delta: float) -> void:
+	_perceive_left -= delta
+	var look: bool = _perceive_left <= 0.0
+	if look:
+		_perceive_left = config.perceive_sec
+	for a: int in count:
+		var st: int = state[a]
+		if st != State.DORMANT:
+			_state_left[a] -= delta
+			if _state_left[a] <= 0.0:
+				if st == State.HUNTING:
+					state[a] = State.SUSPICIOUS
+					_state_left[a] = config.suspicious_sec
+					_point_noise_flow(goal[a])  # it walks to the last sighting
+				else:
+					state[a] = State.DORMANT
+		if not look:
+			continue
+		var t: EnemyConfig = type_of(a)
+		var sight: float = config.sight_m * sight_mul * (t.sight_mul if t != null else 1.0)
+		if positions[a].distance_squared_to(target) <= sight * sight and grid.line_of_sight(positions[a], target):
+			state[a] = State.HUNTING
+			goal[a] = target
+			_state_left[a] = config.lose_sec
 
 
 ## Applies damage to the given agents (each listed once). Returns how many died.
@@ -195,9 +307,14 @@ func apply_hits(agents: PackedInt32Array, damages: PackedInt32Array, source: Vec
 		if hp[a] <= 0:
 			dead.append(a)
 			continue
-		slow_left[a] = minf(slow_left[a] + config.hit_slow_sec, config.hit_slow_cap_sec)
-		dormant[a] = 0  # a hit wakes it
-		stagger_left[a] = maxf(stagger_left[a], stagger)
+		var t: EnemyConfig = type_of(a)
+		var slow_k: float = t.hit_slow_mul if t != null else 1.0
+		if slow_k > 0.0:
+			slow_left[a] = minf(slow_left[a] + config.hit_slow_sec * slow_k, config.hit_slow_cap_sec)
+		stagger_left[a] = maxf(stagger_left[a], stagger * (t.stagger_mul if t != null else 1.0))
+		state[a] = State.HUNTING  # a hit wakes it and it knows where from
+		goal[a] = source if source != Vector2.INF else positions[a]
+		_state_left[a] = config.lose_sec
 		if anim[a] != Anim.ATTACK:
 			anim[a] = Anim.FLINCH
 			anim_time[a] = 0.0
@@ -242,6 +359,10 @@ func _queue_death(a: int, push: Vector2, blast: bool, burned: bool = false) -> v
 	d.push = push
 	d.blast = blast
 	d.burned = burned
+	d.type = type[a]
+	var t: EnemyConfig = type_of(a)
+	if t != null:
+		d.scale = t.scale
 	deaths.append(d)
 
 
@@ -386,27 +507,35 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 	var max_step2: float = max_step * max_step
 	var target_cell: Vector2i = Vector2i(floori((target.x - ox) * inv), floori((target.y - oy) * inv))
 
-	var sleep: PackedByteArray = dormant
+	var st: PackedByteArray = state
+	var goals: PackedVector2Array = goal
 	for a: int in count:
-		if sleep[a] != 0:
-			continue  # asleep: stands where it is (still in the spatial hash, so others walk around it)
+		if st[a] == State.DORMANT:
+			continue  # stands where it is (still in the spatial hash, so others walk around it)
+		var hunting: bool = st[a] == State.HUNTING
 		var p: Vector2 = pos[a]
 		var cx: int = floori((p.x - ox) * inv)
 		var cy: int = floori((p.y - oy) * inv)
 		var in_grid: bool = cx >= 0 and cy >= 0 and cx < w and cy < h
 
-		var to_target: Vector2 = target - p
+		# Hunters chase `target` on the main flow; suspicious agents walk to their noise on the noise flow.
+		var tgt: Vector2 = target if hunting else goals[a]
+		var tcell: Vector2i = target_cell if hunting else _noise_cell
+		var field: FlowField = flow if hunting else noise_flow
+		var to_target: Vector2 = tgt - p
 		var dist2: float = to_target.length_squared()
 		var desired: Vector2 = Vector2.ZERO
 		var stag: bool = stagger_left[a] > 0.0
 		if stag:
 			stagger_left[a] -= delta
-		if dist2 > stop_r2 and not stag:
-			if in_grid and not (cx == target_cell.x and cy == target_cell.y):
-				desired = flow.direction_at(cy * w + cx)
+		var arrive2: float = stop_r2 if hunting else 1.0  # suspicious: stops within 1 m of the noise
+		if dist2 > arrive2 and not stag:
+			if in_grid and not (cx == tcell.x and cy == tcell.y):
+				desired = field.direction_at(cy * w + cx)
 			if desired == Vector2.ZERO:
 				desired = to_target / sqrt(dist2)
-			desired *= config.speed * speed_scale[a] * (slow_mul if slow[a] > 0.0 else 1.0) 				* (burn_mul if burn[a] > 0.0 and spot[a] == 0 else 1.0)
+			desired *= config.speed * speed_scale[a] * (slow_mul if slow[a] > 0.0 else 1.0) \
+				* (burn_mul if burn[a] > 0.0 and spot[a] == 0 else 1.0) * (1.0 if hunting else config.suspicious_speed)
 		slow[a] = maxf(slow[a] - delta, 0.0)
 
 		# Separation from neighbours in the 3x3 cells around.
@@ -454,7 +583,7 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 			head[a] = head[a].lerp(to_target / sqrt(dist2), turn).normalized()
 
 		cooldown[a] -= delta
-		var attacking: bool = attack and dist2 <= attack_r2 and cooldown[a] <= 0.0
+		var attacking: bool = hunting and attack and dist2 <= attack_r2 and cooldown[a] <= 0.0
 		if attacking:
 			cooldown[a] = config.attack_interval
 			hits_on_target += 1

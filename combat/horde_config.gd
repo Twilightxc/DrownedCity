@@ -25,6 +25,18 @@ extends Resource
 @export var flinch_anim_sec: float = 0.33
 @export var variants: int = 2  ## looks drawn by HordeRenderer (male / female)
 
+@export_group("Types (GDD §9)")
+@export var types: Array[EnemyConfig] = []  ## empty: one plain type from the numbers above
+@export var spawn_mix: PackedFloat32Array = PackedFloat32Array()  ## weight per type for spawns; empty = all type 0
+
+@export_group("Perception (GDD §9: sound first, sight second)")
+@export var sight_m: float = 10.0  ## a calm zombie with line of sight this close starts hunting
+@export var hunt_noise_frac: float = 0.35  ## a noise this close (× its radius) makes it hunt at once
+@export var suspicious_sec: float = 10.0  ## a suspicious zombie that finds nothing calms down after this
+@export var lose_sec: float = 5.0  ## a hunter without sight of its target this long turns suspicious
+@export var perceive_sec: float = 0.2  ## sight checks run this often
+@export var suspicious_speed: float = 0.7  ## × speed while walking to a noise
+
 @export_group("Flow field")
 @export var flow_recompute_sec: float = 0.25
 

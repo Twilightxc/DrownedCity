@@ -59,6 +59,8 @@ var _blood: BloodFx
 var _ground_fire: GroundFire
 var _fire_fx: FireFx
 var _explosions: ExplosionFx
+var _gas: GasField = GasField.new()  ## Bloater clouds (1.2); the player's damage from them comes in 1.3
+var _gas_fx: GasFx
 var _fire_rev: int = -1
 var _water_y: float = WATER_Y
 ## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
@@ -132,6 +134,10 @@ func _ready() -> void:
 		if _grenades != null:
 			_grenades.ground_fire = _ground_fire
 	_rig.position = _player.position
+	_gas_fx = GasFx.new()
+	_gas_fx.ground_y = GROUND_Y
+	_gas_fx.gas = _gas
+	add_child(_gas_fx)
 
 	_auto_shoot = "--auto-shoot" in OS.get_cmdline_user_args()
 	if OS.has_feature("web"):
@@ -163,6 +169,7 @@ func _process(delta: float) -> void:
 	_drain_horde_events()
 	if _fire_fx != null:
 		_fire_fx.sync(delta, _fx_horde, _ground_fire if _fx_horde == _horde else null)
+	_gas.update(delta)
 
 	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
 	_update_status()
@@ -229,6 +236,10 @@ func _on_blast(at: Vector3, _killed: int, cfg: ThrowableConfig) -> void:
 ## Hits and deaths since the last frame → blood and corpses.
 func _drain_horde_events() -> void:
 	var h: Horde = _fx_horde
+	for d: Horde.Death in h.deaths:
+		var t: EnemyConfig = h.config.types[d.type] if d.type < h.config.types.size() else null
+		if t != null and t.gas_on_death:
+			_gas.add(d.position, t.gas_radius_m, t.gas_sec)
 	if _blood != null:
 		for i: int in h.hit_points.size():
 			_blood.hit(h.hit_points[i], h.hit_dirs[i])
@@ -255,7 +266,7 @@ func _spawn(delta: float, target: Vector2) -> void:
 		for attempt: int in 8:
 			var c: Vector2i = _perimeter[_rng.randi() % _perimeter.size()]
 			var p: Vector2 = _grid.cell_center(c) + Vector2(_rng.randf_range(-0.3, 0.3), _rng.randf_range(-0.3, 0.3))
-			if p.distance_squared_to(target) >= min_d2 and _horde.spawn(p):
+			if p.distance_squared_to(target) >= min_d2 and _horde.spawn(p, _horde.pick_type()):
 				break
 
 
@@ -289,6 +300,16 @@ func _publish_stats(delta: float) -> void:
 	DebugOverlay.set_stat("horde_render_sync", "%.2f ms" % _render_ms)
 	DebugOverlay.set_stat("flow_field", "%.2f ms (every %.2f s)" % [_flow_ms, horde_config.flow_recompute_sec])
 	DebugOverlay.set_stat("kills", str(_horde.kills))
+	if not horde_config.types.is_empty():
+		var per: PackedInt32Array = PackedInt32Array()
+		per.resize(horde_config.types.size())
+		for a: int in _fx_horde.count:
+			per[_fx_horde.type[a]] += 1
+		var parts: PackedStringArray = PackedStringArray()
+		for i: int in per.size():
+			parts.append("%s %d" % [horde_config.types[i].display_name, per[i]])
+		DebugOverlay.set_stat("types", " · ".join(parts))
+		DebugOverlay.set_stat("gas_clouds", str(_gas.count()))
 	if _corpses != null:
 		DebugOverlay.set_stat("corpses", "%d / %d" % [_corpses.live_count(), gore_config.corpse_cap])
 		DebugOverlay.set_stat("gore", "on" if gore_config.enabled else "off")

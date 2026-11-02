@@ -1,9 +1,10 @@
 class_name InteriorHordes
 extends Node3D
 ## Zombies inside one building (GDD §5, PHASE0 0.8 part 2): a Horde + flow field + renderer per walkable
-## storey, on that storey's NavGrid. They start dormant (standing still, no flow) and wake by noise (shots,
-## blasts; damped through one floor), by sight (line of sight to the player) or next to an awake one.
-## Awake zombies chase the player across storeys: on another storey they head for the stair flight toward
+## storey, on that storey's NavGrid. They start dormant and follow the horde's perception (GDD §9, Phase 1
+## step 1.2): a noise (shots, blasts; damped through one floor) makes them walk to it, sight of the player on
+## its storey makes them hunt, and so does a hunter next to them or a hit.
+## Hunters chase the player across storeys: on another storey they head for the stair flight toward
 ## the player, and an agent past the middle of a flight moves into the other storey's horde (the same rule
 ## that moves the player). Each flight's wrong end is blocked in the zombie grids, so they climb it from
 ## its foot instead of stepping onto its top from the landing below.
@@ -74,18 +75,14 @@ func awake_count() -> int:
 	return n
 
 
-## A sound at `at` on `storey`: sleepers within `radius` wake, and within radius × floor_damping on the
-## storeys just above and below.
+## A sound at `at` on `storey`, heard within `radius` there and radius × floor_damping on the storeys just
+## above and below (Horde.hear: they walk to it; close to it they hunt).
 func noise(at: Vector2, storey: int, radius: float) -> void:
 	for s: int in hordes.size():
 		var h: Horde = hordes[s]
 		if h == null or absi(s - storey) > 1:
 			continue
-		var r: float = radius if s == storey else radius * config.floor_damping
-		var r2: float = r * r
-		for a: int in h.count:
-			if h.dormant[a] != 0 and h.positions[a].distance_squared_to(at) <= r2:
-				h.dormant[a] = 0
+		h.hear(at, radius if s == storey else radius * config.floor_damping)
 
 
 ## One step. `player_storey` = -1 while the player is outside: awake zombies then gather at the landing
@@ -101,8 +98,11 @@ func step(delta: float, player_storey: int, player_pos: Vector2) -> void:
 		var h: Horde = hordes[s]
 		if h == null:
 			continue
+		if s == player_storey:
+			h.sight_mul = config.sight / horde_config.sight_m  # dark interiors: shorter sight
+			h.perceive(player_pos, delta)
 		if check:
-			_wake_checks(s, player_storey, player_pos)
+			_chain_checks(s)
 		if h.count == 0 or h.awake_count() == 0:
 			h.spatial.rebuild(h.positions, h.count)  # the player's hitscan reads it; update() isn't run
 			continue
@@ -180,26 +180,22 @@ func _populate(s: int) -> void:
 		var c: Vector2i = cells[k]
 		cells[k] = cells[i]
 		var p: Vector2 = layout.cell_center(c) + Vector2(_rng.randf_range(-0.25, 0.25), _rng.randf_range(-0.25, 0.25))
-		if h.spawn(p):
-			h.dormant[h.count - 1] = 1
+		if h.spawn(p, h.pick_type(), Horde.State.DORMANT):
 			h.heading[h.count - 1] = Vector2.from_angle(_rng.randf() * TAU)
 
 
-func _wake_checks(s: int, player_storey: int, player_pos: Vector2) -> void:
+## A calm zombie right next to a hunter joins the hunt (the crowd carries it along).
+func _chain_checks(s: int) -> void:
 	var h: Horde = hordes[s]
-	var sight2: float = config.sight * config.sight
 	var chain2: float = config.chain * config.chain
 	for a: int in h.count:
-		if h.dormant[a] == 0:
+		if h.state[a] == Horde.State.HUNTING:
 			continue
 		var p: Vector2 = h.positions[a]
-		if s == player_storey and p.distance_squared_to(player_pos) <= sight2 \
-				and grids[s].line_of_sight(p, player_pos):
-			h.dormant[a] = 0
-			continue
 		for b: int in h.count:
-			if h.dormant[b] == 0 and p.distance_squared_to(h.positions[b]) <= chain2:
-				h.dormant[a] = 0
+			if h.state[b] == Horde.State.HUNTING and p.distance_squared_to(h.positions[b]) <= chain2:
+				h.state[a] = Horde.State.HUNTING
+				h.goal[a] = h.goal[b]
 				break
 
 
