@@ -11,6 +11,7 @@ enum Anim { WALK, ATTACK, FLINCH }
 enum State { DORMANT, SUSPICIOUS, HUNTING }
 
 const MAX_EVENTS: int = 512  ## per queue; older events are dropped if nobody drains them
+const KNOCK_DECAY: float = 9.0  ## 1/s
 const SPOT_PARTS: Vector2i = Vector2i(1, 10)  ## spot fires land on torso .. shin_r (kit_zombie SKELETON order)
 
 
@@ -56,6 +57,7 @@ var noise_flow: FlowField  ## toward the latest noise, shared by every suspiciou
 var lift: PackedFloat32Array  ## m above the horde's floor (stair flights inside buildings); drawn, not simulated
 var armor: PackedByteArray  ## WeaponConfig.Armor per agent (0 = none); set per enemy type
 var stagger_left: PackedFloat32Array  ## s a hit agent stands still (weapon stagger)
+var knock: PackedVector2Array  ## m/s shove from hits (GDD §6 "thrown back along the bullet"), fades fast
 
 ## Event queues (drained by game/fx): hit point + direction per bullet/blast hit, deaths.
 var hit_points: PackedVector2Array = PackedVector2Array()
@@ -101,6 +103,7 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	lift.resize(max_agents)
 	armor.resize(max_agents)
 	stagger_left.resize(max_agents)
+	knock.resize(max_agents)
 	_burn_tick.resize(max_agents)
 	_attack_cooldown.resize(max_agents)
 	_rng.seed = rng_seed
@@ -153,6 +156,7 @@ func spawn(p: Vector2, enemy_type: int = 0, start: State = State.HUNTING) -> boo
 	lift[a] = 0.0
 	armor[a] = t.armor if t != null else 0
 	stagger_left[a] = 0.0
+	knock[a] = Vector2.ZERO
 	_burn_tick[a] = 0.0
 	_attack_cooldown[a] = _rng.randf() * config.attack_interval
 	count += 1
@@ -182,6 +186,7 @@ func kill(a: int) -> void:
 		lift[a] = lift[last]
 		armor[a] = armor[last]
 		stagger_left[a] = stagger_left[last]
+		knock[a] = knock[last]
 		_burn_tick[a] = _burn_tick[last]
 		_attack_cooldown[a] = _attack_cooldown[last]
 	count = last
@@ -296,9 +301,10 @@ func apply_damage(agents: PackedInt32Array, damage: int, source: Vector2 = Vecto
 	return apply_hits(agents, damages, source, blast)
 
 
-## Like apply_damage with a damage per agent (falloff, pierce, armor), and an optional stagger.
+## Like apply_damage with a damage per agent (falloff, pierce, armor), an optional stagger, and a
+## knock-back per agent (m/s along the push; shotguns sum their pellets).
 func apply_hits(agents: PackedInt32Array, damages: PackedInt32Array, source: Vector2 = Vector2.INF,
-		blast: bool = false, stagger: float = 0.0) -> int:
+		blast: bool = false, stagger: float = 0.0, knocks: PackedFloat32Array = PackedFloat32Array()) -> int:
 	var dead: PackedInt32Array = PackedInt32Array()
 	for i: int in agents.size():
 		var a: int = agents[i]
@@ -313,6 +319,8 @@ func apply_hits(agents: PackedInt32Array, damages: PackedInt32Array, source: Vec
 		if slow_k > 0.0:
 			slow_left[a] = minf(slow_left[a] + config.hit_slow_sec * slow_k, config.hit_slow_cap_sec)
 		stagger_left[a] = maxf(stagger_left[a], stagger * (t.stagger_mul if t != null else 1.0))
+		if i < knocks.size():
+			knock[a] += dir * knocks[i] * (t.knockback_mul if t != null else 1.0)
 		state[a] = State.HUNTING  # a hit wakes it and it knows where from
 		goal[a] = source if source != Vector2.INF else positions[a]
 		_state_left[a] = config.lose_sec
@@ -557,6 +565,12 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 		# Separation displaces directly (position-based) so it never builds up momentum.
 		var v: Vector2 = vel[a].lerp(desired, turn)
 		var step: Vector2 = v * delta + push * minf(sep_k * delta, 0.5)
+		# Knock-back rides on top of the walk and fades within a fraction of a second.
+		var kn: Vector2 = knock[a]
+		if kn != Vector2.ZERO:
+			step += kn * delta
+			kn *= maxf(1.0 - KNOCK_DECAY * delta, 0.0)
+			knock[a] = kn if kn.length_squared() > 0.01 else Vector2.ZERO
 		# Under half a cell per frame, so the destination-cell check can't skip a 1-cell wall
 		# (a dense pile summed ~1.7 m of push in one frame).
 		if step.length_squared() > max_step2:

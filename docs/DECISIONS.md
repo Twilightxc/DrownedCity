@@ -2,6 +2,8 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-02 | `TimeControl` is the only writer of Engine.time_scale; hit-stop and slow-mo are requests and the slowest wins, timed in real seconds | Two effects writing time_scale directly would fight; real time keeps a freeze from stretching itself |
+| 2026-11-02 | Kill chain: each kill scores the chain length capped at ×10 | With 200 zombies a chain runs into the hundreds; uncapped the score grew quadratically |
 | 2026-11-02 | Player health is `FighterHealth` (RefCounted) over a `FighterConfig` and worn `ArmorConfig` pieces; downed 10 s then dead (GDD §5), restart reloads the spike scene | The same class serves survivors on expeditions (1.9) and moves into SimCore's survivor state in 1.6 |
 | 2026-11-02 | Your own grenade hurts you at ×0.5 with distance falloff (F4 tunable, 0 = off) | Pillar 3 "risk is chosen"; J to judge in the feel test |
 | 2026-11-02 | Perception lives in `Horde` (state per agent: dormant / suspicious / hunting; `hear`, `perceive`); suspicious agents share one noise flow field toward the latest noise | GDD §9; no per-agent pathfinding (web budget); the interior's old wake rules become calls to it |

@@ -3,6 +3,28 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.4 Game feel — 🟡 built without audio (2026-11-02), waiting for J's feel test
+
+Live: `?spike=twinstick` (F4: Hit-stop, Camera shake + strength, Muzzle flash, Shell casings), `?spike=style`.
+
+| Item | How |
+| --- | --- |
+| Knock-back | `WeaponConfig.knockback` m/s per hit (pistol 1.5, AR 1.0, shotgun 0.8 per pellet so a full blast ~8, DMR 3) × `EnemyConfig.knockback_mul` (Runner 1.2, Armored 0.35, Bloater 0.3); grenades shove survivors outward (6 m/s at the centre). `Horde.knock` fades at 9/s, rides on the walk, slides along walls |
+| Hit-stop | ×0.05 for 45 ms when one round kills 2+, 70 ms for a blast that kills 2+ |
+| Time | `game/fx/time_control.gd`: the one owner of Engine.time_scale; the slowest active request wins (hit-stop, the 1.3 low-HP slow-mo), real-time so a freeze can't stretch itself |
+| Shake | `game/fx/screen_shake.gd`: trauma² (decays 2.2/s, max 0.5 m) via the camera's h/v offset; shots add recoil × 0.06, blasts 0.7 falling to 0 at 15 m, taking a hit 0.25 |
+| Muzzle | `game/fx/muzzle_fx.gd`: an additive flame billboard + a shadowless omni light for 50 ms; bigger for the shotgun, smaller with the silencer |
+| Casings | `game/fx/casing_fx.gd`: one MultiMesh ring (96): out to the right, tumble, one bounce, lie 6 s, shrink; brass, shotgun shells red |
+| Kill chain | `combat/kill_chain.gd`: kills within 2 s extend it; each kill scores the chain length up to ×10 (score → influence in 1.10); "x12 chain" on the right, fading with the window |
+| Crosshair | `game/fx/crosshair_hud.gd`: four ticks on the mouse (pad: 8 m along the aim) opening with the gun's spread + bloom; white X on a hit, red on a kill; the OS cursor hides while playing and comes back when paused or dead |
+| Tests | kill chain + cap, shake bounds + decay, time control, knock-back (direction, armored barely moves, fades): 5 new, 167 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 | style + 200, `--auto-shoot`, AR then shotgun | 60 | 71–89 | ≤ 251k | the muzzle light adds a few draws while it's on (+10 at most) |
+
+Not measured on the web yet. No audio yet: CC0 sounds need J's OK for each download.
+
 ## 1.3 Player in danger — 🟡 built (2026-11-02), waiting for J's feel test
 
 Live: `?spike=twinstick` (F4: Invulnerable, Slow-mo on low HP, Self blast damage ×), `?spike=style`.

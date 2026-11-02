@@ -16,6 +16,7 @@ enum Armor { NONE, L, M, H }  ## armor_pen against a target's armor or cover (GD
 @export var body_pen: int = 1  ## bodies one bullet can hit; each one passed takes 20 % off the next hit
 @export var armor_pen: Armor = Armor.L
 @export var stagger_sec: float = 0.0  ## a hit target stands still this long (on top of the hit slow)
+@export var knockback: float = 0.0  ## m/s shove along the bullet per hit (per pellet), fading fast
 @export var range_m: float = 40.0
 @export var falloff_start_m: float = 20.0  ## full damage up to here, then down to falloff_min at range_m
 @export var falloff_min: float = 0.6

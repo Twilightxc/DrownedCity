@@ -119,6 +119,12 @@ func _build_tuning() -> void:
 		_tuning.add_float("Dismember chance (bullet)", gore_config, "dismember_chance", 0.0, 1.0, 0.05)
 	_tuning.add_float("Hit slow (fraction)", horde_config, "hit_slow", 0.0, 0.8, 0.05)
 	_tuning.add_float("Hit slow per hit (s)", horde_config, "hit_slow_sec", 0.0, 1.5, 0.05)
+	# Game feel (1.4): every effect can go off.
+	_tuning.add_bool("Hit-stop", feel_config, "hitstop")
+	_tuning.add_bool("Camera shake", feel_config, "shake")
+	_tuning.add_float("Shake strength (m)", feel_config, "shake_max_m", 0.0, 1.5, 0.05)
+	_tuning.add_bool("Muzzle flash", feel_config, "muzzle_flash")
+	_tuning.add_bool("Shell casings", feel_config, "casings")
 	# Player in danger (1.3).
 	_tuning.add_bool("Invulnerable", _player.health, "invulnerable")
 	_tuning.add_bool("Slow-mo on low HP", _player.fighter, "slowmo")

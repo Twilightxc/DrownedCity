@@ -19,6 +19,7 @@ const WARM_UP_Y: float = -14.0
 ## Spike E (0.7): corpses, blood and dismemberment; needs the animated horde (HordeRenderer.models).
 @export var gore_config: GoreConfig
 @export var fire_config: FireConfig  ## optional: burning zombies + ground fire (0.7 part 3)
+@export var feel_config: FeelConfig = preload("res://data/fx/feel.tres")  ## hit-stop, shake, muzzle, casings (1.4)
 @export var roof_size: Vector2i = Vector2i(40, 40)
 ## Obstacles in roof cells: stair house, AC units, water tanks, low walls.
 @export var obstacles: Array[Rect2i] = [
@@ -62,6 +63,13 @@ var _explosions: ExplosionFx
 var _gas: GasField = GasField.new()  ## Bloater clouds (1.2); the player's damage from them comes in 1.3
 var _gas_fx: GasFx
 var _feedback: DamageFeedback  ## red edge, downed / dead message, low-HP slow-mo (1.3)
+var _time: TimeControl  ## the one owner of Engine.time_scale (hit-stop, slow-mo)
+var _shake: ScreenShake = ScreenShake.new()
+var _muzzle: MuzzleFx
+var _casings: CasingFx
+var _chain: KillChain
+var _crosshair: CrosshairHud
+var _kills_seen: int = 0
 var _fire_rev: int = -1
 var _water_y: float = WATER_Y
 ## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
@@ -151,9 +159,13 @@ func _ready() -> void:
 		_fire_fx.warm_up(Vector3(_player.position.x, WARM_UP_Y, _player.position.z))
 	_build_ui()
 	_player.health.invulnerable = _auto_shoot  # measurements must not end in a death screen
+	_time = TimeControl.new()
+	add_child(_time)
 	_feedback = DamageFeedback.new()
 	add_child(_feedback)
+	_feedback.time_control = _time
 	_feedback.bind(_player.health)
+	_build_feel()
 	_player.restart_requested.connect(func() -> void:
 		Engine.time_scale = 1.0
 		get_tree().reload_current_scene())
@@ -179,6 +191,7 @@ func _process(delta: float) -> void:
 		_fire_fx.sync(delta, _fx_horde, _ground_fire if _fx_horde == _horde else null)
 	_gas.update(delta)
 	_hurt_player(delta)
+	_update_feel(delta)
 	_burn_gas()
 
 	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
@@ -241,6 +254,12 @@ func _auto_attack(delta: float, from: Vector2) -> void:
 func _on_blast(at: Vector3, _killed: int, cfg: ThrowableConfig) -> void:
 	var in_water: bool = not _grid.in_bounds(_grid.world_to_cell(Vector2(at.x, at.z)))
 	_explosions.blast(at, cfg.blast_radius, in_water, cfg.embers, cfg.shrapnel, cfg.fire_radius > 0.0)
+	# Shake by distance; a blast that kills several freezes the frame a little longer than a shot.
+	var to_blast: float = Vector2(at.x, at.z).distance_to(_player.ground_position())
+	if feel_config.shake:
+		_shake.add(feel_config.shake_blast * maxf(1.0 - to_blast / 15.0, 0.0))
+	if feel_config.hitstop and _killed >= feel_config.hitstop_kills:
+		_time.request(feel_config.hitstop_scale, feel_config.hitstop_blast_sec)
 	# Your own grenade hurts you too (FighterConfig.self_blast_mul), less toward the edge of the blast.
 	var d: float = Vector2(at.x, at.z).distance_to(_player.ground_position())
 	if d < cfg.blast_radius:
@@ -250,6 +269,52 @@ func _on_blast(at: Vector3, _killed: int, cfg: ThrowableConfig) -> void:
 		for i: int in range(_gas.count() - 1, -1, -1):
 			if _gas.centers[i].distance_to(Vector2(at.x, at.z)) < _gas.radii[i] + cfg.blast_radius:
 				_ignite_gas(i)
+
+
+## Game feel (Phase 1 step 1.4): muzzle flash, casings and shake per shot, hit-stop on multi-kills,
+## shake when hurt, the kill chain and the crosshair.
+func _build_feel() -> void:
+	_muzzle = MuzzleFx.new()
+	add_child(_muzzle)
+	_casings = CasingFx.new()
+	_casings.life_sec = feel_config.casing_life_sec
+	add_child(_casings)
+	_chain = KillChain.new(feel_config.chain_window_sec, feel_config.chain_score_cap)
+	_crosshair = CrosshairHud.new()
+	add_child(_crosshair)
+	_crosshair.bind(_player, _chain)
+	_kills_seen = _total_kills()
+	_player.shot.connect(func(g: Gun) -> void:
+		var muzzle: Vector3 = Vector3(_player.position.x + _player.aim_dir.x * 0.6, _player.ground_y + 1.1,
+			_player.position.z + _player.aim_dir.y * 0.6)
+		var shotgun: bool = g.config.pellets > 1
+		if feel_config.muzzle_flash:
+			var size: float = 1.4 if shotgun else 0.8 if g.noise_m < 20.0 else 1.0  # silenced: small
+			_muzzle.flash(muzzle, size, feel_config.muzzle_light_energy)
+		if feel_config.casings:
+			_casings.eject(muzzle, _player.aim_dir, shotgun, _player.ground_y)
+		if feel_config.shake:
+			_shake.add(g.recoil_deg * feel_config.shake_per_recoil_deg))
+	_player.hit_confirmed.connect(func(kills: int) -> void:
+		if feel_config.hitstop and kills >= feel_config.hitstop_kills:
+			_time.request(feel_config.hitstop_scale, feel_config.hitstop_sec))
+	_player.health.damaged.connect(func(_amount: int, kind: StringName) -> void:
+		if feel_config.shake and kind == &"melee":
+			_shake.add(feel_config.shake_hit))
+
+
+func _update_feel(delta: float) -> void:
+	var kills: int = _total_kills()
+	_chain.add_kills(maxi(kills - _kills_seen, 0))
+	_kills_seen = kills
+	_chain.step(delta)
+	var offset: Vector2 = _shake.step(delta, feel_config.shake_decay, feel_config.shake_max_m)
+	_rig.set_shake(offset if feel_config.shake else Vector2.ZERO)
+
+
+## Every kill this scene has seen (all hordes; the interior spike adds its storeys).
+func _total_kills() -> int:
+	return _horde.kills
 
 
 ## Zombie hits, gas and fire on the player this frame (Phase 1 step 1.3).

@@ -12,6 +12,7 @@ pellets = 15
 body_pen = 1
 armor_pen = 1
 stagger_sec = 0.25
+knockback = 0.8
 range_m = 15.0
 falloff_start_m = 5.0
 falloff_min = 0.3

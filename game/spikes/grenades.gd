@@ -87,7 +87,13 @@ func _explode(cfg: ThrowableConfig, at: Vector3) -> void:
 		horde.spatial.rebuild(horde.positions, horde.count)
 		_hits.clear()
 		horde.spatial.query_radius(horde.positions, Vector2(at.x, at.z), cfg.blast_radius, _hits)
-		killed = horde.apply_damage(_hits, cfg.damage, Vector2(at.x, at.z), true)
+		var damages: PackedInt32Array = PackedInt32Array()
+		var knocks: PackedFloat32Array = PackedFloat32Array()
+		for a: int in _hits:
+			damages.append(cfg.damage)
+			var d: float = horde.positions[a].distance_to(Vector2(at.x, at.z))
+			knocks.append(cfg.knockback * maxf(1.0 - d / cfg.blast_radius, 0.0))
+		killed = horde.apply_hits(_hits, damages, Vector2(at.x, at.z), true, 0.0, knocks)
 		if cfg.fire_radius > 0.0:
 			_ignite(cfg, Vector2(at.x, at.z))
 		if cfg.spot_burn_chance > 0.0:

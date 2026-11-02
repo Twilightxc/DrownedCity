@@ -51,6 +51,12 @@ func rotate_step(dir: int) -> void:
 	_rotate_tween.tween_property(self, "rotation_degrees:y", _target_yaw, rotate_time)
 
 
+## Screen-space camera offset (m) for shake; zero puts it back.
+func set_shake(offset: Vector2) -> void:
+	_camera.h_offset = offset.x
+	_camera.v_offset = offset.y
+
+
 func zoom_step(dir: int) -> void:
 	var i: int = clampi(zoom_index + dir, 0, zoom_factors.size() - 1)
 	if i == zoom_index:

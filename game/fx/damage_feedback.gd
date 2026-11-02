@@ -16,6 +16,7 @@ void fragment() {
 """
 
 var health: FighterHealth
+var time_control: TimeControl  ## optional: shares Engine.time_scale with hit-stop (1.4)
 
 var _edge: ColorRect
 var _mat: ShaderMaterial
@@ -70,8 +71,11 @@ func _process(delta: float) -> void:
 	# Slow-mo once when HP first falls below the line.
 	var is_low: bool = health.is_alive() and frac < cfg.low_hp_frac
 	if is_low and not _was_low and cfg.slowmo:
-		_slowmo_until_ms = Time.get_ticks_msec() + int(cfg.slowmo_sec * 1000.0)
-		Engine.time_scale = cfg.slowmo_scale
+		if time_control != null:
+			time_control.request(cfg.slowmo_scale, cfg.slowmo_sec)
+		else:
+			_slowmo_until_ms = Time.get_ticks_msec() + int(cfg.slowmo_sec * 1000.0)
+			Engine.time_scale = cfg.slowmo_scale
 	_was_low = is_low
 	if _slowmo_until_ms > 0 and Time.get_ticks_msec() >= _slowmo_until_ms:
 		_slowmo_until_ms = 0

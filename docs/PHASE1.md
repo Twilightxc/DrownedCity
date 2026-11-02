@@ -56,9 +56,11 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
       blast sets a cloud alight; everyone inside catches fire.
 
 ### 1.4 Game feel (GDD §6 "Boxhead part")
-- [ ] Hit-stop, knock-back along the bullet, muzzle flash, shell casings, camera shake (tunable, off option).
-- [ ] Kill chain counter (score → influence later), hit markers, crosshair per weapon spread.
+- [x] Hit-stop, knock-back along the bullet, muzzle flash, shell casings, camera shake (tunable, off option).
+      → `data/fx/feel.tres` + F4 switches; `TimeControl` owns Engine.time_scale (hit-stop + 1.3 slow-mo).
+- [x] Kill chain counter (score → influence later), hit markers, crosshair per weapon spread.
 - [ ] Audio pass 1: CC0 gun, impact, zombie and blast sounds; noise radius matches what you hear.
+      → needs CC0 sound downloads (J approves each); includes the 1.3 hit sound.
 
 ### 1.5 Combat test arena — "one night on the roof"
 - [ ] The arena **is** the base roof (J 2026-10-29), so it carries over into the night horde (1.10).
