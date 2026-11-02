@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/weapon_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+display_name = "DMR .308"
+weapon_class = "rifle"
+caliber = ".308"
+damage = 70
+pellets = 1
+body_pen = 3
+armor_pen = 3
+stagger_sec = 0.15
+range_m = 60.0
+falloff_start_m = 35.0
+falloff_min = 0.85
+rpm = 240.0
+modes = Array[int]([0])
+spread_deg = 0.5
+recoil_deg = 1.5
+recoil_max_deg = 4.0
+recoil_recover_deg = 6.0
+mag = 10
+reload_sec = 2.8
+reload_per_round = false
+noise_m = 60.0
+weight_kg = 4.5
+wear_per_shot = 0.06
+attachment_slots = PackedStringArray("muzzle", "optic", "under", "mag")
+burst_count = 3
+burst_spread_mul = 0.7
+burst_pause_sec = 0.25
+jam_below = 50.0
+jam_chance_max = 0.08
+waterproof = false

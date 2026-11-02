@@ -4,7 +4,7 @@
 [ext_resource type="Resource" path="res://data/combat/horde_spike.tres" id="2_horde"]
 [ext_resource type="Script" path="res://game/iso_camera_rig.gd" id="3_rig"]
 [ext_resource type="Script" path="res://game/spikes/spike_player.gd" id="4_player"]
-[ext_resource type="Resource" path="res://data/weapons/spike_rifle.tres" id="5_rifle"]
+[ext_resource type="Resource" path="res://data/weapons/spike_loadout.tres" id="5_loadout"]
 [ext_resource type="Script" path="res://combat/horde_renderer.gd" id="6_renderer"]
 [ext_resource type="Script" path="res://game/spikes/tracers.gd" id="7_tracers"]
 [ext_resource type="Resource" path="res://data/input/twin_stick.tres" id="9_controls"]
@@ -48,7 +48,7 @@ far = 300.0
 
 [node name="Player" type="Node3D" parent="."]
 script = ExtResource("4_player")
-weapon = ExtResource("5_rifle")
+loadout = ExtResource("5_loadout")
 controls = ExtResource("9_controls")
 throwable = ExtResource("15_grenade")
 throwables = Array[Resource]([ExtResource("15_grenade"), ExtResource("16_incendiary")])

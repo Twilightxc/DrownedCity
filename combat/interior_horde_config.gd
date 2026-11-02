@@ -7,7 +7,7 @@ extends Resource
 @export var hatch_clear: float = 5.0  ## m around the roof-hatch landing kept free at spawn
 
 @export_group("Waking")
-@export var shot_noise: float = 12.0  ## m: a shot wakes sleepers this close on the shooter's storey
+@export var indoor_noise_mul: float = 0.3  ## a gun's noise_m indoors (walls damp it): AR 40 m → 12 m on the storey
 @export var blast_noise: float = 20.0  ## m, the same for a grenade blast
 @export var floor_damping: float = 0.5  ## noise radius on the storeys just above and below
 @export var sight: float = 6.0  ## m: a sleeper with line of sight to the player wakes

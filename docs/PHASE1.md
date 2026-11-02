@@ -17,17 +17,21 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
 ## Part A — Combat first (detailed)
 
 ### 1.1 Weapons from data (GDD §6)
-- [ ] `WeaponConfig` grows to the GDD stat schema: class, caliber, damage, pellets, rpm, mag, reload, spread,
+- [x] `WeaponConfig` grows to the GDD stat schema: class, caliber, damage, pellets, rpm, mag, reload, spread,
       recoil, range + falloff, stagger, body_pen (−20 % damage per body passed), armor_pen L/M/H, noise_m,
       weight, durability + jam curve. Data in `data/weapons/`, live in the F4 panel.
-- [ ] Demo guns, one per class: Pistol (9mm), AR (5.56, burst mode), Shotgun (pump, 15 pellets), Rifle (DMR
+      → rpm, spread and recoil per gun in the F4 panel (`?spike=twinstick`); `Gun` is the carried state.
+- [x] Demo guns, one per class: Pistol (9mm), AR (5.56, burst mode), Shotgun (pump, 15 pellets), Rifle (DMR
       .308). Calibers and ammo pick-ups; the two grenades already exist (frag, incendiary).
-- [ ] Weapon switching (keys 1–4, wheel / pad Y+stick), ammo in the HUD, reload per class (shotgun: shell by shell).
-- [ ] Gun attachments ×4 (GDD §6 demo list): silencer, red dot, extended mag, flashlight (the 0.8 flashlight
-      moves onto the gun).
-- [ ] Noise: every shot emits `noise_m` into the horde perception (1.2).
-- [ ] Tests: damage falloff, penetration, armor table, DPS per class within ±10 % of the GDD table.
-- Assets (desktop, Blender): 4 low-poly guns in the player's hands.
+      → loose rounds per caliber (`AmmoPouch`); the supply crate tops them up (pick-ups in the world: 1.5).
+- [x] Weapon switching (keys 1–4, wheel / pad Y+stick), ammo in the HUD, reload per class (shotgun: shell by shell).
+      → keys 1–4, pad R3 = next gun (the wheel stays the orders wheel); fire mode V / pad L3.
+- [x] Gun attachments ×4 (GDD §6 demo list): silencer, red dot, extended mag, flashlight (the 0.8 flashlight
+      moves onto the gun). → no models yet; the interior flashlight is on only with a flashlight on the gun.
+- [x] Noise: every shot emits `noise_m` into the horde perception (1.2). → `SpikePlayer.noise`; inside a
+      building it wakes sleepers at `noise_m` × 0.3 until 1.2's perception replaces those rules.
+- [x] Tests: damage falloff, penetration, armor table, DPS per class within ±10 % of the GDD table.
+- [ ] Assets (desktop, Blender): 4 low-poly guns in the player's hands + the 4 attachments on them.
 
 ### 1.2 Enemy types and perception (GDD §9)
 - [ ] Demo zombies (GDD §17 "4 types", J 2026-10-29): Walker (≥ 4 sub-variants), Runner, Armored

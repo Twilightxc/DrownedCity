@@ -5,7 +5,7 @@ extends Node3D
 ## to (walls and windows block it, furniture doesn't). Rooms seen before and out of sight now stay dim.
 ## Levels go to one small texture per building (a texel per cell, for the player's storey) that the
 ## interior and horde shaders read through global uniforms, so there is no light node per room.
-## A shadowless spot light on the player is the flashlight, on while inside.
+## A shadowless spot light on the player is the flashlight, on while inside if the gun in hand has one.
 
 const NEIGHBOURS: Array[Vector2i] = [
 	Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
@@ -68,9 +68,10 @@ func setup(p_layout: InteriorLayout, p_config: InteriorLightConfig) -> void:
 
 
 ## `storey` = -1 while the player is outside: everything off.
-func step(delta: float, storey: int, player: Vector3, aim: Vector2) -> void:
+## `has_flashlight`: the gun in hand carries one (GDD §6 attachment); off outside either way.
+func step(delta: float, storey: int, player: Vector3, aim: Vector2, has_flashlight: bool = true) -> void:
 	var inside: bool = storey >= 0
-	flashlight.visible = inside
+	flashlight.visible = inside and has_flashlight
 	if not inside:
 		if _storey >= 0:
 			RenderingServer.global_shader_parameter_set("interior_light_on", 0.0)

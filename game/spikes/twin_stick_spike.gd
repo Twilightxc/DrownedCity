@@ -119,3 +119,9 @@ func _build_tuning() -> void:
 		_tuning.add_float("Dismember chance (bullet)", gore_config, "dismember_chance", 0.0, 1.0, 0.05)
 	_tuning.add_float("Hit slow (fraction)", horde_config, "hit_slow", 0.0, 0.8, 0.05)
 	_tuning.add_float("Hit slow per hit (s)", horde_config, "hit_slow_sec", 0.0, 1.5, 0.05)
+	# Guns (Phase 1 step 1.1): edits the WeaponConfig, so every Gun using it changes at once.
+	for g: Gun in _player.guns:
+		var w: WeaponConfig = g.config
+		_tuning.add_float("%s rpm" % w.display_name, w, "rpm", 30.0, 1000.0, 10.0)
+		_tuning.add_float("%s spread (± deg)" % w.display_name, w, "spread_deg", 0.0, 12.0, 0.1)
+		_tuning.add_float("%s recoil per shot (deg)" % w.display_name, w, "recoil_deg", 0.0, 4.0, 0.05)

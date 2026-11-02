@@ -30,8 +30,15 @@ func _ready() -> void:
 	var title: Label = Label.new()
 	title.text = "Feel tuning (paused) · F4 / Start / B: close · not saved"
 	box.add_child(title)
+	# Scrolls once the rows outgrow the screen (gun rows, 1.1); follows gamepad focus.
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(460.0, 480.0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	box.add_child(scroll)
 	_rows = VBoxContainer.new()
-	box.add_child(_rows)
+	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_rows)
 	_summary = Label.new()
 	_summary.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_summary.custom_minimum_size.x = 460.0
@@ -108,7 +115,11 @@ func _refresh_summary() -> void:
 	var parts: PackedStringArray = PackedStringArray()
 	for e: Entry in _entries:
 		var v: Variant = e.target.get(e.property)
-		parts.append("%s=%s" % [e.property, str(v) if e.is_bool else _fmt(float(v))])
+		# Guns share property names: prefix them with the data file (ar_556.rpm=700).
+		var key: String = e.property
+		if e.target is WeaponConfig:
+			key = "%s.%s" % [(e.target as Resource).resource_path.get_file().get_basename(), e.property]
+		parts.append("%s=%s" % [key, str(v) if e.is_bool else _fmt(float(v))])
 	_summary.text = " ".join(parts)
 
 

@@ -45,6 +45,8 @@ var burn_left: PackedFloat32Array  ## s of burning remaining, 0 = not burning
 var burn_spot: PackedByteArray  ## 0 = the whole body burns; else part index + 1 of a small spot fire
 var dormant: PackedByteArray  ## 1 = asleep: stands still, no flow, no attack (zombies inside buildings)
 var lift: PackedFloat32Array  ## m above the horde's floor (stair flights inside buildings); drawn, not simulated
+var armor: PackedByteArray  ## WeaponConfig.Armor per agent (0 = none); set per enemy type
+var stagger_left: PackedFloat32Array  ## s a hit agent stands still (weapon stagger)
 
 ## Event queues (drained by game/fx): hit point + direction per bullet/blast hit, deaths.
 var hit_points: PackedVector2Array = PackedVector2Array()
@@ -80,6 +82,8 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	burn_spot.resize(max_agents)
 	dormant.resize(max_agents)
 	lift.resize(max_agents)
+	armor.resize(max_agents)
+	stagger_left.resize(max_agents)
 	_burn_tick.resize(max_agents)
 	_attack_cooldown.resize(max_agents)
 	_rng.seed = rng_seed
@@ -104,6 +108,8 @@ func spawn(p: Vector2) -> bool:
 	burn_spot[a] = 0
 	dormant[a] = 0
 	lift[a] = 0.0
+	armor[a] = 0
+	stagger_left[a] = 0.0
 	_burn_tick[a] = 0.0
 	_attack_cooldown[a] = _rng.randf() * config.attack_interval
 	count += 1
@@ -128,6 +134,8 @@ func kill(a: int) -> void:
 		burn_spot[a] = burn_spot[last]
 		dormant[a] = dormant[last]
 		lift[a] = lift[last]
+		armor[a] = armor[last]
+		stagger_left[a] = stagger_left[last]
 		_burn_tick[a] = _burn_tick[last]
 		_attack_cooldown[a] = _attack_cooldown[last]
 	count = last
@@ -150,6 +158,8 @@ func transfer(a: int, other: Horde) -> bool:
 	other.slow_left[b] = slow_left[a]
 	other.burn_left[b] = burn_left[a]
 	other.burn_spot[b] = burn_spot[a]
+	other.armor[b] = armor[a]
+	other.stagger_left[b] = stagger_left[a]
 	other._burn_tick[b] = _burn_tick[a]
 	kill(a)
 	return true
@@ -167,9 +177,19 @@ func awake_count() -> int:
 ## `source` is the muzzle or the blast centre: it sets the blood and corpse push direction.
 ## Survivors flinch and slow down (hit_slow, stacking up to hit_slow_cap_sec).
 func apply_damage(agents: PackedInt32Array, damage: int, source: Vector2 = Vector2.INF, blast: bool = false) -> int:
+	var damages: PackedInt32Array = PackedInt32Array()
+	damages.resize(agents.size())
+	damages.fill(damage)
+	return apply_hits(agents, damages, source, blast)
+
+
+## Like apply_damage with a damage per agent (falloff, pierce, armor), and an optional stagger.
+func apply_hits(agents: PackedInt32Array, damages: PackedInt32Array, source: Vector2 = Vector2.INF,
+		blast: bool = false, stagger: float = 0.0) -> int:
 	var dead: PackedInt32Array = PackedInt32Array()
-	for a: int in agents:
-		hp[a] -= damage
+	for i: int in agents.size():
+		var a: int = agents[i]
+		hp[a] -= damages[i]
 		var dir: Vector2 = _push_dir(a, source)
 		_queue_hit(positions[a], dir)
 		if hp[a] <= 0:
@@ -177,6 +197,7 @@ func apply_damage(agents: PackedInt32Array, damage: int, source: Vector2 = Vecto
 			continue
 		slow_left[a] = minf(slow_left[a] + config.hit_slow_sec, config.hit_slow_cap_sec)
 		dormant[a] = 0  # a hit wakes it
+		stagger_left[a] = maxf(stagger_left[a], stagger)
 		if anim[a] != Anim.ATTACK:
 			anim[a] = Anim.FLINCH
 			anim_time[a] = 0.0
@@ -377,7 +398,10 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 		var to_target: Vector2 = target - p
 		var dist2: float = to_target.length_squared()
 		var desired: Vector2 = Vector2.ZERO
-		if dist2 > stop_r2:
+		var stag: bool = stagger_left[a] > 0.0
+		if stag:
+			stagger_left[a] -= delta
+		if dist2 > stop_r2 and not stag:
 			if in_grid and not (cx == target_cell.x and cy == target_cell.y):
 				desired = flow.direction_at(cy * w + cx)
 			if desired == Vector2.ZERO:

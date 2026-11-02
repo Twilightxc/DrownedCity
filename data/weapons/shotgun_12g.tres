@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/weapon_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+display_name = "Pump shotgun"
+weapon_class = "shotgun"
+caliber = "12g"
+damage = 9
+pellets = 15
+body_pen = 1
+armor_pen = 1
+stagger_sec = 0.25
+range_m = 15.0
+falloff_start_m = 5.0
+falloff_min = 0.3
+rpm = 70.0
+modes = Array[int]([0])
+spread_deg = 6.0
+recoil_deg = 2.0
+recoil_max_deg = 4.0
+recoil_recover_deg = 8.0
+mag = 6
+reload_sec = 0.5
+reload_per_round = true
+noise_m = 40.0
+weight_kg = 3.6
+wear_per_shot = 0.08
+attachment_slots = PackedStringArray("optic", "under")
+burst_count = 3
+burst_spread_mul = 0.7
+burst_pause_sec = 0.25
+jam_below = 50.0
+jam_chance_max = 0.08
+waterproof = false
