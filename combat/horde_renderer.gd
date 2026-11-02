@@ -75,6 +75,12 @@ func _sync_look(horde: Horde, v: int, ground_y: float) -> void:
 	var clip_t: PackedFloat32Array = horde.anim_time
 	var burn: PackedFloat32Array = horde.burn_left
 	var lift: PackedFloat32Array = horde.lift
+	var kind: PackedByteArray = horde.type
+	var scales: PackedVector3Array = PackedVector3Array()  # per enemy type: body scale (GDD §9 silhouettes)
+	for t: EnemyConfig in horde.config.types:
+		scales.append(t.scale)
+	if scales.is_empty():
+		scales.append(Vector3.ONE)
 	var spot: PackedByteArray = horde.burn_spot
 	var clips: VatClips = models[v].clips if not models.is_empty() else null
 	var rows_of: PackedInt32Array = _clip_index[v] if clips != null else PackedInt32Array()
@@ -88,17 +94,18 @@ func _sync_look(horde: Horde, v: int, ground_y: float) -> void:
 		# Yaw so local +Z faces the heading: basis = rotation about Y.
 		var c: float = head[a].y
 		var s: float = head[a].x
-		buf[o] = c
+		var k: Vector3 = scales[mini(kind[a], scales.size() - 1)]  # scales the basis columns (local axes)
+		buf[o] = c * k.x
 		buf[o + 1] = 0.0
-		buf[o + 2] = s
+		buf[o + 2] = s * k.z
 		buf[o + 3] = p.x
 		buf[o + 4] = 0.0
-		buf[o + 5] = 1.0
+		buf[o + 5] = k.y
 		buf[o + 6] = 0.0
 		buf[o + 7] = ground_y + lift[a]
-		buf[o + 8] = -s
+		buf[o + 8] = -s * k.x
 		buf[o + 9] = 0.0
-		buf[o + 10] = c
+		buf[o + 10] = c * k.z
 		buf[o + 11] = p.y
 		var t: Color = tint[a]
 		buf[o + 12] = t.r

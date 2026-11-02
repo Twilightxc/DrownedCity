@@ -1,9 +1,16 @@
-[gd_resource type="Resource" script_class="HordeConfig" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="HordeConfig" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://combat/horde_config.gd" id="1_cfg"]
+[ext_resource type="Script" path="res://combat/enemy_config.gd" id="2_enemy"]
+[ext_resource type="Resource" path="res://data/enemies/walker.tres" id="3_walker"]
+[ext_resource type="Resource" path="res://data/enemies/runner.tres" id="4_runner"]
+[ext_resource type="Resource" path="res://data/enemies/armored.tres" id="5_armored"]
+[ext_resource type="Resource" path="res://data/enemies/bloater.tres" id="6_bloater"]
 
 [resource]
 script = ExtResource("1_cfg")
+types = Array[ExtResource("2_enemy")]([ExtResource("3_walker"), ExtResource("4_runner"), ExtResource("5_armored"), ExtResource("6_bloater")])
+spawn_mix = PackedFloat32Array(0.72, 0.14, 0.1, 0.04)
 speed = 2.2
 speed_jitter = 0.25
 steering = 8.0

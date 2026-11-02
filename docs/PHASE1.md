@@ -34,12 +34,15 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
 - [ ] Assets (desktop, Blender): 4 low-poly guns in the player's hands + the 4 attachments on them.
 
 ### 1.2 Enemy types and perception (GDD §9)
-- [ ] Demo zombies (GDD §17 "4 types", J 2026-10-29): Walker (≥ 4 sub-variants), Runner, Armored
+- [x] Demo zombies (GDD §17 "4 types", J 2026-10-29): Walker (≥ 4 sub-variants), Runner, Armored
       (armor M, helmet can drop), Bloater (gas on death). Per-type data: HP, speed, armor, hit slow, stagger.
+      → `data/enemies/`; the helmet drop waits for the Armored mesh; the gas cloud's damage to the player is 1.3.
 - [ ] One MultiMesh per type mesh; type silhouette stays readable at a glance (pillar 5).
-- [ ] Perception: dormant → suspicious (walks to the last noise) → hunting; sound first, sight second (fog and
-      night shorten sight). Replaces the interior spike's simple wake rules.
-- Assets (desktop): Runner / Armored / Bloater meshes + VAT clips (hand-keyed or Mixamo when needed).
+      → until the desktop meshes: body scale + tint per type on the shared male/female VAT models.
+- [x] Perception: dormant → suspicious (walks to the last noise) → hunting; sound first, sight second (fog and
+      night shorten sight). Replaces the interior spike's simple wake rules. → `Horde.hear` / `perceive`,
+      `sight_mul` for fog and night (1.11); the roof horde of the spikes always hunts (a night attack).
+- [ ] Assets (desktop): Runner / Armored / Bloater meshes + VAT clips (hand-keyed or Mixamo when needed).
 
 ### 1.3 Player in danger
 - [ ] Player HP, hits from zombies (the horde already counts them), downed state, revive or restart.

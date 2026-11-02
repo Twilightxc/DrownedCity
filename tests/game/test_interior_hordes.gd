@@ -48,10 +48,10 @@ func test_noise_wakes_sleepers_in_range_and_less_through_a_floor() -> void:
 	var h2: Horde = _hordes.horde_at(2)
 	var at: Vector2 = h2.positions[0]
 	_hordes.noise(at, 2, 0.5)
-	assert_eq(h2.dormant[0], 0, "the one at the noise")
+	assert_eq(h2.state[0], Horde.State.HUNTING, "right at the noise: hunts")
 	for a: int in h1.count:
-		var expect: int = 0 if h1.positions[a].distance_to(at) <= 0.5 * _config.floor_damping else 1
-		assert_eq(h1.dormant[a], expect, "storey below, damped radius")
+		var heard: bool = h1.positions[a].distance_to(at) <= 0.5 * _config.floor_damping
+		assert_eq(h1.state[a] != Horde.State.DORMANT, heard, "storey below, damped radius")
 	_hordes.noise(at, 2, 100.0)
 	assert_eq(h2.awake_count(), h2.count)
 	assert_eq(h1.awake_count(), h1.count, "100 m × 0.5 still covers the floor below")
@@ -60,7 +60,7 @@ func test_noise_wakes_sleepers_in_range_and_less_through_a_floor() -> void:
 func test_a_hit_wakes_a_sleeper() -> void:
 	var h: Horde = _hordes.horde_at(2)
 	h.apply_damage(PackedInt32Array([0]), 1)
-	assert_eq(h.dormant[0], 0)
+	assert_eq(h.state[0], Horde.State.HUNTING)
 
 
 func test_awake_zombies_climb_to_the_player_and_take_stair_heights() -> void:
@@ -94,4 +94,4 @@ func test_sight_needs_line_of_sight() -> void:
 	_hordes.step(0.05, 2, p)
 	var grid: NavGrid = _hordes.grids[2]
 	for a: int in h.count:
-		assert_eq(h.dormant[a] == 0, grid.line_of_sight(h.positions[a], p))
+		assert_eq(h.state[a] == Horde.State.HUNTING, grid.line_of_sight(h.positions[a], p))

@@ -34,6 +34,7 @@ var _clip: PackedByteArray  ## 0 death, 1 death_blown
 var _t: PackedFloat32Array  ## s since death (or since landing in water)
 var _pose_t: PackedFloat32Array  ## VAT time; < 0 = follow _t (corpses play their death clip)
 var _hide: PackedInt32Array
+var _scale: PackedVector3Array  ## the enemy type's body scale (limbs that flew stay unscaled)
 var _in_water: PackedByteArray
 var _sink: PackedFloat32Array  ## s sinking, < 0 = not yet
 var _slide_t: PackedFloat32Array  ## s into the blast slide, < 0 = not sliding
@@ -69,6 +70,7 @@ func setup(p_config: GoreConfig, p_models: Array[VatModel]) -> void:
 	_t.resize(_cap)
 	_pose_t.resize(_cap)
 	_hide.resize(_cap)
+	_scale.resize(_cap)
 	_sink.resize(_cap)
 	_slide_t.resize(_cap)
 	_from.resize(_cap)
@@ -144,6 +146,7 @@ func add_death(d: Horde.Death) -> int:
 	# Blasts throw the body backwards, away from the centre: face the blast, play death_blown, slide.
 	var facing: Vector2 = -d.push if d.blast else d.heading
 	var i: int = _add(d.position, facing, d.variant, tint, 1 if d.blast else 0, hide, 0.0)
+	_scale[i] = d.scale
 	if d.blast:
 		_start_slide(i, d.push)
 	for g: int in groups:
@@ -247,6 +250,7 @@ func _add(p: Vector2, facing: Vector2, look: int, tint: Color, clip: int, hide: 
 	_t[i] = t
 	_pose_t[i] = -1.0
 	_hide[i] = hide
+	_scale[i] = Vector3.ONE
 	_in_water[i] = 1 if water else 0
 	_sink[i] = -1.0
 	_slide_t[i] = -1.0
@@ -328,6 +332,8 @@ func _sync_look(v: int) -> void:
 				var k: float = minf(_slide_t[i] / config.blast_slide_sec, 1.0)
 				y += 4.0 * config.blast_arc_height * k * (1.0 - k)
 			xf = _yaw_transform(_pos[i], _head[i], y)
+			var k: Vector3 = _scale[i]
+			xf.basis = Basis(xf.basis.x * k.x, xf.basis.y * k.y, xf.basis.z * k.z)
 		var b: Basis = xf.basis
 		buf[o] = b.x.x
 		buf[o + 1] = b.y.x

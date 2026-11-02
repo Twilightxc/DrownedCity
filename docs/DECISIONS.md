@@ -2,6 +2,8 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-02 | Perception lives in `Horde` (state per agent: dormant / suspicious / hunting; `hear`, `perceive`); suspicious agents share one noise flow field toward the latest noise | GDD §9; no per-agent pathfinding (web budget); the interior's old wake rules become calls to it |
+| 2026-11-02 | Until the desktop builds a mesh per type, types read by body scale + tint on the shared VAT models | Code and balance can go on now; the silhouette check (pillar 5) waits for the meshes |
 | 2026-11-02 | Combat runs on GDD numbers: Walker HP 100, guns from the GDD §6 table; fire, frag (150) and incendiary (60) damage scaled so kill times stay as tuned in 0.7 | One scale for guns, armor and enemy types (1.2); DPS per class is unit-tested against the GDD table |
 | 2026-11-02 | A carried gun is a `Gun` (RefCounted: magazine, mode, bloom, durability, jam, reload) over a `WeaponConfig`; attachments are multipliers read live, so F4 edits apply at once; loose rounds per caliber in an `AmmoPouch` | No nodes per gun; the same classes serve survivors in 1.6+ |
 | 2026-11-02 | Pad: R3 = next gun, L3 = fire mode (the radial wheel stays for orders); keys 1–4 and V | The only free pad buttons; every new input keeps a pad path |

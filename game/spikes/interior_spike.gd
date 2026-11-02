@@ -1,6 +1,6 @@
 extends "res://game/spikes/horde_spike.gd"
 ## Spike F (Phase 0.8): walk into the base building through the roof hatch and move between its storeys
-## with the cutaway camera (part 1). Part 2: dormant zombies on every walkable storey wake by noise, sight
+## with the cutaway camera (part 1). Part 2: dormant zombies on every walkable storey react to noise, sight
 ## or an awake neighbour and follow the player across storeys; rooms stay dark until seen, and the player
 ## carries a flashlight inside. Spike B scene and player; the roof horde
 ## starts empty (raise it with ]) and waits while the player is inside.
@@ -58,7 +58,7 @@ func _ready() -> void:
 		elif kv == "wake=1":  # every zombie inside starts awake (measurements)
 			for h: Horde in _inside.hordes:
 				if h != null:
-					h.dormant.fill(0)
+					h.state.fill(Horde.State.HUNTING)
 
 
 func _process(delta: float) -> void:
@@ -74,7 +74,11 @@ func _process(delta: float) -> void:
 		if h != null and h != _fx_horde:
 			h.clear_events()
 	DebugOverlay.set_stat("storey", "roof" if _interior.storey < 0 else "%d of %d" % [_interior.storey + 1, _interior.storeys])
-	DebugOverlay.set_stat("zombies_inside", "%d (%d awake)" % [_inside.total_count(), _inside.awake_count()])
+	var hunting: int = 0
+	for h: Horde in _inside.hordes:
+		if h != null:
+			hunting += h.hunting_count()
+	DebugOverlay.set_stat("zombies_inside", "%d (%d awake, %d hunting)" % [_inside.total_count(), _inside.awake_count(), hunting])
 	DebugOverlay.set_stat("inside_update", "%.2f ms" % _inside_ms)
 	# The base overlay counts the roof horde only; add the zombies inside.
 	var kills: int = _horde.kills
@@ -115,6 +119,9 @@ func _on_storey_changed(s: int) -> void:
 		_explosions.grid = grid
 	if _fire_fx != null:
 		_fire_fx.ground_y = floor_y
+	_gas = GasField.new()  # clouds stay on the floor they were left on
+	_gas_fx.gas = _gas
+	_gas_fx.ground_y = floor_y
 
 
 func _help_text(pad: bool) -> String:

@@ -3,6 +3,27 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.2 Enemy types and perception — 🟡 built (2026-11-02), waiting for J's look
+
+Live: `?spike=style` / `?spike=twinstick` (roof: the mix hunts), `?spike=interior&storey=2` (sleepers inside).
+
+| Item | How |
+| --- | --- |
+| Types | `combat/enemy_config.gd`, `data/enemies/`: Walker HP 100 (4 tints × 2 bodies = 8 looks), Runner HP 60 ×1.8 speed, sees 20 % further, Armored HP 150 armor M ×0.85 speed, no hit slow, stagger ×0.3, Bloater HP 250 ×0.6 speed, gas cloud on death (3 m, 8 s). HordeConfig.types + spawn_mix (72 / 14 / 10 / 4 %) |
+| Look | body scale + tint per type on the shared VAT models (Runner thin and red-brown, Armored bulky and navy, Bloater wide and olive); corpses keep the scale. Real meshes: desktop |
+| Armor | per agent from the type; pistol (L) does ×0.25 and stops in an Armored, AR (M) ×0.75, DMR (H) full |
+| Perception | `Horde.state`: dormant / suspicious / hunting. `hear(at, r)`: calm agents within r walk to the noise on a shared noise flow field (×0.7 speed), within 0.35 r they hunt; `perceive(target)`: line of sight within 10 m × type × `sight_mul` → hunt; a hunter blind for 5 s turns suspicious at the last sighting; suspicious finds nothing for 10 s → dormant. A hit always makes it hunt. Suspicious agents don't attack |
+| Interior | the interior hordes use it: shots (`noise_m` × 0.3) make sleepers walk to the sound, sight (6 m, dark) or a hunter next to them makes them hunt; hunters still follow across storeys |
+| Gas | `combat/gas_field.gd` (cap 6, thins over the last 2 s; `strength_at` for 1.3) + `game/fx/gas_fx.gd` (one MultiMesh of puffs) |
+| Overlay | Types (count per type), Gas Clouds; inside: Zombies Inside (awake, hunting) |
+| Tests | stats per type, spawn mix, armor vs each gun, no slow on Armored, far / near / close noise, sight → hunt → lost → calm, Runner sight, death type + scale, gas fade + cap: 10 new, 152 total |
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | desktop GL Compatibility 1280×720 (Godot 4.7.2) | style + 200 mixed types, `--auto-shoot`, a gas cloud | 60 | 72–78 | ≤ 247k | horde update 1.2–1.75 ms, same as main (1.2–1.5 ms) in the same run |
+
+Not measured on the web yet. Not decided yet (J): whether the four types read apart at a glance.
+
 ## 1.1 Weapons from data — 🟡 built (2026-11-02), waiting for J's feel test
 
 Live: `?spike=twinstick` (F4 panel has the gun rows) and `?spike=style`; the interior spike carries the same guns.

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/enemy_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+display_name = "Runner"
+hp = 60
+speed_mul = 1.8
+armor = 0
+hit_slow_mul = 1.0
+stagger_mul = 1.2
+sight_mul = 1.2
+gas_on_death = false
+scale = Vector3(0.88, 1.06, 0.88)
+tints = PackedColorArray(1.3, 0.72, 0.62, 1, 1.22, 0.8, 0.6, 1)
