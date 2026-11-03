@@ -1,6 +1,6 @@
 # phase1/audio-pass-1
 
-- **PR:** see below (pushed? yes)
+- **PR:** #42 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 15dea02
 - **Updated:** 2026-11-03
