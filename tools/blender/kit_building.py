@@ -7,6 +7,11 @@ so every building shares one water plane in Godot (y = water level) and stacks f
 
 `decay` (0..1) drives the abandonment: bleached palette, rain streaks under sills and parapets,
 peeling patches, broken / boarded / missing windows, parapet gaps, vines, moss and roof debris.
+
+Facades (J 2026-11-04: too many windows, too regular, no lit windows): each building has a bay width and a
+mix of window types; a column keeps its type up the facade (single, tall, double, small, or blank wall), now and
+then a floor differs, and some columns stack balconies with a door on every dry floor (collapsed or railing-less
+when decayed). No window is lit.
 Optional ruin features: `roof_hole` (caved-in slab) and `collapse` (upper floors of one corner gone).
 """
 import math
@@ -22,21 +27,25 @@ WATERLINE_OFFSET = 1.0   # water reaches ~1 m up the lowest dry floor
 UNDERWATER = 3.4         # body continues below the water plane
 PARAPET_H = 0.8
 PARAPET_T = 0.5
-WIN_SPACING = 2.4
-WIN_W, WIN_H = 1.3, 1.7
+# window type: (width, height, centre offset from the floor's window line)
+WINDOW_TYPES = {"single": (1.2, 1.6, 0.0), "tall": (0.8, 1.95, 0.12), "double": (2.1, 1.5, 0.0),
+                "small": (0.75, 0.75, 0.45), "door": (1.0, 2.3, -0.32)}
+WIN_H = 1.6  # the window line most windows share (sill streaks)
 WALL_SEG = 0.8           # weathering resolution on walls (one colour per quad)
 
 BARE = {"plaster": "plaster_bare", "brick": "brick_bare", "concrete": "concrete_stain"}
 
 BUILDINGS = [
     # The survivors' base: weathered but held together; boarded floor above the water, a few lit rooms.
-    dict(name="building_base_3f", size=(26.0, 22.0), floors=3, wall="plaster", lit=0.05, hut=True, seed=3,
-         decay=0.45, boarded_floor=1),
+    # bay = column spacing (m); mix = weights of single / tall / double / small / blank; balcony = share of
+    # columns that stack balconies
+    dict(name="building_base_3f", size=(26.0, 22.0), floors=3, wall="plaster", lit=0.0, hut=True, seed=3,
+         decay=0.45, boarded_floor=1, bay=3.6, mix=(5, 2, 2, 1, 2), balcony=0.25),
     dict(name="building_brick_2f", size=(14.0, 12.0), floors=2, wall="brick", lit=0.0, hut=True, seed=5,
-         decay=0.85, roof_hole=True),
+         decay=0.85, roof_hole=True, bay=3.4, mix=(4, 3, 0, 1, 2), balcony=0.0),
     # collapse = (corner width x, corner depth y, floors lost) at the +x / +y corner (Godot +x / -z)
     dict(name="building_concrete_5f", size=(12.0, 13.0), floors=5, wall="concrete", lit=0.0, hut=False, seed=7,
-         decay=0.9, collapse=(5.5, 6.0, 2)),
+         decay=0.9, collapse=(5.5, 6.0, 2), bay=4.2, mix=(3, 1, 3, 1, 1), balcony=0.35),
 ]
 
 
@@ -49,9 +58,27 @@ def smoothstep(e0, e1, x):
     return t * t * (3 - 2 * t)
 
 
-def window_grid(length):
-    n = int((length - 1.5) // WIN_SPACING)
-    return [-(n - 1) * WIN_SPACING / 2 + i * WIN_SPACING for i in range(n)]
+TYPE_ORDER = ("single", "tall", "double", "small", "blank")
+
+
+def window_columns(length, spec, side_key):
+    """[(position along the wall, type, balcony)] for one facade: bays of spec["bay"], at least 1.6 m from the
+    corners, a type per column from spec["mix"] (deterministic per building and side)."""
+    bay = spec["bay"]
+    n = max(1, int((length - 3.2) // bay) + 1)
+    out = []
+    for i in range(n):
+        at = -(n - 1) * bay / 2 + i * bay
+        r = K.hash01(spec["seed"], side_key, i, "type") * sum(spec["mix"])
+        kind = TYPE_ORDER[-1]
+        for k, wgt in zip(TYPE_ORDER, spec["mix"]):
+            if r < wgt:
+                kind = k
+                break
+            r -= wgt
+        balcony = kind in ("single", "double", "tall") and K.hash01(spec["seed"], side_key, i, "bal") < spec["balcony"]
+        out.append((at, kind, balcony))
+    return out
 
 
 def window_centres_z(top, z_lo, z_hi):
@@ -89,7 +116,12 @@ def make_weathering(spec, top):
     """Per-quad wall colour: rain streaks from parapets and sills, peeling patches, grime toward the top."""
     decay, seed = spec["decay"], spec["seed"]
     bare = K.color(BARE[spec["wall"]])
-    win_cols = {"x": window_grid(spec["size"][0]), "y": window_grid(spec["size"][1])}
+    win_cols = {}
+    for axis, length in (("x", spec["size"][0]), ("y", spec["size"][1])):
+        cols = set()
+        for key in ((axis, -1), (axis, 1)):
+            cols.update(round(a, 2) for a, kind, _ in window_columns(length, spec, key) if kind != "blank")
+        win_cols[axis] = sorted(cols)
 
     def fn(c, n, rgba):
         if abs(n[2]) > 0.5:
@@ -117,8 +149,8 @@ def make_weathering(spec, top):
     return fn
 
 
-def window(mb, side, along, z, spec, floor_z):
-    """Window in the side's local frame. Fate depends on decay: lit / intact / broken / boarded / gone."""
+def window(mb, side, along, z, spec, floor_z, kind="single"):
+    """Window of `kind` in the side's local frame. Fate depends on decay: intact / broken / boarded / gone."""
     decay = spec["decay"]
     boarded_here = spec.get("boarded_floor") is not None and 1.5 < floor_z < 5.0
     r = random.random()
@@ -126,17 +158,22 @@ def window(mb, side, along, z, spec, floor_z):
     p_board = (0.55 if boarded_here else 0.04 + 0.14 * decay)
     p_broken = 0.12 + 0.5 * decay
     p_gone = 0.12 * decay
-    with mb.transform(side.origin(z), (0, 0, side.yaw)):
+    fw, fh, dz = WINDOW_TYPES[kind]
+    if kind == "small":
+        p_board *= 0.5
+    with mb.transform(side.origin(z + dz), (0, 0, side.yaw)):
         with mb.transform((side.to_local(along), 0, 0)):
-            fw, fh = WIN_W, WIN_H
             if r < p_gone:  # frame rotted away: just the dark opening and a cracked sill
                 mb.box((0, -0.02, 0), (fw + 0.1, 0.06, fh + 0.1), "void")
                 mb.box((0, -0.12, -fh / 2 - 0.1), (fw + 0.2, 0.25, 0.1), "trim", yaw=random.uniform(-0.1, 0.1))
                 return
             mb.box((0, -0.05, 0), (fw + 0.2, 0.1, fh + 0.2), "frame")
-            mb.box((0, -0.17, -fh / 2 - 0.12), (fw + 0.4, 0.3, 0.1), "trim")
+            if kind != "door":
+                mb.box((0, -0.17, -fh / 2 - 0.12), (fw + 0.4, 0.3, 0.1), "trim")
+            if kind == "double":
+                mb.box((0, -0.14, 0), (0.08, 0.04, fh), "frame")  # mullion
             r -= p_gone
-            if r < p_lit:
+            if r < p_lit:  # p_lit is 0 everywhere since J 2026-11-04 (no light leaks); kept for later bases
                 mb.box((0, -0.11, 0), (fw, 0.04, fh), "lit", mat=1)
                 mb.box((0, -0.14, 0), (0.06, 0.03, fh), "frame")
             elif r < p_lit + p_board:
@@ -155,6 +192,36 @@ def window(mb, side, along, z, spec, floor_z):
             else:
                 mb.box((0, -0.11, 0), (fw, 0.04, fh), "glass" if random.random() < 0.5 else "glass_dirty")
                 mb.box((0, -0.14, 0), (0.06, 0.03, fh), "frame")
+
+
+def balcony(mb, side, along, slab_z, width, decay):
+    """A balcony slab and railing in the side's local frame (-y outward). Decay drops some to a broken stub or
+    takes their railing."""
+    r = random.random()
+    with mb.transform(side.origin(slab_z), (0, 0, side.yaw)):
+        with mb.transform((side.to_local(along), 0, 0)):
+            if r < 0.25 * decay:  # collapsed: a stub and a bracket left on the wall
+                mb.box((0, -0.15, 0), (width * 0.6, 0.3, 0.14), "concrete_dark", yaw=random.uniform(-0.1, 0.1))
+                mb.box((width * 0.3, -0.2, -0.25), (0.08, 0.35, 0.08), "rust")
+                return
+            depth = 1.05
+            mb.box((0, -depth / 2, 0), (width, depth, 0.16), "concrete")
+            mb.box((0, -depth / 2, -0.12), (width - 0.1, depth - 0.1, 0.08), "concrete_stain")  # underside drip
+            if r < 0.25 * decay + 0.25 * decay:  # railing gone, a post or two left
+                for x in (-width / 2 + 0.05, width / 2 - 0.05):
+                    if random.random() < 0.6:
+                        mb.box((x, -depth + 0.04, 0.4), (0.05, 0.05, 0.8), "rust")
+                return
+            sag = random.uniform(-0.12, 0.12) * decay
+            for i in range(int(width / 0.45) + 1):
+                x = -width / 2 + 0.05 + i * (width - 0.1) / max(1, int(width / 0.45))
+                if random.random() < 0.12 * decay:
+                    continue
+                mb.box((x, -depth + 0.04, 0.48), (0.035, 0.035, 0.9), "metal")
+            with mb.transform((0, -depth + 0.04, 0.95), (0.0, sag, 0.0)):
+                mb.box((0, 0, 0), (width, 0.06, 0.06), "rust")
+            for x in (-width / 2 + 0.03, width / 2 - 0.03):
+                mb.box((x, -depth / 2, 0.95), (0.05, depth, 0.05), "rust")
 
 
 def wall_block(mb, spec, top, x0, x1, y0, y1, z0, z1, boundary, weather, cut_color=None):
@@ -190,15 +257,26 @@ def wall_block(mb, spec, top, x0, x1, y0, y1, z0, z1, boundary, weather, cut_col
                             mb.box((lx, -depth / 2 + 0.02, random.uniform(-0.05, 0.05)), (0.92, depth, 0.24),
                                    "concrete_dark", yaw=random.uniform(-0.08, 0.08))
         z -= FLOOR
-    # windows on facade sides only
+    # windows on facade sides only: a type per column, balconies stacked on dry floors
     for side, name in zip(sides, names):
         if name not in boundary:
             continue
-        grid = window_grid(spec["size"][0] if side.axis == "y" else spec["size"][1])
-        for zc in window_centres_z(top, z0, z1):
-            for along in grid:
-                if side.lo + 0.9 < along < side.hi - 0.9:
-                    window(mb, side, along, zc, spec, zc)
+        length = spec["size"][0] if side.axis == "y" else spec["size"][1]
+        for along, kind, has_balcony in window_columns(length, spec, (side.axis, side.sign)):
+            if not (side.lo + 0.9 < along < side.hi - 0.9):
+                continue
+            for zc in window_centres_z(top, z0, z1):
+                if kind == "blank":
+                    continue
+                here = kind
+                if K.hash01(spec["seed"], name, round(along, 2), round(zc, 2)) < 0.12:
+                    here = "small" if kind != "small" else "single"  # now and then one floor differs
+                dry = zc > WATERLINE_OFFSET + 0.4
+                if has_balcony and dry:
+                    w = WINDOW_TYPES["double" if kind == "double" else "single"][0] + 0.9
+                    balcony(mb, side, along, zc - WIN_H / 2 - 0.25, w, spec["decay"])
+                    here = "door"
+                window(mb, side, along, zc, spec, zc, here)
     return sides, names
 
 
