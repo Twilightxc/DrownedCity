@@ -1,6 +1,6 @@
 # phase1/stances
 
-- **PR:** see below (pushed? yes)
+- **PR:** #44 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 2e759c5
 - **Updated:** 2026-11-03
