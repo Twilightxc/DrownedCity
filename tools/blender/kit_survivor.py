@@ -113,10 +113,13 @@ def _legs(p, t, thigh, knee, lift=0.0):
 def idle(u):
     t = u * math.tau
     p = {"torso": (0.02 + 0.015 * math.sin(t), 0.0, 0.0), "head": (0.0, 0.0, 0.03 * math.sin(t))}
-    p["thigh_l"] = (0.0, 0.0, 0.04)
-    p["thigh_r"] = (0.0, 0.0, -0.04)
+    # Shooting stance (J 2026-11-03): left foot ahead, right foot a step back and turned out, knees soft.
+    p["thigh_l"] = (-0.14, 0.0, 0.05)
+    p["shin_l"] = (0.12, 0.0, 0.0)
+    p["thigh_r"] = (0.3, 0.0, -0.35)
+    p["shin_r"] = (0.18, 0.0, 0.0)
     _arms_down(p)
-    return p, (0, 0, -0.005 + 0.005 * math.sin(t))
+    return p, (0, 0, -0.03 + 0.005 * math.sin(t))
 
 
 def walk(u):
@@ -136,7 +139,20 @@ def run(u):
     return p, (0, 0, -0.06 + 0.05 * abs(math.cos(t)))
 
 
-CROUCH_DROP = 0.34
+CROUCH_DROP = 0.34  # squat (crouch walk)
+KNEEL_HIP = 0.5    # kneeling: the right knee on the ground
+
+
+def _kneel(p, sway=0.0):
+    """Kneeling to shoot (J 2026-11-03): right knee on the floor, shin flat behind; left foot planted ahead,
+    knee up."""
+    p["pelvis"] = (0.0, 0.0, 0.0)
+    p["torso"] = (0.12 + sway, 0.0, 0.0)
+    p["head"] = (-0.1, 0.0, 0.0)
+    p["thigh_r"] = (0.12, 0.0, -0.1)
+    p["shin_r"] = (math.pi / 2 - 0.05, 0.0, 0.0)
+    p["thigh_l"] = (-1.45, 0.0, 0.05)
+    p["shin_l"] = (1.5, 0.0, 0.0)
 
 
 def _crouch(p, sway=0.0):
@@ -152,9 +168,9 @@ def _crouch(p, sway=0.0):
 def crouch_idle(u):
     t = u * math.tau
     p = {}
-    _crouch(p, 0.02 * math.sin(t))
+    _kneel(p, 0.02 * math.sin(t))
     _arms_down(p)
-    return p, (0, 0, -CROUCH_DROP)
+    return p, (0, 0, KNEEL_HIP - HIP_HEIGHT)
 
 
 def crouch_walk(u):
@@ -177,10 +193,12 @@ def _prone(p, t=0.0, crawl=0.0):
     p["pelvis"] = (math.pi / 2, 0.0, 0.05 * crawl * math.sin(t))
     p["torso"] = (-0.12, 0.0, 0.08 * crawl * math.sin(t))
     p["head"] = (-0.9, 0.0, 0.0)  # looks ahead along the ground
-    p["thigh_l"] = (0.0, 0.0, 0.18 + 0.4 * crawl * max(0.0, math.sin(t)))
-    p["thigh_r"] = (0.0, 0.0, -0.18 - 0.4 * crawl * max(0.0, -math.sin(t)))
-    p["shin_l"] = (0.9 * crawl * max(0.0, math.sin(t)), 0.0, 0.0)
-    p["shin_r"] = (0.9 * crawl * max(0.0, -math.sin(t)), 0.0, 0.0)
+    # Legs apart (ry spreads, rz twists), knees drawn up sideways when crawling; feet turned so the toes point
+    # out and the insides of the boots lie on the floor (J 2026-11-03).
+    p["thigh_l"] = (0.0, -0.22 - 0.5 * crawl * max(0.0, math.sin(t)), 0.0)
+    p["thigh_r"] = (0.0, 0.22 + 0.5 * crawl * max(0.0, -math.sin(t)), 0.0)
+    p["shin_l"] = (0.9 * crawl * max(0.0, math.sin(t)), 0.0, 1.35)
+    p["shin_r"] = (0.9 * crawl * max(0.0, -math.sin(t)), 0.0, -1.35)
     p["arm_l"] = (-2.6 - 0.3 * crawl * math.sin(t), 0.0, -0.3)
     p["arm_r"] = (-2.7 + 0.3 * crawl * math.sin(t), 0.0, 0.25)
     p["fore_l"] = (-0.5, 0.0, 0.0)
