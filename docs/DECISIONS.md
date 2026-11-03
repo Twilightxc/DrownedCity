@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-03 | Guns: `WeaponConfig.model` is a `GunModel` (mesh + muzzle + one mount per attachment slot) written by `tools/blender/kit_guns.py`; each attachment is its own small mesh placed on its mount by `GunView` | Any gun takes any attachment its slots allow without baking every combination; ≤ 5 draw calls a fighter, cheap at ≤ 6 people |
 | 2026-11-03 | A zombie type with its own meshes lists them in `EnemyConfig.models`; look indices are the shared Walker looks first, then each type's, in `HordeConfig.types` order (`look_range`, `looks`) | One renderer path for all types; a new type is data plus a kit entry |
 | 2026-11-03 | Armored helmet: drops after `helmet_hp` (40) damage after armor, or on any blast; then armor M → L. The helmet is part 11 of its mesh, so the hidden-part bits grow to 12 and the burning / spot-fire bits move up one | GDD §9 "head (helmet can drop)" without a headshot system the top-down view can't aim; J tunes the number |
 | 2026-11-02 | The arena (`?spike=arena`, the default page) is the twin-stick spike plus a wave director: 4 edge entrances, 2 barricaded; waves, entrances and barricade HP from `data/combat/arena_roof.tres` | The base roof carries over into the night horde (1.10); J tunes length and pressure in data |

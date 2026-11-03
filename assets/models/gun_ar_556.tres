@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="GunModel" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://combat/gun_model.gd" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/models/gun_ar_556.glb" id="2_mesh"]
+
+[resource]
+script = ExtResource("1_model")
+mesh_scene = ExtResource("2_mesh")
+muzzle = Vector3(0.0000, 0.0338, 0.7995)
+mounts = Dictionary[String, Vector3]({"muzzle": Vector3(0.0000, 0.0338, 0.7995), "optic": Vector3(0.0000, 0.0897, 0.1300), "under": Vector3(0.0000, -0.0026, 0.4420), "mag": Vector3(0.0000, -0.0195, 0.1300)})

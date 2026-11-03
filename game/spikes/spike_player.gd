@@ -26,6 +26,7 @@ const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 @export var throwable: ThrowableConfig
 @export var throwables: Array[ThrowableConfig] = []  ## more than one: "throwable_next" cycles them (shared count)
 @export var controls: TwinStickConfig
+@export var gun_hold: Vector3 = Vector3(-0.12, 0.95, 0.34)  ## the right hand in the aim marker's space (+Z = aim)
 
 var grid: NavGrid
 var horde: Horde
@@ -63,6 +64,7 @@ var _aim_line: ImmediateMesh = ImmediateMesh.new()
 var _throw_ring: MeshInstance3D
 
 @onready var _aim_marker: Node3D = $AimMarker
+var gun_view: GunView
 
 
 func setup(nav: NavGrid, crowd: Horde, cam: Camera3D, y: float) -> void:
@@ -88,6 +90,7 @@ func _arm() -> void:
 		for slot: WeaponSlot in loadout.slots:
 			guns.append(Gun.new(slot.weapon, slot.attachments, pouch))
 	gun = guns[0]
+	_show_gun()
 	var worn: Array[ArmorConfig] = []
 	if loadout != null:
 		worn = loadout.wearing
@@ -100,11 +103,34 @@ func select_gun(i: int) -> void:
 		return
 	gun.reload_left = 0.0
 	gun = guns[i]
+	_show_gun()
+
+
+## The gun model in hand; the placeholder barrel shows only for a gun without one.
+func _show_gun() -> void:
+	if gun_view == null:
+		return
+	gun_view.show_gun(gun)
+	var barrel: Node3D = _aim_marker.get_node_or_null("Barrel") as Node3D
+	if barrel != null:
+		barrel.visible = gun.config.model == null
+
+
+## Where the flash and casings come from: the gun's muzzle, or the placeholder's tip.
+func muzzle_position() -> Vector3:
+	if gun_view != null and gun.config.model != null:
+		return gun_view.muzzle_position()
+	return Vector3(position.x + aim_dir.x * 0.6, ground_y + 1.1, position.z + aim_dir.y * 0.6)
 
 
 func _ready() -> void:
 	if controls == null:
 		controls = TwinStickConfig.new()
+	gun_view = GunView.new()
+	gun_view.position = gun_hold
+	_aim_marker.add_child(gun_view)
+	if gun != null:
+		_show_gun()
 	var line_mat: StandardMaterial3D = StandardMaterial3D.new()
 	line_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	line_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA

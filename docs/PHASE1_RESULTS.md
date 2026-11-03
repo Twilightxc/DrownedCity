@@ -98,6 +98,7 @@ Live: `?spike=twinstick` (F4 panel has the gun rows) and `?spike=style`; the int
 
 | Item | How |
 | --- | --- |
+| Gun meshes (desktop, 2026-11-03) | `tools/blender/kit_guns.py`: pistol 48 tris, AR 152, shotgun 116, DMR 112; silencer, red dot, extended mag, flashlight 24–60 each. One draw call for the gun + one per attachment (the AR in the arena: 4) plus their shadow pass. Close-up: `docs/art/08_guns_in_hand.png`. Not measured on the Arc |
 | Schema | `combat/weapon_config.gd`: class, caliber, damage, pellets, body_pen, armor_pen, stagger, range + falloff, rpm, fire modes (semi / auto / burst), spread + recoil bloom, mag, reload (whole mag or per round), noise, weight, wear + jam curve, waterproof, attachment slots |
 | Rules | `combat/ballistics.gd`: falloff, −20 % per body passed, armor table (lower ×0.25 and the round stops, equal ×0.75, higher ×1), sustained DPS. Shots: every pellet is cast first, damage summed per zombie, applied once (`Horde.apply_hits`) with the gun's stagger |
 | Carried state | `combat/gun.gd` (`Gun`): magazine, fire mode, bloom, durability, jams (from 50 % durability, up to 8 % per shot at 0 %; a reload clears it), reload from `AmmoPouch` (loose rounds per caliber) |

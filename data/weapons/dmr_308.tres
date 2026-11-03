@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="WeaponConfig" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://combat/weapon_config.gd" id="1_cfg"]
+[ext_resource type="Resource" path="res://assets/models/gun_dmr_308.tres" id="90_model"]
 
 [resource]
 script = ExtResource("1_cfg")
@@ -35,3 +36,4 @@ burst_pause_sec = 0.25
 jam_below = 50.0
 jam_chance_max = 0.08
 waterproof = false
+model = ExtResource("90_model")

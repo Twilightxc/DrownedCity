@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="AttachmentConfig" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://combat/attachment_config.gd" id="1_cfg"]
+[ext_resource type="PackedScene" path="res://assets/models/att_extended_mag.glb" id="90_model"]
 
 [resource]
 script = ExtResource("1_cfg")
@@ -9,3 +10,4 @@ slot = "mag"
 mag_mul = 1.5
 reload_mul = 1.15
 weight_kg = 0.3
+mesh_scene = ExtResource("90_model")
