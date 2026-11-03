@@ -89,13 +89,17 @@ of it taken from those milestones.
       `noise_m`. → 9 packs (`docs/audio/SOURCES.md`) cut by `tools/audio/build_sfx.py` into 34 Ogg files, 0.31 MB;
       `SfxBank` (`data/audio/sfx_bank.tres`), `SfxPlayer` pool of 24, `SpikeAudio` glue; F4 volume / mute.
       Footsteps per stance come with A3.
-- [ ] **A2 Survivor body** (desktop, Blender): `tools/blender/kit_survivor.py`, low-poly, warm palette, the gun in
+- [x] **A2 Survivor body** (desktop, Blender): `tools/blender/kit_survivor.py`, low-poly, warm palette, the gun in
       the right hand. Skeleton3D + AnimationTree, not VAT (≤ 6 people on screen). Hand-keyed clips: idle, walk,
       run, crouch idle / walk, prone idle / crawl, roll, reload per class (pistol, rifle, shotgun shell by shell),
       downed. Replaces the capsule for the player and the teammates. Male / female, build and outfits stay in 1.8.
       Sprint carry per gun (J 2026-11-03), from `WeaponConfig.carry_pose`: pistol / SMG at high ready, both hands,
       muzzle up; long guns (AR, shotgun, DMR) at port arms, across the chest in the crook of the arm, military
       style. Walking and standing keep the aim pose (no shooting while sprinting, A3).
+      → `tools/blender/kit_survivor.py` (288 tris, 13 bones, 16 clips); `SurvivorView`: lower + upper layer through
+      a bone filter, the gun on `hand_r` with a measured hold per clip; the player uses it; `?spike=poses` shows
+      every clip. Stance / sprint / roll flags are ready for A3. The left hand holds the gun by two-bone IK to
+      `GunModel.support`.
 - [ ] **A3 Stances and movement:** C crouch (toggle), Z prone (toggle), Shift sprint (hold), Space dodge roll
       (not Ctrl: Ctrl+R / Ctrl+W are browser shortcuts). Pad: L3 sprint, B roll, crouch / prone on the D-pad;
       fire mode moves off L3. Per stance in `data/combat/stances.tres`: speed, spread, footstep and shot noise,
