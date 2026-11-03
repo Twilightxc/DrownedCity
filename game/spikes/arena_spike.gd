@@ -11,7 +11,7 @@ const POCKET_CROWD: int = 12  ## zombies waiting in one entrance pocket at most;
 ## AI teammates (1.5+ A5): one per loadout, named in order, on the leader's left then right.
 @export var teammate_loadouts: Array[LoadoutConfig] = [preload("res://data/weapons/teammate_ar_loadout.tres"),
 	preload("res://data/weapons/teammate_shotgun_loadout.tres")]
-@export var teammate_names: PackedStringArray = PackedStringArray(["Mali", "Somchai"])
+@export var teammate_names: PackedStringArray = PackedStringArray(["Marco", "Jess"])
 
 var _director: WaveDirector
 var _barricades: Barricades

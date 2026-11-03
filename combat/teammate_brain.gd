@@ -3,8 +3,8 @@ extends RefCounted
 ## What an AI teammate wants each frame (PHASE1 1.5+ A5): where to move, where to aim, whether to pull the
 ## trigger, sprint or reload. Pure data in, wishes out, so it is testable without a scene; the Teammate node
 ## feeds it and acts on the result with the same gun, stance and movement rules as the player.
-## It picks the nearest hunting zombie it can see within its gun's reach (weighted toward those near the
-## leader), turns to it at a human rate, waits a reaction time, fires in bursts, backs away from anything too
+## It picks the hunting zombie nearest to itself that it can see within its gun's reach (protect_weight can
+## lean it toward those near the leader; 0 by default, J 2026-11-04), turns to it at a human rate, waits a reaction time, fires in bursts, backs away from anything too
 ## close, and otherwise keeps its spot beside the leader or where it was told to hold.
 
 enum Order { FOLLOW, HOLD }

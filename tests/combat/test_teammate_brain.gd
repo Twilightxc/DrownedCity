@@ -22,13 +22,14 @@ func _think(sec: float, me: Vector2, gun: Gun, leader: Vector2 = Vector2(20, 30)
 		_brain.think(0.05, me, gun, 1.4, leader, Vector2(0, -1), _horde, _grid)
 
 
-func test_it_picks_a_visible_zombie_near_the_leader_turns_and_fires_after_a_beat() -> void:
-	_horde.spawn(Vector2(10.5, 10.5), 0)  # far from the leader
-	_horde.spawn(Vector2(24.5, 24.5), 0)  # near the leader
+func test_it_picks_the_zombie_nearest_to_itself_turns_and_fires_after_a_beat() -> void:
+	_horde.spawn(Vector2(10.5, 10.5), 0)  # far from it, near nobody
+	_horde.spawn(Vector2(24.5, 24.5), 0)  # nearest to it
+	_horde.spawn(Vector2(20.5, 29.5), 0)  # right by the leader, but further from it
 	var gun: Gun = Gun.new(AR)
 	_brain.aim = Vector2(-1, 0)
 	_think(0.05, Vector2(20, 20), gun)
-	assert_eq(_brain.target, 1, "the one closing on the leader")
+	assert_eq(_brain.target, 1, "nearest to itself first (J)")
 	assert_false(_brain.fire, "not yet: turning and reacting")
 	_think(0.6, Vector2(20, 20), gun)
 	assert_gt(_brain.aim.dot((Vector2(24.5, 24.5) - Vector2(20, 20)).normalized()), 0.99, "aimed")

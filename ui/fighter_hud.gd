@@ -1,7 +1,7 @@
 class_name FighterHud
 extends CanvasLayer
-## The fighter's own HUD (PHASE1 1.5+ A4): HP and stamina bars at the bottom left, and a ring over each fighter's
-## head that fills while it reloads (one step per shell for a pump shotgun; orange while clearing a jam). Downed,
+## The fighter's own HUD (PHASE1 1.5+ A4): HP and stamina bars at the bottom left with a small card per teammate
+## above them (name, HP, stamina), and a ring over each fighter's head that fills while it reloads (one step per shell for a pump shotgun; orange while clearing a jam). Downed,
 ## the HP bar becomes the time left to be helped up. Non-interactive, so nothing to navigate with a pad.
 
 const BAR_SIZE: Vector2 = Vector2(260.0, 16.0)
@@ -18,8 +18,9 @@ const RING_COLOR: Color = Color(1.0, 0.92, 0.6)
 const JAM_COLOR: Color = Color(1.0, 0.55, 0.15)
 const BACK_COLOR: Color = Color(0.0, 0.0, 0.0, 0.55)
 const REVIVE_COLOR: Color = Color(0.45, 0.95, 0.45)
-const MINI_BAR: Vector2 = Vector2(46.0, 5.0)  ## a teammate's HP over its head
-const NAME_HEIGHT: float = 2.55  ## m: a teammate's name and HP bar
+const CARD_SIZE: Vector2 = Vector2(170.0, 40.0)  ## a teammate's card
+const CARD_GAP: float = 6.0
+const MINI_BAR_H: float = 5.0
 
 var player: SpikePlayer
 ## Every fighter that gets a reload ring (the player; teammates join in 1.5+ A5).
@@ -99,9 +100,11 @@ func _on_draw() -> void:
 		var low: bool = m.stamina < m.config.sprint_min_stamina
 		var col: Color = LOW_COLOR if low and fmod(_blink, 0.5) < 0.25 else STAMINA_COLOR
 		_bar(Vector2(x, y + BAR_SIZE.y + BAR_GAP), m.stamina_fraction(), col, _stance_text(m))
+	var card_y: float = y - BAR_GAP * 2.0 - CARD_SIZE.y
 	for f: SpikePlayer in fighters:
 		if f != player:
-			_tag(f)
+			_card(f, Vector2(x, card_y))
+			card_y -= CARD_SIZE.y + CARD_GAP
 		_ring(f)
 
 
@@ -126,28 +129,28 @@ func _stance_text(m: FighterMotion) -> String:
 	return tr("Stamina")
 
 
-## A teammate's name and a small HP bar (downed: the time left, dark red) over its head.
-func _tag(f: SpikePlayer) -> void:
-	var at3: Vector3 = Vector3(f.position.x, f.ground_y + NAME_HEIGHT, f.position.z)
-	if f.camera == null or f.camera.is_position_behind(at3):
-		return
-	var at: Vector2 = f.camera.unproject_position(at3)
+## A teammate's card (J 2026-11-04): name, HP and stamina in a small panel above the player's bars. Downed, the
+## HP bar counts down the time to be helped up; dead, the card greys out.
+func _card(f: SpikePlayer, at: Vector2) -> void:
 	var h: FighterHealth = f.health
-	var name: String = f.get("display_name") if f.get("display_name") != null else ""
-	if h.state == FighterHealth.State.DEAD:
-		name = tr("%s (dead)") % name
-	var w: float = _font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
-	_draw.draw_string_outline(_font, at + Vector2(-w * 0.5, -8.0), name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, 4,
-		Color.BLACK)
-	_draw.draw_string(_font, at + Vector2(-w * 0.5, -8.0), name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13)
-	if h.state == FighterHealth.State.DEAD:
-		return
+	var dead: bool = h.state == FighterHealth.State.DEAD
 	var downed: bool = h.state == FighterHealth.State.DOWNED
-	var fill: float = h.downed_left / maxf(h.config.downed_sec, 0.01) if downed else h.hp_frac()
-	var origin: Vector2 = at - Vector2(MINI_BAR.x * 0.5, 0.0)
-	_draw.draw_rect(Rect2(origin - Vector2(1, 1), MINI_BAR + Vector2(2, 2)), BACK_COLOR)
-	_draw.draw_rect(Rect2(origin, Vector2(MINI_BAR.x * clampf(fill, 0.0, 1.0), MINI_BAR.y)),
-		DOWNED_COLOR if downed else HP_COLOR)
+	_draw.draw_rect(Rect2(at, CARD_SIZE), Color(0.0, 0.0, 0.0, 0.45 if dead else 0.6))
+	var name: String = f.get("display_name") if f.get("display_name") != null else ""
+	var status: String = tr(" · dead") if dead else tr(" · down %d s") % ceili(h.downed_left) if downed else ""
+	var text_col: Color = Color(0.6, 0.6, 0.6) if dead else Color(1, 1, 1)
+	_draw.draw_string(_font, at + Vector2(8.0, 16.0), name + status, HORIZONTAL_ALIGNMENT_LEFT, CARD_SIZE.x - 16.0, 13,
+		text_col)
+	var bar_w: float = CARD_SIZE.x - 16.0
+	var hp_fill: float = 0.0 if dead else h.downed_left / maxf(h.config.downed_sec, 0.01) if downed else h.hp_frac()
+	_mini_bar(at + Vector2(8.0, 22.0), bar_w, hp_fill, DOWNED_COLOR if downed else HP_COLOR)
+	var m: FighterMotion = f.motion
+	_mini_bar(at + Vector2(8.0, 31.0), bar_w, 0.0 if dead or m == null else m.stamina_fraction(), STAMINA_COLOR)
+
+
+func _mini_bar(at: Vector2, width: float, fill: float, col: Color) -> void:
+	_draw.draw_rect(Rect2(at, Vector2(width, MINI_BAR_H)), BACK_COLOR)
+	_draw.draw_rect(Rect2(at, Vector2(width * clampf(fill, 0.0, 1.0), MINI_BAR_H)), col)
 
 
 ## The reload ring over `f`'s head: a dark track, the filled arc from the top clockwise, a tick per shell.

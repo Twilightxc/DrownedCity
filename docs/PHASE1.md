@@ -118,7 +118,7 @@ of it taken from those milestones.
       the same `Gun` / ballistics, reload, carry their own ammo, make noise, can be downed and revived by the
       player (hold F). Orders from the Tab wheel: follow / hold here. No friendly fire for now.
       → `Teammate` (a SpikePlayer driven by `TeammateBrain` instead of input) + `data/combat/teammate.tres`;
-      Mali (AR) and Somchai (shotgun), each with a pistol; `Horde.extra_targets`: hunters chase and hit the nearest;
+      Marco (AR) and Jess (shotgun), each with a pistol; `Horde.extra_targets`: hunters chase and hit the nearest;
       orders wheel: Follow me / Hold here / Hold fire; downed: F next to them for 2 s; `?mates=N`.
 
 ### 1.G Gate — "combat is fun"

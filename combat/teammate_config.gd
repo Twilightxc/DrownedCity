@@ -11,7 +11,7 @@ extends Resource
 
 @export_group("Shooting")
 @export var engage_range_mul: float = 0.85  ## × the gun's range: targets beyond aren't picked
-@export var protect_weight: float = 0.6  ## a zombie's distance to the leader counts this much against it
+@export var protect_weight: float = 0.0  ## a zombie's distance to the leader counts this much against it (J: 0, nearest to itself first)
 @export var retarget_sec: float = 0.25
 @export var reaction_sec: float = 0.3  ## a new target is held this long before the first shot
 @export var aim_turn_deg_per_sec: float = 420.0

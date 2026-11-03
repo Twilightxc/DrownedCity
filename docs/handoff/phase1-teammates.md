@@ -13,8 +13,10 @@
 - `game/spikes/teammate.gd`: a SpikePlayer whose wishes come from the brain; revive by F (2 s); swaps to the pistol.
 - SpikePlayer input goes through `_move_input / _wants_sprint / _wants_fire / _update_aim` (overridable).
 - `Horde.extra_targets / extra_hits`; horde_spike `add_teammate()` (flow goals, hits, blasts, fx, audio, HUD).
-- Arena: Mali (AR) + Somchai (shotgun), restock each calm, orders (Follow / Hold here / Hold fire), summary line,
+- Arena: Marco (AR) + Jess (shotgun), restock each calm, orders (Follow / Hold here / Hold fire), summary line,
   `?mates=N`. HUD: names, mini HP bars, revive ring. Picture: `docs/art/11_teammates.png`.
+- J (2026-11-04): "เปลี่ยนชื่อเพื่อน ไม่ใช้ชื่อไทยและไม่แสดงบนหัวตัวละคร / มีแถบการ์ดเล็กๆแสดงพลังชีวิต สแตมิน่า ชื่อของเพื่อน /
+  เพื่อนจะยิงศัตรูที่อยู่ใกล้ตัวเองมากที่สุดก่อน" → Marco and Jess; team cards above the player's bars; protect_weight 0.
 - 6 new tests, 215 total, all passing on desktop.
 
 ## Not done / next
