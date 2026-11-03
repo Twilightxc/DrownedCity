@@ -321,7 +321,8 @@ func _process(delta: float) -> void:
 
 func _move(delta: float) -> void:
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
-	var desired: Vector2 = AimMath.screen_to_world(input, camera.global_basis) * controls.move_speed 		* health.speed_mul() * motion.speed_mul()
+	var speed: float = controls.move_speed * health.speed_mul() * motion.speed_mul()
+	var desired: Vector2 = AimMath.screen_to_world(input, camera.global_basis) * speed
 	var rate: float = controls.move_accel if desired != Vector2.ZERO else controls.move_decel
 	velocity = motion.roll_velocity() if motion.is_rolling() else velocity.move_toward(desired, rate * delta)
 	if velocity == Vector2.ZERO:

@@ -12,8 +12,9 @@ convention for every part (same as kit_zombie): figure faces -Y (Godot +Z, the a
 rx < 0 swings a hanging limb forward, rx > 0 leans the torso / pelvis / head forward, rx > 0 on a shin bends
 the knee, rx < 0 on a forearm bends the elbow forward. Angles in radians.
 
-Clips (24 fps). Lower body / full body: idle, walk_f / b / l / r, run, crouch_idle, crouch_f / b / l / r, prone_idle,
-crawl, roll, downed (the game blends the four walks by the direction of travel against the aim).
+Clips (24 fps). Lower body / full body: idle, walk_f / b, run, crouch_idle, crouch_f / b, prone_idle, crawl, roll,
+downed. Moving sideways the game turns the hips to the travel and twists the torso back to the aim (HipTwist), so
+the legs only ever walk forward or backward.
 Upper body (spine, head, arms, hands): aim_pistol, aim_rifle, carry_high (pistol / SMG sprint: high ready,
 muzzle up), carry_port (long gun sprint: port arms, across the chest), reload_pistol, reload_rifle,
 reload_shell. The gun hangs on hand_r; the game keeps it level in the aim pose (it measures the hand there).
@@ -126,9 +127,10 @@ def idle(u):
 
 
 def walk(u):
+    """The game's walk is brisk (4.5 m/s, a light jog): long strides, a clear knee lift, some bounce."""
     t = u * math.tau
-    p = {"pelvis": (0.0, 0.0, 0.08 * math.sin(t)), "torso": (0.05, 0.0, -0.08 * math.sin(t))}
-    _legs(p, t, 0.45, 0.8)
+    p = {"pelvis": (0.06, 0.0, 0.1 * math.sin(t)), "torso": (0.08, 0.0, -0.1 * math.sin(t))}
+    _legs(p, t, 0.6, 1.15, lift=0.05)
     _arms_down(p, 0.3 * math.sin(t))
     return p, (0, 0, -0.02 + 0.02 * abs(math.cos(t)))
 
@@ -140,32 +142,6 @@ def run(u):
     _arms_down(p, 0.6 * math.sin(t))
     p["fore_l"] = p["fore_r"] = (-1.2, 0.0, 0.0)
     return p, (0, 0, -0.06 + 0.05 * abs(math.cos(t)))
-
-
-def _strafe(p, t, side, swing=0.3, knee=0.6):
-    """Side-step: both legs swing across together, the leading knee lifts. side = +1 left (+X), -1 right."""
-    s = math.sin(t)
-    p["thigh_l"] = (-0.05, -side * swing * s, 0.0)
-    p["thigh_r"] = (-0.05, -side * swing * s, 0.0)
-    p["shin_l"] = (0.1 + knee * max(0.0, side * math.sin(t + 1.0)), 0.0, 0.0)
-    p["shin_r"] = (0.1 + knee * max(0.0, -side * math.sin(t + 1.0)), 0.0, 0.0)
-    p["pelvis"] = (0.0, 0.05 * side * s, 0.0)
-
-
-def walk_l(u):
-    t = u * math.tau
-    p = {"torso": (0.04, 0.0, 0.0)}
-    _strafe(p, t, 1.0)
-    _arms_down(p)
-    return p, (0, 0, -0.02 + 0.015 * abs(math.cos(t)))
-
-
-def walk_r(u):
-    t = u * math.tau
-    p = {"torso": (0.04, 0.0, 0.0)}
-    _strafe(p, t, -1.0)
-    _arms_down(p)
-    return p, (0, 0, -0.02 + 0.015 * abs(math.cos(t)))
 
 
 def walk_b(u):
@@ -217,27 +193,6 @@ def crouch_walk(u):
     p["shin_r"] = (2.0 + 0.3 * max(0.0, math.sin(t + math.pi + 1.3)), 0.0, 0.0)
     _arms_down(p, 0.15 * math.sin(t))
     return p, (0, 0, -CROUCH_DROP + 0.02 * abs(math.cos(t)))
-
-
-def _crouch_strafe(u, side):
-    t = u * math.tau
-    p = {}
-    _crouch(p)
-    s = math.sin(t)
-    p["thigh_l"] = (-1.3, -side * 0.25 * s + 0.1, 0.0)
-    p["thigh_r"] = (-1.3, -side * 0.25 * s - 0.1, 0.0)
-    p["shin_l"] = (2.0 + 0.25 * max(0.0, side * math.sin(t + 1.0)), 0.0, 0.0)
-    p["shin_r"] = (2.0 + 0.25 * max(0.0, -side * math.sin(t + 1.0)), 0.0, 0.0)
-    _arms_down(p)
-    return p, (0, 0, -CROUCH_DROP + 0.015 * abs(math.cos(t)))
-
-
-def crouch_l(u):
-    return _crouch_strafe(u, 1.0)
-
-
-def crouch_r(u):
-    return _crouch_strafe(u, -1.0)
 
 
 def crouch_b(u):
@@ -414,10 +369,8 @@ def reload_shell(u):
 
 # name: (function, frames, loop)
 CLIPS = {
-    "idle": (idle, 48, True), "walk_f": (walk, 24, True), "walk_b": (walk_b, 24, True),
-    "walk_l": (walk_l, 24, True), "walk_r": (walk_r, 24, True), "run": (run, 16, True),
+    "idle": (idle, 48, True), "walk_f": (walk, 18, True), "walk_b": (walk_b, 18, True), "run": (run, 16, True),
     "crouch_idle": (crouch_idle, 48, True), "crouch_f": (crouch_walk, 28, True), "crouch_b": (crouch_b, 28, True),
-    "crouch_l": (crouch_l, 28, True), "crouch_r": (crouch_r, 28, True),
     "prone_idle": (prone_idle, 48, True), "crawl": (crawl, 32, True), "roll": (roll, 14, False),
     "downed": (downed, 48, True),
     "aim_pistol": (aim_pistol, 48, True), "aim_rifle": (aim_rifle, 48, True),
@@ -426,9 +379,11 @@ CLIPS = {
     "reload_shell": (reload_shell, 12, True),
 }
 LOOP_CLIPS = [n for n, (_, _, loop) in CLIPS.items() if loop]
-WALK_SPEED = 1.4  # m/s the walk clip's stride matches at 1× (survivor_view.gd scales the clip by speed)
-RUN_SPEED = 4.2
-CRAWL_SPEED = 0.6
+# m/s each moving clip matches at 1× (survivor_view.gd CLIP_SPEED agrees and scales the clip by speed)
+WALK_SPEED = 4.5
+RUN_SPEED = 6.0
+CROUCH_SPEED = 1.7
+CRAWL_SPEED = 0.85
 
 
 # ---- build ---------------------------------------------------------------------------------------
