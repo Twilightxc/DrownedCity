@@ -3,6 +3,17 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.5+ A4 HUD — 🟡 built (2026-11-03), waiting for J's look
+
+Live: `?spike=arena`. The top-left line now only shows the gun (mode, mag, rounds, jam).
+
+| Item | How |
+| --- | --- |
+| Bars | `FighterHud` (CanvasLayer 39), bottom left: HP (red) and stamina (amber, the stance written on it, flashing when there isn't enough to sprint); downed, the HP bar turns dark red and counts down `downed_sec` |
+| Reload ring | over the head (2.25 m, projected each frame), fills from the top clockwise with the reload; a pump shotgun's ring has a tick per shell it loads and fills one step per shell; orange while clearing a jam |
+| Cost | one Control redraw a frame, no nodes per fighter |
+| Not checked | readability at the Arc's resolution |
+
 ## 1.5+ A3 Stances and movement — 🟡 built (2026-11-03), waiting for J's feel test
 
 Live: `?spike=arena` (C crouch, Z prone, Shift sprint, Space roll; the HUD shows stamina and the stance). The

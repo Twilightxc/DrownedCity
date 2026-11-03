@@ -72,6 +72,7 @@ var _chain: KillChain
 var _crosshair: CrosshairHud
 var _kills_seen: int = 0
 var _audio: SpikeAudio
+var _hud: FighterHud  ## HP / stamina bars, reload rings (1.5+ A4)
 var _fire_rev: int = -1
 var _water_y: float = WATER_Y
 ## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
@@ -170,6 +171,9 @@ func _ready() -> void:
 	_feedback.time_control = _time
 	_feedback.bind(_player.health)
 	_build_feel()
+	_hud = FighterHud.new()
+	add_child(_hud)
+	_hud.bind(_player)
 	if sfx_bank != null:
 		_audio = SpikeAudio.new()
 		add_child(_audio)
@@ -480,22 +484,12 @@ func _publish_stats(delta: float) -> void:
 
 func _update_status() -> void:
 	var g: Gun = _player.gun
-	var hp_text: String = "HP %d" % _player.health.hp
-	var m: FighterMotion = _player.motion
-	hp_text += "  ·  " + tr("Stamina %d") % roundi(m.stamina)
-	if m.is_rolling():
-		hp_text += "  ·  " + tr("ROLL")
-	elif m.sprinting:
-		hp_text += "  ·  " + tr("SPRINT")
-	elif m.stance != FighterMotion.Stance.STAND:
-		hp_text += "  ·  " + tr("CROUCH" if m.stance == FighterMotion.Stance.CROUCH else "PRONE")
+	# HP, stamina, stance and the reload are on FighterHud's bars and ring (1.5+ A4); this line is the gun.
 	var mode: String = ["semi", "auto", "burst"][g.mode()]
-	var text: String = "%s   ·   %s [%s]  %d / %d  · %d" % [hp_text, tr(g.config.display_name), tr(mode), g.ammo,
-		g.mag_size, _player.pouch.count(g.config.caliber)]
+	var text: String = "%s [%s]  %d / %d  · %d" % [tr(g.config.display_name), tr(mode), g.ammo, g.mag_size,
+		_player.pouch.count(g.config.caliber)]
 	if g.jammed and not g.is_reloading():
 		text += "  · " + tr("JAMMED: reload")
-	elif g.is_reloading():
-		text += "  · " + tr("Reloading %d%%") % int(g.reload_progress() * 100.0)
 	if g.durability < g.config.jam_below:
 		text += "  · %d%%" % int(g.durability)
 	if _player.throwable != null:
