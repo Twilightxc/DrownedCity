@@ -1,6 +1,6 @@
 # docs/plan-before-1g
 
-- **PR:** see below (pushed? yes)
+- **PR:** #40 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ d5cffe0
 - **Updated:** 2026-11-03
