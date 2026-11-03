@@ -43,3 +43,4 @@ enum Armor { NONE, L, M, H }  ## armor_pen against a target's armor or cover (GD
 @export var jam_chance_max: float = 0.08  ## per shot at 0 % durability
 @export var waterproof: bool = false
 @export var attachment_slots: PackedStringArray = PackedStringArray(["muzzle", "optic", "under", "mag"])
+@export var model: GunModel  ## mesh + mount points from tools/blender/kit_guns.py; null = the placeholder barrel

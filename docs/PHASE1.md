@@ -31,7 +31,9 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
 - [x] Noise: every shot emits `noise_m` into the horde perception (1.2). → `SpikePlayer.noise`; inside a
       building it wakes sleepers at `noise_m` × 0.3 until 1.2's perception replaces those rules.
 - [x] Tests: damage falloff, penetration, armor table, DPS per class within ±10 % of the GDD table.
-- [ ] Assets (desktop, Blender): 4 low-poly guns in the player's hands + the 4 attachments on them.
+- [x] Assets (desktop, Blender): 4 low-poly guns in the player's hands + the 4 attachments on them.
+      → `tools/blender/kit_guns.py` (×1.3 real size, 48–152 tris a gun); `GunModel` .tres per gun with its muzzle
+      and slot mounts; `GunView` under the aim marker; the silencer moves the muzzle flash forward.
 
 ### 1.2 Enemy types and perception (GDD §9)
 - [x] Demo zombies (GDD §17 "4 types", J 2026-10-29): Walker (≥ 4 sub-variants), Runner, Armored

@@ -285,8 +285,7 @@ func _build_feel() -> void:
 	_crosshair.bind(_player, _chain)
 	_kills_seen = _total_kills()
 	_player.shot.connect(func(g: Gun) -> void:
-		var muzzle: Vector3 = Vector3(_player.position.x + _player.aim_dir.x * 0.6, _player.ground_y + 1.1,
-			_player.position.z + _player.aim_dir.y * 0.6)
+		var muzzle: Vector3 = _player.muzzle_position()
 		var shotgun: bool = g.config.pellets > 1
 		if feel_config.muzzle_flash:
 			var size: float = 1.4 if shotgun else 0.8 if g.noise_m < 20.0 else 1.0  # silenced: small

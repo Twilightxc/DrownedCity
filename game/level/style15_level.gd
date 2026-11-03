@@ -19,17 +19,18 @@ const OBSTACLE_MARGIN: float = 0.2  ## m a nav obstacle's footprint grows before
 
 func _ready() -> void:
 	RenderingServer.global_shader_parameter_set("water_level", water_level)
-	_apply_materials(self, SURFACE_MATERIAL)
+	apply_materials(self, SURFACE_MATERIAL, water)
 	for node: Node in get_tree().get_nodes_in_group("floating"):
 		if is_ancestor_of(node):
-			_apply_materials(node, FLOATING_MATERIAL)
+			apply_materials(node, FLOATING_MATERIAL, water)
 	_publish_footprints()
 
 
-func _apply_materials(root: Node, surface: Material) -> void:
+## Swaps the kit's "surface" / "emissive" placeholder materials under `root` (also used by GunView).
+static func apply_materials(root: Node, surface: Material, skip: MeshInstance3D = null) -> void:
 	for node: Node in root.find_children("*", "MeshInstance3D", true, false):
 		var mi: MeshInstance3D = node as MeshInstance3D
-		if mi == water or mi.mesh == null:
+		if mi == skip or mi.mesh == null:
 			continue
 		for s: int in mi.mesh.get_surface_count():
 			var mat: Material = mi.mesh.surface_get_material(s)
