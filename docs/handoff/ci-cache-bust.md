@@ -1,6 +1,6 @@
 # ci/cache-bust
 
-- **PR:** see below (pushed? yes)
+- **PR:** #39 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ f4ed53d
 - **Updated:** 2026-11-03
