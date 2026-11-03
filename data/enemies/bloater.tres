@@ -20,3 +20,6 @@ gas_radius_m = 3.0
 gas_sec = 8.0
 models = Array[ExtResource("2_vat")]([ExtResource("3_look")])
 tints = PackedColorArray(1, 1, 1, 1, 1.05, 1, 0.9, 1)
+voice_sfx = &"zombie_groan"
+voice_pitch = 0.68
+death_sfx = &"bloater_pop"

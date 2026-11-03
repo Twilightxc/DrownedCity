@@ -21,3 +21,6 @@ extends Resource
 @export var spot_burn_radius: float = 0.0  ## m; wider than blast_radius, so the sparks reach past the kills
 @export var embers: int = 0  ## burning flecks left stuck on the floor (look only: no cost, don't ignite)
 @export var shrapnel: bool = true  ## hot fragment streaks in the blast fx
+
+@export_group("Sound")
+@export var blast_sfx: StringName = &"blast_frag"

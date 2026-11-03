@@ -18,3 +18,5 @@ sight_mul = 1.2
 gas_on_death = false
 models = Array[ExtResource("2_vat")]([ExtResource("3_look")])
 tints = PackedColorArray(1, 1, 1, 1, 0.92, 0.95, 1.05, 1)
+voice_sfx = &"zombie_alert"
+voice_pitch = 1.15

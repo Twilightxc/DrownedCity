@@ -20,3 +20,5 @@ helmet_hp = 40
 armor_after_helmet = 1
 models = Array[ExtResource("2_vat")]([ExtResource("3_look")])
 tints = PackedColorArray(1, 1, 1, 1, 0.9, 0.95, 1.05, 1)
+voice_sfx = &"zombie_groan"
+voice_pitch = 0.82

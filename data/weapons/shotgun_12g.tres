@@ -37,3 +37,6 @@ jam_below = 50.0
 jam_chance_max = 0.08
 waterproof = false
 model = ExtResource("90_model")
+shot_sfx = &"shot_shotgun"
+reload_sfx = &"shell_insert"
+cycle_sfx = &"pump_shotgun"

@@ -18,3 +18,4 @@ spot_burn_chance = 0.35
 spot_burn_radius = 5.0
 embers = 12
 shrapnel = true
+blast_sfx = &"blast_frag"

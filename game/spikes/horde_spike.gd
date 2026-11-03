@@ -20,6 +20,7 @@ const WARM_UP_Y: float = -14.0
 @export var gore_config: GoreConfig
 @export var fire_config: FireConfig  ## optional: burning zombies + ground fire (0.7 part 3)
 @export var feel_config: FeelConfig = preload("res://data/fx/feel.tres")  ## hit-stop, shake, muzzle, casings (1.4)
+@export var sfx_bank: SfxBank = preload("res://data/audio/sfx_bank.tres")  ## null = silent (1.5+ A1)
 @export var roof_size: Vector2i = Vector2i(40, 40)
 ## Obstacles in roof cells: stair house, AC units, water tanks, low walls.
 @export var obstacles: Array[Rect2i] = [
@@ -70,6 +71,7 @@ var _casings: CasingFx
 var _chain: KillChain
 var _crosshair: CrosshairHud
 var _kills_seen: int = 0
+var _audio: SpikeAudio
 var _fire_rev: int = -1
 var _water_y: float = WATER_Y
 ## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
@@ -166,6 +168,10 @@ func _ready() -> void:
 	_feedback.time_control = _time
 	_feedback.bind(_player.health)
 	_build_feel()
+	if sfx_bank != null:
+		_audio = SpikeAudio.new()
+		add_child(_audio)
+		_audio.bind(sfx_bank, _player, _rig)
 	_player.restart_requested.connect(func() -> void:
 		Engine.time_scale = 1.0
 		get_tree().reload_current_scene())
@@ -190,6 +196,8 @@ func _process(delta: float) -> void:
 	if _fire_fx != null:
 		_fire_fx.sync(delta, _fx_horde, _ground_fire if _fx_horde == _horde else null)
 	_gas.update(delta)
+	if _audio != null:
+		_audio.update(delta, _fx_horde, _ground_fire if _fx_horde == _horde else null)
 	_hurt_player(delta)
 	_update_feel(delta)
 	_burn_gas()
@@ -254,6 +262,8 @@ func _auto_attack(delta: float, from: Vector2) -> void:
 func _on_blast(at: Vector3, _killed: int, cfg: ThrowableConfig) -> void:
 	var in_water: bool = not _grid.in_bounds(_grid.world_to_cell(Vector2(at.x, at.z)))
 	_explosions.blast(at, cfg.blast_radius, in_water, cfg.embers, cfg.shrapnel, cfg.fire_radius > 0.0)
+	if _audio != null:
+		_audio.on_blast(at, cfg)
 	# Shake by distance; a blast that kills several freezes the frame a little longer than a shot.
 	var to_blast: float = Vector2(at.x, at.z).distance_to(_player.ground_position())
 	if feel_config.shake:
@@ -385,6 +395,8 @@ func _drain_horde_events() -> void:
 				_blood.pool(d.position + (d.push if d.blast else d.heading) * 0.5, size)
 		for d: Horde.Death in h.helmet_drops:
 			_corpses.add_helmet(d)
+	if _audio != null:
+		_audio.on_horde_events(h)
 	h.clear_events()
 
 

@@ -44,3 +44,9 @@ enum Armor { NONE, L, M, H }  ## armor_pen against a target's armor or cover (GD
 @export var waterproof: bool = false
 @export var attachment_slots: PackedStringArray = PackedStringArray(["muzzle", "optic", "under", "mag"])
 @export var model: GunModel  ## mesh + mount points from tools/blender/kit_guns.py; null = the placeholder barrel
+
+@export_group("Sound")
+@export var shot_sfx: StringName = &"shot_ar"  ## SfxBank event; heard up to noise_m away
+@export var reload_sfx: StringName = &"reload_rifle"  ## per round for reload_per_round guns
+@export var cycle_sfx: StringName = &""  ## after each shot (pump action); empty = none
+@export var cycle_delay_sec: float = 0.35

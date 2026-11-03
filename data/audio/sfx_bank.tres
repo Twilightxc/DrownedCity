@@ -1,0 +1,244 @@
+[gd_resource type="Resource" script_class="SfxBank" load_steps=57 format=3]
+
+[ext_resource type="Script" path="res://audio/sfx_bank.gd" id="1_bank"]
+[ext_resource type="Script" path="res://audio/sfx_event.gd" id="2_event"]
+[ext_resource type="AudioStream" path="res://assets/audio/blast_frag.ogg" id="3_blast_frag"]
+[ext_resource type="AudioStream" path="res://assets/audio/blast_incendiary.ogg" id="4_blast_incendiary"]
+[ext_resource type="AudioStream" path="res://assets/audio/bloater_pop.ogg" id="5_bloater_pop"]
+[ext_resource type="AudioStream" path="res://assets/audio/dry_click.ogg" id="6_dry_click"]
+[ext_resource type="AudioStream" path="res://assets/audio/fire_loop.ogg" id="7_fire_loop"]
+[ext_resource type="AudioStream" path="res://assets/audio/flesh_hit_1.ogg" id="8_flesh_hit_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/flesh_hit_2.ogg" id="9_flesh_hit_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/flesh_hit_3.ogg" id="10_flesh_hit_3"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_1.ogg" id="11_footstep_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_2.ogg" id="12_footstep_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_3.ogg" id="13_footstep_3"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_4.ogg" id="14_footstep_4"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_5.ogg" id="15_footstep_5"]
+[ext_resource type="AudioStream" path="res://assets/audio/helmet_clang.ogg" id="16_helmet_clang"]
+[ext_resource type="AudioStream" path="res://assets/audio/player_hit.ogg" id="17_player_hit"]
+[ext_resource type="AudioStream" path="res://assets/audio/pump_shotgun.ogg" id="18_pump_shotgun"]
+[ext_resource type="AudioStream" path="res://assets/audio/reload_pistol.ogg" id="19_reload_pistol"]
+[ext_resource type="AudioStream" path="res://assets/audio/reload_rifle.ogg" id="20_reload_rifle"]
+[ext_resource type="AudioStream" path="res://assets/audio/shell_insert.ogg" id="21_shell_insert"]
+[ext_resource type="AudioStream" path="res://assets/audio/shot_ar.ogg" id="22_shot_ar"]
+[ext_resource type="AudioStream" path="res://assets/audio/shot_dmr.ogg" id="23_shot_dmr"]
+[ext_resource type="AudioStream" path="res://assets/audio/shot_pistol.ogg" id="24_shot_pistol"]
+[ext_resource type="AudioStream" path="res://assets/audio/shot_pistol_silenced.ogg" id="25_shot_pistol_silenced"]
+[ext_resource type="AudioStream" path="res://assets/audio/shot_shotgun.ogg" id="26_shot_shotgun"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_alert.ogg" id="27_zombie_alert"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_groan_1.ogg" id="28_zombie_groan_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_groan_2.ogg" id="29_zombie_groan_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_groan_3.ogg" id="30_zombie_groan_3"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_groan_4.ogg" id="31_zombie_groan_4"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_groan_5.ogg" id="32_zombie_groan_5"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_groan_6.ogg" id="33_zombie_groan_6"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_moan_1.ogg" id="34_zombie_moan_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_moan_2.ogg" id="35_zombie_moan_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_moan_3.ogg" id="36_zombie_moan_3"]
+
+[sub_resource type="Resource" id="E_shot_pistol"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("24_shot_pistol")])
+volume_db = -4.0
+pitch_jitter = 0.04
+max_distance_m = 40.0
+max_voices = 4
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_shot_pistol_silenced"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("25_shot_pistol_silenced")])
+volume_db = -2.0
+pitch_jitter = 0.05
+max_distance_m = 16.0
+max_voices = 4
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_shot_ar"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("22_shot_ar")])
+volume_db = -5.0
+pitch_jitter = 0.04
+max_distance_m = 40.0
+max_voices = 5
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_shot_shotgun"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("26_shot_shotgun")])
+volume_db = -2.0
+pitch_jitter = 0.03
+max_distance_m = 40.0
+max_voices = 3
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_shot_dmr"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("23_shot_dmr")])
+volume_db = -2.0
+pitch_jitter = 0.03
+max_distance_m = 40.0
+max_voices = 3
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_reload_pistol"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("19_reload_pistol")])
+volume_db = -6.0
+pitch_jitter = 0.02
+max_distance_m = 15.0
+max_voices = 2
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_reload_rifle"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("20_reload_rifle")])
+volume_db = -6.0
+pitch_jitter = 0.02
+max_distance_m = 15.0
+max_voices = 2
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_pump_shotgun"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("18_pump_shotgun")])
+volume_db = -5.0
+pitch_jitter = 0.03
+max_distance_m = 15.0
+max_voices = 2
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_shell_insert"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("21_shell_insert")])
+volume_db = -8.0
+pitch_jitter = 0.06
+max_distance_m = 12.0
+max_voices = 2
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_dry_click"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("6_dry_click")])
+volume_db = -6.0
+pitch_jitter = 0.05
+max_distance_m = 10.0
+max_voices = 1
+min_interval_sec = 0.15
+
+[sub_resource type="Resource" id="E_blast_frag"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("3_blast_frag")])
+volume_db = 0.0
+pitch_jitter = 0.06
+max_distance_m = 60.0
+max_voices = 3
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_blast_incendiary"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("4_blast_incendiary")])
+volume_db = -2.0
+pitch_jitter = 0.06
+max_distance_m = 45.0
+max_voices = 3
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_fire_loop"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("7_fire_loop")])
+volume_db = -8.0
+pitch_jitter = 0.0
+max_distance_m = 18.0
+max_voices = 1
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_zombie_groan"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("28_zombie_groan_1"), ExtResource("29_zombie_groan_2"), ExtResource("30_zombie_groan_3"), ExtResource("31_zombie_groan_4"), ExtResource("32_zombie_groan_5"), ExtResource("33_zombie_groan_6"), ExtResource("34_zombie_moan_1"), ExtResource("35_zombie_moan_2"), ExtResource("36_zombie_moan_3")])
+volume_db = -10.0
+pitch_jitter = 0.08
+max_distance_m = 20.0
+max_voices = 5
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_zombie_alert"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("27_zombie_alert")])
+volume_db = -8.0
+pitch_jitter = 0.08
+max_distance_m = 24.0
+max_voices = 3
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_bloater_pop"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("5_bloater_pop")])
+volume_db = -2.0
+pitch_jitter = 0.08
+max_distance_m = 30.0
+max_voices = 3
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_flesh_hit"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("8_flesh_hit_1"), ExtResource("9_flesh_hit_2"), ExtResource("10_flesh_hit_3")])
+volume_db = -10.0
+pitch_jitter = 0.12
+max_distance_m = 25.0
+max_voices = 4
+min_interval_sec = 0.04
+
+[sub_resource type="Resource" id="E_helmet_clang"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("16_helmet_clang")])
+volume_db = -4.0
+pitch_jitter = 0.08
+max_distance_m = 30.0
+max_voices = 2
+min_interval_sec = 0.0
+
+[sub_resource type="Resource" id="E_player_hit"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("17_player_hit")])
+volume_db = -3.0
+pitch_jitter = 0.08
+max_distance_m = 10.0
+max_voices = 2
+min_interval_sec = 0.08
+
+[sub_resource type="Resource" id="E_footstep"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("11_footstep_1"), ExtResource("12_footstep_2"), ExtResource("13_footstep_3"), ExtResource("14_footstep_4"), ExtResource("15_footstep_5")])
+volume_db = -14.0
+pitch_jitter = 0.08
+max_distance_m = 10.0
+max_voices = 2
+min_interval_sec = 0.1
+
+[resource]
+script = ExtResource("1_bank")
+events = Dictionary[StringName, ExtResource("2_event")]({
+&"shot_pistol": SubResource("E_shot_pistol"),
+&"shot_pistol_silenced": SubResource("E_shot_pistol_silenced"),
+&"shot_ar": SubResource("E_shot_ar"),
+&"shot_shotgun": SubResource("E_shot_shotgun"),
+&"shot_dmr": SubResource("E_shot_dmr"),
+&"reload_pistol": SubResource("E_reload_pistol"),
+&"reload_rifle": SubResource("E_reload_rifle"),
+&"pump_shotgun": SubResource("E_pump_shotgun"),
+&"shell_insert": SubResource("E_shell_insert"),
+&"dry_click": SubResource("E_dry_click"),
+&"blast_frag": SubResource("E_blast_frag"),
+&"blast_incendiary": SubResource("E_blast_incendiary"),
+&"fire_loop": SubResource("E_fire_loop"),
+&"zombie_groan": SubResource("E_zombie_groan"),
+&"zombie_alert": SubResource("E_zombie_alert"),
+&"bloater_pop": SubResource("E_bloater_pop"),
+&"flesh_hit": SubResource("E_flesh_hit"),
+&"helmet_clang": SubResource("E_helmet_clang"),
+&"player_hit": SubResource("E_player_hit"),
+&"footstep": SubResource("E_footstep")
+})
+voices = 24

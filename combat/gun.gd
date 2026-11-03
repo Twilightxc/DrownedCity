@@ -13,6 +13,12 @@ var damage: float:
 	get: return config.damage * _mul.damage_mul
 var noise_m: float:
 	get: return config.noise_m * _mul.noise_mul
+var shot_sfx: StringName:  ## the gun's shot, or an attachment's (silencer)
+	get:
+		for a: AttachmentConfig in attachments:
+			if a.shot_sfx != &"":
+				return a.shot_sfx
+		return config.shot_sfx
 var spread_deg: float:
 	get: return config.spread_deg * _mul.spread_mul
 var recoil_deg: float:
@@ -35,6 +41,10 @@ var durability: float = 100.0
 var jammed: bool = false
 var reload_left: float = 0.0
 var shots_fired: int = 0
+# Counters the presentation polls for sounds (PHASE1 1.5+ A1): a whole-mag reload started, a shell went in,
+# the trigger was pulled on an empty gun with nothing left to load.
+var reload_sounds: int = 0
+var dry_fires: int = 0
 
 var _mul: AttachmentConfig = AttachmentConfig.new()  ## every attachment folded into one set of multipliers
 var _clearing_jam: bool = false
@@ -97,6 +107,8 @@ func start_reload() -> bool:
 		return false
 	_clearing_jam = false
 	reload_left = reload_sec
+	if not config.reload_per_round:
+		reload_sounds += 1
 	return true
 
 
@@ -148,7 +160,8 @@ func step(delta: float, trigger: bool, rng: RandomNumberGenerator) -> int:
 		return 0
 	if ammo <= 0:
 		_burst_left = 0
-		start_reload()
+		if not start_reload() and pressed and reload_left <= 0.0:
+			dry_fires += 1
 		return 0
 	_cooldown += 60.0 / config.rpm  # carry the remainder so the rate doesn't depend on FPS
 	if _burst_left > 0:
@@ -196,6 +209,7 @@ func _finish_reload() -> void:
 		return
 	if config.reload_per_round:
 		ammo += _take(1)
+		reload_sounds += 1
 		if ammo < mag_size and _rounds_left() > 0:
 			reload_left = reload_sec  # next shell
 		return
