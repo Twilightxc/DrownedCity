@@ -1,6 +1,6 @@
 # phase1/survivor-body
 
-- **PR:** see below (pushed? yes)
+- **PR:** #43 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 85569cf
 - **Updated:** 2026-11-03
