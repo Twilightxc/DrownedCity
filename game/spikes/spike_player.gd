@@ -142,6 +142,7 @@ func _show_gun() -> void:
 		return
 	if body != null:
 		body.set_gun(gun)
+		body.set_holstered(guns, gun)
 	else:
 		gun_view.show_gun(gun)
 	var barrel: Node3D = _aim_marker.get_node_or_null("Barrel") as Node3D

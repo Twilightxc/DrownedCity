@@ -191,3 +191,18 @@ func test_a_long_gun_is_shouldered_at_shoulder_height() -> void:
 		var pocket: Vector3 = sk.get_bone_global_pose(sk.find_bone("torso")) * RightArmAim.POCKET
 		assert_lt(stock.distance_to(pocket), 0.03, "slot %d: butt plate in the shoulder" % slot)
 		assert_between(stock.y, 1.3, 1.5, "slot %d: at shoulder height" % slot)
+
+
+func test_guns_not_in_hand_are_slung_on_the_back_and_holstered() -> void:
+	var guns: Array[Gun] = [_gun(0), _gun(1), _gun(2), _gun(3)]  # AR, pistol, shotgun, DMR
+	_body.set_gun(guns[0])
+	_body.set_holstered(guns, guns[0])
+	var shown: Array = []
+	for v: GunView in _body._slung:
+		shown.append(v.shown.config.display_name if v.visible else "")
+	assert_eq(shown, [guns[2].config.display_name, guns[3].config.display_name, guns[1].config.display_name],
+		"shotgun and DMR on the back, pistol on the thigh")
+	_body.set_gun(guns[1])
+	_body.set_holstered(guns, guns[1])
+	assert_false(_body._slung[2].visible, "the pistol in hand leaves the holster empty")
+	assert_true(_body._slung[0].visible and _body._slung[1].visible)

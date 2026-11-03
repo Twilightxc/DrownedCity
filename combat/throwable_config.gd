@@ -24,3 +24,8 @@ extends Resource
 
 @export_group("Sound")
 @export var blast_sfx: StringName = &"blast_frag"
+
+@export_group("Look")
+@export var mesh_scene: PackedScene  ## kit_props.py (frag grenade, Molotov); null = a ball
+@export var mesh_scale: float = 1.8  ## real-size models are scaled up so they read in flight
+@export var spin_deg_per_sec: float = 540.0  ## tumbles through the air

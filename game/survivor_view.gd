@@ -65,6 +65,14 @@ const TORSO_POINTS: Dictionary[StringName, Vector3] = {
 	&"pouch": Vector3(0.12, 0.15, 0.17),  # vest front, left (torso bone space)
 	&"belt": Vector3(0.2, -0.05, 0.08),   # left hip
 }
+## Guns not in hand (J 2026-11-04): long guns slung crossed on the back, a sidearm in a holster on the right
+## thigh. [bone, position in the bone's space, barrel direction, the gun's top]. No shadows (cheap).
+const SLINGS: Array = [
+	["torso", Vector3(0.0, 0.3, -0.28), Vector3(0.5, 0.85, 0.0), Vector3(0, 0, -1)],
+	["torso", Vector3(0.0, 0.3, -0.31), Vector3(-0.5, 0.85, 0.0), Vector3(0, 0, -1)],
+]
+const HOLSTER: Array = ["thigh_r", Vector3(-0.115, -0.1, 0.02), Vector3(0.0, -1.0, 0.15), Vector3(0, 0, 1)]
+const SLING_CENTRE_M: float = 0.25  ## a slung gun hangs by its middle, not by its grip
 const DROPPED_MAX: int = 6  ## dropped mags kept on the floor at once
 const DROPPED_SEC: float = 6.0
 
@@ -100,6 +108,7 @@ var _model_gun: GunModel
 var _target_yaw: float = 0.0
 var _reload_phase: float = -1.0  ## last frame's phase of the reload clip, < 0 = none
 var _dropped: Array[Node3D] = []
+var _slung: Array[GunView] = []  ## back slots, then the holster
 
 
 func _ready() -> void:
@@ -178,6 +187,44 @@ func set_gun(gun: Gun) -> void:
 		hand_item.visible = false
 		_hand_l_mount.add_child(hand_item)
 		Style15Level.apply_materials(hand_item, SURFACE_MATERIAL)
+
+
+## Shows the fighter's other guns where they are carried: up to two long guns on the back, one sidearm on the thigh.
+func set_holstered(guns: Array[Gun], in_hand: Gun) -> void:
+	if _slung.is_empty():
+		for slot: Array in SLINGS + [HOLSTER]:
+			var bone: BoneAttachment3D = BoneAttachment3D.new()
+			bone.bone_name = slot[0]
+			skeleton.add_child(bone)
+			var z: Vector3 = (slot[2] as Vector3).normalized()
+			var y: Vector3 = ((slot[3] as Vector3) - z * (slot[3] as Vector3).dot(z)).normalized()
+			var view: GunView = GunView.new()
+			var centre: float = SLING_CENTRE_M if slot != HOLSTER else 0.0
+			view.transform = Transform3D(Basis(y.cross(z), y, z), slot[1] - z * centre)
+			bone.add_child(view)
+			_slung.append(view)
+	var backs: Array[Gun] = []
+	var side: Gun = null
+	for g: Gun in guns:
+		if g == in_hand:
+			continue
+		if SpikePlayer.is_sidearm(g):
+			if side == null:
+				side = g
+		elif backs.size() < SLINGS.size():
+			backs.append(g)
+	for i: int in SLINGS.size():
+		_show_slung(_slung[i], backs[i] if i < backs.size() else null)
+	_show_slung(_slung[SLINGS.size()], side)
+
+
+func _show_slung(view: GunView, g: Gun) -> void:
+	view.visible = g != null
+	if g == null:
+		return
+	view.show_gun(g)
+	for mi: Node in view.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## Picks both layers from what the fighter is doing. `velocity` and `facing` are on the ground plane (m/s, unit).

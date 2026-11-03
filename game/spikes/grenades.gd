@@ -13,7 +13,7 @@ class Flight:
 	var from: Vector3
 	var to: Vector3
 	var t: float = 0.0
-	var node: MeshInstance3D
+	var node: Node3D  ## the throwable's model (ThrowableConfig.mesh_scene) or a ball
 
 
 class Flash:
@@ -59,8 +59,14 @@ func throw(config: ThrowableConfig, from: Vector3, to: Vector3) -> void:
 	f.config = config
 	f.from = from
 	f.to = to
-	f.node = MeshInstance3D.new()
-	f.node.mesh = _ball_mesh
+	if config.mesh_scene != null:
+		f.node = config.mesh_scene.instantiate() as Node3D
+		f.node.scale = Vector3.ONE * config.mesh_scale
+		Style15Level.apply_materials(f.node, Style15Level.SURFACE_MATERIAL)
+	else:
+		var ball: MeshInstance3D = MeshInstance3D.new()
+		ball.mesh = _ball_mesh
+		f.node = ball
 	f.node.position = from
 	add_child(f.node)
 	_flying.append(f)
@@ -72,6 +78,7 @@ func _process(delta: float) -> void:
 		var f: Flight = _flying[i]
 		f.t = minf(f.t + delta / f.config.flight_time, 1.0)
 		f.node.position = f.from.lerp(f.to, f.t) + Vector3.UP * (4.0 * f.config.arc_height * f.t * (1.0 - f.t))
+		f.node.rotate_object_local(Vector3.RIGHT, deg_to_rad(f.config.spin_deg_per_sec) * delta)
 		if f.t >= 1.0:
 			f.node.queue_free()
 			_flying.remove_at(i)
