@@ -1,6 +1,6 @@
 # phase1/arena-wave-param
 
-- **PR:** see below (pushed? yes)
+- **PR:** #38 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 1149e8f
 - **Updated:** 2026-11-03
