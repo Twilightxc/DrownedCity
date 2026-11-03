@@ -1,9 +1,9 @@
 # phase1/teammates
 
-- **PR:** see below (pushed? yes)
+- **PR:** #47 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** phase1/hud (PR #46) on main @ 7b8e6ec
-- **Updated:** 2026-11-03
+- **Updated:** 2026-11-04
 
 ## J asked
 "next task" → 1.5+ A5: "เอไอเพื่อนช่วยยิง" (2 teammates, J's answer).
