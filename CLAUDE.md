@@ -74,7 +74,8 @@ Reference images: `docs/art/03_style15_horde.png`, `docs/art/04_style15_horde_hu
 - One shadowed directional sun, low-angle dusk; emissive windows/fires + glow; depth fog.
 - **Mood: abandoned and lonely** (J, 2026-10-26; `docs/art/06_desolate_vs_spike_b.png`). Bleached, desaturated
   city: rain streaks, peeling walls, broken/boarded windows, collapsed corners and roof holes, vines and moss,
-  flotsam, sunken cars, dead lamps and trees in the water. Lit windows only where survivors live. Cooler
+  flotsam, sunken cars, dead lamps and trees in the water. No lit windows (J, 2026-11-04). Facades: sparse,
+  varied windows in bays, some balconies (`tools/blender/kit_building.py`). Cooler
   light, slightly desaturated grade, thicker fog. Survivors stay warm so they read against it.
 - Assets are built by `tools/blender/*.py` (Blender `bpy` 5.x via pip), exported as .glb. Keep scripts as the
   source of truth so variations are reproducible.
