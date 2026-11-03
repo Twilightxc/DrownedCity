@@ -1,6 +1,6 @@
 # art/building-facades
 
-- **PR:** see below (pushed? yes)
+- **PR:** #49 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 745bd16
 - **Updated:** 2026-11-04
