@@ -75,8 +75,33 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
 - [x] Telemetry hooks (local only for now): time alive, kills per weapon, ammo used, hits taken.
       → `telemetry/run_log.gd`: one JSON line per run in `user://telemetry/arena_runs.jsonl` + the summary screen.
 
+### 1.5+ Added before the gate (J 2026-11-03)
+J: after the gun meshes (1.1 assets), do these before 1.G, because combat fun depends on them. The gate moves
+after this set. Parts of 1.8 (one survivor body), 1.9 (teammates) and 1.13 (audio) move forward; ≈ 60 h, most
+of it taken from those milestones.
+
+- [ ] **A1 Audio pass 1** (replaces the 1.4 item). CC0 only (Kenney, OpenGameArt, freesound CC0): Claude lists each
+      file with source and licence, J approves before any download. Shots per gun class + silenced, reload and
+      dry click, frag and incendiary blasts, fire loop, zombie groan / attack / death per type, Bloater pop,
+      player hit, footsteps per stance. Ogg, pooled players, ≤ 3 MB of the 7.6 MB left. What you hear matches
+      `noise_m`.
+- [ ] **A2 Survivor body** (desktop, Blender): `tools/blender/kit_survivor.py`, low-poly, warm palette, the gun in
+      the right hand. Skeleton3D + AnimationTree, not VAT (≤ 6 people on screen). Hand-keyed clips: idle, walk,
+      run, crouch idle / walk, prone idle / crawl, roll, reload per class (pistol, rifle, shotgun shell by shell),
+      downed. Replaces the capsule for the player and the teammates. Male / female, build and outfits stay in 1.8.
+- [ ] **A3 Stances and movement:** C crouch (toggle), Z prone (toggle), Shift sprint (hold), Space dodge roll
+      (not Ctrl: Ctrl+R / Ctrl+W are browser shortcuts). Pad: L3 sprint, B roll, crouch / prone on the D-pad;
+      fire mode moves off L3. Per stance in `data/combat/stances.tres`: speed, spread, footstep and shot noise,
+      how far zombies see you (`Horde.perceive`). Stamina: sprint and roll drain it, regen after a pause; no
+      shooting while sprinting or rolling; the roll has short i-frames and a cooldown.
+- [ ] **A4 HUD:** HP and stamina bars; a reload ring above the character's head that fills over the reload time
+      (shotgun: one step per shell).
+- [ ] **A5 Two AI teammates:** follow the player, shoot the nearest hunting zombie in range and line of sight with
+      the same `Gun` / ballistics, reload, carry their own ammo, make noise, can be downed and revived by the
+      player (hold F). Orders from the Tab wheel: follow / hold here. No friendly fire for now.
+
 ### 1.G Gate — "combat is fun"
-- **Pass (J):** J plays the arena at least 3 times on the Arc in Chrome and says it's fun; ≥ 50 FPS at the
+- **Pass (J):** after 1.5+, J plays the arena at least 3 times on the Arc in Chrome and says it's fun; ≥ 50 FPS at the
   largest wave. **Fallback:** tune with the F4 panel and data for one more round; if still not fun, stop and
   rethink the combat design before Part B (GDD §16 risk "combat isn't fun").
 
@@ -98,6 +123,9 @@ Order follows the loop. Hours from GDD §17 (J's time).
 
 Part A (combat, 1.1–1.5) ≈ 80 h, so the total is ≈ 750 h.
 
-## Settled with J (2026-10-29)
+## Settled with J
+- 2026-11-03: 1.5+ before the gate; CC0 sound packs; roll on Space; 2 AI teammates in the arena.
+
+### 2026-10-29
 - Demo zombie types: Walker, Runner, Armored, Bloater.
 - The combat test arena is the real base roof.
