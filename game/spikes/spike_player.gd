@@ -301,8 +301,7 @@ func _process(delta: float) -> void:
 	if grid == null:
 		return
 	health.step(delta)
-	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
-	motion.step(delta, Input.is_action_pressed("sprint"), input != Vector2.ZERO, Input.is_action_pressed("fire"))
+	motion.step(delta, _wants_sprint(), _move_input() != Vector2.ZERO, _wants_fire())
 	health.dodging = motion.has_iframes()
 	gun.stance_spread_mul = motion.spread_mul()
 	if body != null:
@@ -325,10 +324,25 @@ func _process(delta: float) -> void:
 	_draw_aim_line()
 
 
-func _move(delta: float) -> void:
+# What the fighter wants, from the keyboard / pad here; an AI teammate overrides these (Teammate, 1.5+ A5).
+
+## Movement on the ground plane, length 0..1 (a stick's tilt).
+func _move_input() -> Vector2:
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
+	return AimMath.screen_to_world(input, camera.global_basis) if input != Vector2.ZERO else Vector2.ZERO
+
+
+func _wants_sprint() -> bool:
+	return Input.is_action_pressed("sprint")
+
+
+func _wants_fire() -> bool:
+	return Input.is_action_pressed("fire") or auto_trigger
+
+
+func _move(delta: float) -> void:
 	var speed: float = controls.move_speed * health.speed_mul() * motion.speed_mul()
-	var desired: Vector2 = AimMath.screen_to_world(input, camera.global_basis) * speed
+	var desired: Vector2 = _move_input() * speed
 	var rate: float = controls.move_accel if desired != Vector2.ZERO else controls.move_decel
 	velocity = motion.roll_velocity() if motion.is_rolling() else velocity.move_toward(desired, rate * delta)
 	if velocity == Vector2.ZERO:
@@ -390,7 +404,7 @@ func _mouse_on_plane(plane_y: float) -> Variant:
 
 
 func _update_weapon(delta: float) -> void:
-	var trigger: bool = not aim_locked and (Input.is_action_pressed("fire") or auto_trigger) and motion.can_shoot()
+	var trigger: bool = not aim_locked and _wants_fire() and motion.can_shoot()
 	if using_pad and controls.pad_auto_fire and not aim_locked and _aim_stick.length() >= controls.auto_fire_threshold:
 		trigger = true
 	for i: int in gun.step(delta, trigger, _rng):

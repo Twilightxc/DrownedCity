@@ -17,6 +17,9 @@ const LOW_COLOR: Color = Color(1.0, 0.95, 0.85)
 const RING_COLOR: Color = Color(1.0, 0.92, 0.6)
 const JAM_COLOR: Color = Color(1.0, 0.55, 0.15)
 const BACK_COLOR: Color = Color(0.0, 0.0, 0.0, 0.55)
+const REVIVE_COLOR: Color = Color(0.45, 0.95, 0.45)
+const MINI_BAR: Vector2 = Vector2(46.0, 5.0)  ## a teammate's HP over its head
+const NAME_HEIGHT: float = 2.55  ## m: a teammate's name and HP bar
 
 var player: SpikePlayer
 ## Every fighter that gets a reload ring (the player; teammates join in 1.5+ A5).
@@ -97,6 +100,8 @@ func _on_draw() -> void:
 		var col: Color = LOW_COLOR if low and fmod(_blink, 0.5) < 0.25 else STAMINA_COLOR
 		_bar(Vector2(x, y + BAR_SIZE.y + BAR_GAP), m.stamina_fraction(), col, _stance_text(m))
 	for f: SpikePlayer in fighters:
+		if f != player:
+			_tag(f)
 		_ring(f)
 
 
@@ -121,9 +126,37 @@ func _stance_text(m: FighterMotion) -> String:
 	return tr("Stamina")
 
 
+## A teammate's name and a small HP bar (downed: the time left, dark red) over its head.
+func _tag(f: SpikePlayer) -> void:
+	var at3: Vector3 = Vector3(f.position.x, f.ground_y + NAME_HEIGHT, f.position.z)
+	if f.camera == null or f.camera.is_position_behind(at3):
+		return
+	var at: Vector2 = f.camera.unproject_position(at3)
+	var h: FighterHealth = f.health
+	var name: String = f.get("display_name") if f.get("display_name") != null else ""
+	if h.state == FighterHealth.State.DEAD:
+		name = tr("%s (dead)") % name
+	var w: float = _font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
+	_draw.draw_string_outline(_font, at + Vector2(-w * 0.5, -8.0), name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, 4,
+		Color.BLACK)
+	_draw.draw_string(_font, at + Vector2(-w * 0.5, -8.0), name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13)
+	if h.state == FighterHealth.State.DEAD:
+		return
+	var downed: bool = h.state == FighterHealth.State.DOWNED
+	var fill: float = h.downed_left / maxf(h.config.downed_sec, 0.01) if downed else h.hp_frac()
+	var origin: Vector2 = at - Vector2(MINI_BAR.x * 0.5, 0.0)
+	_draw.draw_rect(Rect2(origin - Vector2(1, 1), MINI_BAR + Vector2(2, 2)), BACK_COLOR)
+	_draw.draw_rect(Rect2(origin, Vector2(MINI_BAR.x * clampf(fill, 0.0, 1.0), MINI_BAR.y)),
+		DOWNED_COLOR if downed else HP_COLOR)
+
+
 ## The reload ring over `f`'s head: a dark track, the filled arc from the top clockwise, a tick per shell.
+## A downed teammate being helped up gets a green ring for the revive instead.
 func _ring(f: SpikePlayer) -> void:
 	var fill: float = reload_fill(f)
+	var reviving: bool = f is Teammate and (f as Teammate).revive_fill() >= 0.0
+	if reviving:
+		fill = (f as Teammate).revive_fill()
 	if fill < 0.0 or f.camera == null:
 		return
 	var head: Vector3 = Vector3(f.position.x, f.ground_y + RING_HEIGHT, f.position.z)
@@ -133,9 +166,9 @@ func _ring(f: SpikePlayer) -> void:
 	var start: float = -PI / 2.0
 	_draw.draw_arc(at, RING_RADIUS, 0.0, TAU, 32, BACK_COLOR, RING_WIDTH + 3.0, true)
 	if fill > 0.0:
-		var col: Color = JAM_COLOR if f.gun.jammed else RING_COLOR
+		var col: Color = REVIVE_COLOR if reviving else JAM_COLOR if f.gun.jammed else RING_COLOR
 		_draw.draw_arc(at, RING_RADIUS, start, start + TAU * fill, maxi(4, ceili(32 * fill)), col, RING_WIDTH, true)
-	var steps: int = reload_steps(f)
+	var steps: int = 1 if reviving else reload_steps(f)
 	if steps > 1:
 		for i: int in steps:
 			var a: float = start + TAU * i / steps

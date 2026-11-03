@@ -73,6 +73,10 @@ var helmet_drops: Array[Death] = []  ## helmets knocked off living zombies (posi
 var kills: int = 0
 var hits_on_target: int = 0
 var target_hits: PackedInt32Array = PackedInt32Array()  ## damage of each attack on the target since the last drain
+## More targets for hunters (AI teammates, 1.5+ A5): each hunter chases and attacks whichever target is nearest
+## (the flow field should have every target as a goal). Hits on extra target i land in extra_hits[i].
+var extra_targets: PackedVector2Array = PackedVector2Array()
+var extra_hits: Array[PackedInt32Array] = []
 
 var _attack_cooldown: PackedFloat32Array
 var _burn_tick: PackedFloat32Array
@@ -564,6 +568,12 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 	var max_step: float = grid.cell_size * 0.45
 	var max_step2: float = max_step * max_step
 	var target_cell: Vector2i = Vector2i(floori((target.x - ox) * inv), floori((target.y - oy) * inv))
+	var extras: PackedVector2Array = extra_targets
+	var extra_cells: Array[Vector2i] = []
+	while extra_hits.size() < extras.size():
+		extra_hits.append(PackedInt32Array())
+	for e: Vector2 in extras:
+		extra_cells.append(Vector2i(floori((e.x - ox) * inv), floori((e.y - oy) * inv)))
 
 	var st: PackedByteArray = state
 	var goals: PackedVector2Array = goal
@@ -577,9 +587,20 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 		var cy: int = floori((p.y - oy) * inv)
 		var in_grid: bool = cx >= 0 and cy >= 0 and cx < w and cy < h
 
-		# Hunters chase `target` on the main flow; suspicious agents walk to their noise on the noise flow.
+		# Hunters chase the nearest target on the main flow; suspicious agents walk to their noise on the noise flow.
 		var tgt: Vector2 = target if hunting else goals[a]
 		var tcell: Vector2i = target_cell if hunting else _noise_cell
+		var picked: int = -1  # -1 = `target`, else an extra target
+		if hunting and not extras.is_empty():
+			var best: float = p.distance_squared_to(target)
+			for e: int in extras.size():
+				var d2e: float = p.distance_squared_to(extras[e])
+				if d2e < best:
+					best = d2e
+					picked = e
+			if picked >= 0:
+				tgt = extras[picked]
+				tcell = extra_cells[picked]
 		var field: FlowField = flow if hunting else noise_flow
 		var to_target: Vector2 = tgt - p
 		var dist2: float = to_target.length_squared()
@@ -668,10 +689,15 @@ func update(delta: float, target: Vector2, attack: bool = true) -> void:
 		var attacking: bool = hunting and attack and dist2 <= attack_r2 and cooldown[a] <= 0.0
 		if attacking:
 			cooldown[a] = config.attack_interval
-			hits_on_target += 1
 			var tk: EnemyConfig = type_of(a)
-			if target_hits.size() < MAX_EVENTS:
-				target_hits.append(tk.hit_damage if tk != null else config.hit_damage)
+			var dmg: int = tk.hit_damage if tk != null else config.hit_damage
+			if picked >= 0:
+				if extra_hits[picked].size() < MAX_EVENTS:
+					extra_hits[picked].append(dmg)
+			else:
+				hits_on_target += 1
+				if target_hits.size() < MAX_EVENTS:
+					target_hits.append(dmg)
 
 		if attacking:
 			clip[a] = Anim.ATTACK

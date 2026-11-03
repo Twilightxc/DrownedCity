@@ -3,6 +3,22 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.5+ A5 Two AI teammates — 🟡 built (2026-11-03), waiting for J's feel test (then gate 1.G)
+
+Live: `?spike=arena` (2 teammates), `?spike=arena&mates=0` (none, to compare). Orders: hold Tab.
+
+| Item | How |
+| --- | --- |
+| Who | Mali (AR + red dot, pistol) on the left, Somchai (pump shotgun, pistol) on the right; own ammo, topped up at each calm |
+| Brain | `TeammateBrain` (pure): nearest hunting zombie it can see within 0.85 × gun range, weighted 0.6 toward those near the player; turns at 420°/s, waits 0.3 s on a new target, fires inside 5°, bursts 0.35 s / pause 0.25 s (semi guns pulse); backs off anything within 2.4 m; keeps a spot 2.2 m beside and 2 m behind the player (GridPath around props); sprints back when > 9 m off and idle; swaps to the pistol when the main gun is dry; tactical reload under 40 % when nothing is near |
+| Horde | `Horde.extra_targets`: hunters chase and hit whichever of player / teammates is nearest; the flow field has them all as goals |
+| Down | 10 s downed like the player; F next to them for 2 s gets them up (green ring); walking off cancels |
+| Orders | Follow me · Hold here (where each stands) · Hold fire (toggle); the other wheel items come with expeditions |
+| HUD | name, small HP bar (downed: countdown) and reload / revive ring over each teammate |
+| No friendly fire | rounds test only the horde; grenades do hurt teammates |
+| Desktop bot run, wave 3 | cleared in ~25 s with the player on auto-shoot: Mali 36 kills, Somchai 6 of 65; nobody hit. Mali may be too strong: J's call (`data/combat/teammate.tres`) |
+| Not yet | teammates don't revive the player, throw grenades, crouch or take gas / fire damage; same outfit as the player (outfits are 1.8) |
+
 ## 1.5+ A4 HUD — 🟡 built (2026-11-03), waiting for J's look
 
 Live: `?spike=arena`. The top-left line now only shows the gun (mode, mag, rounds, jam).
