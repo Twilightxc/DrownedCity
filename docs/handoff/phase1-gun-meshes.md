@@ -1,6 +1,6 @@
 # phase1/gun-meshes
 
-- **PR:** see below (pushed? yes)
+- **PR:** #41 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ d5cffe0
 - **Updated:** 2026-11-03
