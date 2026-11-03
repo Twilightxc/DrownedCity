@@ -76,6 +76,7 @@ var rolling: bool = false
 
 var gun_view: GunView
 var skeleton: Skeleton3D
+var look: int = 0  ## which of survivor.glb's outfits shows (set_look); one per fighter, so no two alike
 var lower: StringName = &""
 var upper: StringName = &""
 var hand_item: Node3D  ## the mag or shell in the left hand during a reload (null when nothing)
@@ -105,6 +106,7 @@ func _ready() -> void:
 	add_child(_model)
 	Style15Level.apply_materials(_model, SURFACE_MATERIAL)
 	skeleton = _model.get_node(SKELETON_PATH) as Skeleton3D
+	set_look(look)
 	_anims = _model.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
 	for clip: String in LOOP_CLIPS:
 		if _anims.has_animation(clip):
@@ -133,6 +135,28 @@ func _ready() -> void:
 	skeleton.add_child(_ik)
 	_build_tree()
 	animate(&"idle", 1.0, &"aim_rifle", 1.0, 1.0)
+
+
+## Shows outfit `i` (survivor_<i> in the glb) and hides the others; out-of-range wraps around.
+func set_look(i: int) -> void:
+	look = i
+	if skeleton == null:
+		return
+	var bodies: Array[MeshInstance3D] = []
+	for n: Node in skeleton.get_children():
+		if n is MeshInstance3D and String(n.name).begins_with("survivor_"):
+			bodies.append(n as MeshInstance3D)
+	bodies.sort_custom(func(a: MeshInstance3D, b: MeshInstance3D) -> bool: return String(a.name) < String(b.name))
+	for k: int in bodies.size():
+		bodies[k].visible = k == posmod(i, bodies.size())
+
+
+func look_count() -> int:
+	var n: int = 0
+	for c: Node in skeleton.get_children():
+		if c is MeshInstance3D and String(c.name).begins_with("survivor_"):
+			n += 1
+	return n
 
 
 ## The gun in hand; pistols and SMGs are held like a pistol, the rest like a rifle.

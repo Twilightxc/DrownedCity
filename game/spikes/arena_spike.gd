@@ -61,6 +61,7 @@ func _spawn_teammates() -> void:
 	for i: int in count:
 		var m: Teammate = Teammate.new()
 		m.loadout = teammate_loadouts[i]
+		m.body_look = i + 1  # the player wears look 0
 		m.controls = _player.controls
 		m.display_name = teammate_names[i] if i < teammate_names.size() else "Teammate %d" % (i + 1)
 		var marker: Node3D = Node3D.new()

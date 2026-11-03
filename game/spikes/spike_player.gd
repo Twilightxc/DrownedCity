@@ -29,6 +29,7 @@ const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 @export var controls: TwinStickConfig
 @export var gun_hold: Vector3 = Vector3(-0.12, 0.95, 0.34)  ## the right hand in the aim marker's space (+Z = aim)
 @export var movement: MovementConfig = preload("res://data/combat/movement.tres")  ## stances, sprint, roll (1.5+ A3)
+@export var body_look: int = 0  ## survivor.glb outfit: each fighter its own (J: no two alike)
 @export var survivor_body: bool = true  ## the skinned survivor (1.5+ A2) instead of the capsule; the gun in its hand
 
 var grid: NavGrid
@@ -152,6 +153,7 @@ func _ready() -> void:
 		controls = TwinStickConfig.new()
 	if survivor_body:
 		body = SurvivorView.new()
+		body.look = body_look
 		_aim_marker.add_child(body)
 		gun_view = body.gun_view
 		var capsule: Node3D = get_node_or_null("Body") as Node3D
