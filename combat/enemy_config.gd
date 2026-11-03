@@ -23,3 +23,8 @@ extends Resource
 @export var models: Array[VatModel] = []  ## the type's own looks (tools/blender/kit_zombie.py); empty = shared
 @export var scale: Vector3 = Vector3.ONE  ## body scale; type silhouette beats sub-variant detail
 @export var tints: PackedColorArray = PackedColorArray([Color(1, 1, 1)])  ## sub-variants, × a small random shade
+
+@export_group("Sound")
+@export var voice_sfx: StringName = &"zombie_groan"  ## the type's groan while it hunts
+@export var voice_pitch: float = 1.0  ## lower = bigger (Bloater), higher = thinner (Runner)
+@export var death_sfx: StringName = &"flesh_hit"

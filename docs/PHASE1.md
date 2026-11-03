@@ -64,7 +64,7 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
 - [x] Hit-stop, knock-back along the bullet, muzzle flash, shell casings, camera shake (tunable, off option).
       → `data/fx/feel.tres` + F4 switches; `TimeControl` owns Engine.time_scale (hit-stop + 1.3 slow-mo).
 - [x] Kill chain counter (score → influence later), hit markers, crosshair per weapon spread.
-- [ ] Audio pass 1: CC0 gun, impact, zombie and blast sounds; noise radius matches what you hear.
+- [x] Audio pass 1: CC0 gun, impact, zombie and blast sounds; noise radius matches what you hear. → 1.5+ A1.
       → needs CC0 sound downloads (J approves each); includes the 1.3 hit sound.
 
 ### 1.5 Combat test arena — "one night on the roof"
@@ -82,11 +82,13 @@ J: after the gun meshes (1.1 assets), do these before 1.G, because combat fun de
 after this set. Parts of 1.8 (one survivor body), 1.9 (teammates) and 1.13 (audio) move forward; ≈ 60 h, most
 of it taken from those milestones.
 
-- [ ] **A1 Audio pass 1** (replaces the 1.4 item). CC0 only (Kenney, OpenGameArt, freesound CC0): Claude lists each
+- [x] **A1 Audio pass 1** (replaces the 1.4 item). CC0 only (Kenney, OpenGameArt, freesound CC0): Claude lists each
       file with source and licence, J approves before any download. Shots per gun class + silenced, reload and
       dry click, frag and incendiary blasts, fire loop, zombie groan / attack / death per type, Bloater pop,
       player hit, footsteps per stance. Ogg, pooled players, ≤ 3 MB of the 7.6 MB left. What you hear matches
-      `noise_m`.
+      `noise_m`. → 9 packs (`docs/audio/SOURCES.md`) cut by `tools/audio/build_sfx.py` into 34 Ogg files, 0.31 MB;
+      `SfxBank` (`data/audio/sfx_bank.tres`), `SfxPlayer` pool of 24, `SpikeAudio` glue; F4 volume / mute.
+      Footsteps per stance come with A3.
 - [ ] **A2 Survivor body** (desktop, Blender): `tools/blender/kit_survivor.py`, low-poly, warm palette, the gun in
       the right hand. Skeleton3D + AnimationTree, not VAT (≤ 6 people on screen). Hand-keyed clips: idle, walk,
       run, crouch idle / walk, prone idle / crawl, roll, reload per class (pistol, rifle, shotgun shell by shell),

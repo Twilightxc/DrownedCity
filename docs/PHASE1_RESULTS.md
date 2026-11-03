@@ -3,6 +3,18 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.5+ A1 Audio pass 1 — 🟡 built (2026-11-03), waiting for J's ears
+
+Live: `?spike=arena&wave=4` (click once: browsers start audio on the first input). F4: "Sound off", "Sound volume (dB)".
+
+| Item | How |
+| --- | --- |
+| Sources | 9 CC0 packs, each approved by J (`docs/audio/SOURCES.md`); raw packs stay out of the repo |
+| Files | `tools/audio/build_sfx.py` → 34 mono Ogg (q3; zombies and steps at 22 kHz), 0.31 MB of the 7.6 MB left |
+| Mixing | `SfxPlayer`: 24 pooled AudioStreamPlayer3D, per-event voice cap and min interval, oldest voice stolen; listener on the player, turned with the camera. Desktop wave-4 bot run: peak 10 voices |
+| Range | a shot carries its gun's `noise_m` (silenced pistol 16 m instead of 40 m), so you hear what the zombies hear |
+| Not checked | how it sounds (Claude can't listen); web: no console errors in a local Chrome export, not tried on the Arc |
+
 ## 1.5 Combat test arena — 🟡 built (2026-11-02), waiting for J's gate 1.G (3 runs on the Arc)
 
 Live: `?spike=arena` (also the default page). F4 still works (it's the twin-stick spike plus the arena).

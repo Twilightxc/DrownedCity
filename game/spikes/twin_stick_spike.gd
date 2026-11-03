@@ -125,6 +125,9 @@ func _build_tuning() -> void:
 	_tuning.add_float("Shake strength (m)", feel_config, "shake_max_m", 0.0, 1.5, 0.05)
 	_tuning.add_bool("Muzzle flash", feel_config, "muzzle_flash")
 	_tuning.add_bool("Shell casings", feel_config, "casings")
+	if _audio != null:  # 1.5+ A1
+		_tuning.add_bool("Sound off", _audio, "muted")
+		_tuning.add_float("Sound volume (dB)", _audio, "volume_db", -40.0, 6.0, 1.0)
 	# Player in danger (1.3).
 	_tuning.add_bool("Invulnerable", _player.health, "invulnerable")
 	_tuning.add_bool("Slow-mo on low HP", _player.fighter, "slowmo")

@@ -16,3 +16,4 @@ fire_radius = 5.0
 fire_cells = 6
 embers = 0
 shrapnel = false
+blast_sfx = &"blast_incendiary"
