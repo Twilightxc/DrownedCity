@@ -24,13 +24,15 @@ var _elapsed: float = 0.0
 var _hits_taken: int = 0
 var _grenade_kills: int = 0
 var _ended: bool = false
+var _start_wave: int = 1  ## `?wave=N`: test runs that skip ahead are marked in the run log
 
 
 func _ready() -> void:
 	super._ready()
 	_target_count = 0
 	_count_slider.visible = false
-	_director = WaveDirector.new(arena, _rng.randi())
+	_start_wave = clampi(SpikeLauncher.arg("wave", "1").to_int(), 1, arena.waves.size())  # 1-based like the HUD
+	_director = WaveDirector.new(arena, _rng.randi(), _start_wave - 1)
 	_barricades = Barricades.new(_grid, arena.barricade_cost)
 	_horde.barricades = _barricades
 	_player.barricades = _barricades
@@ -235,7 +237,7 @@ func _end_run() -> void:
 	lines.append(tr("Time %d:%02d · kills %d · best chain x%d · score %d") % [int(_elapsed) / 60, int(_elapsed) % 60,
 		kills, _chain.best, _chain.score])
 	var run: Dictionary = {
-		"won": won, "wave": _director.wave + 1, "waves": _director.wave_count(), "seconds": roundi(_elapsed),
+		"won": won, "wave": _director.wave + 1, "waves": _director.wave_count(), "start_wave": _start_wave, "seconds": roundi(_elapsed),
 		"kills": kills, "best_chain": _chain.best, "score": _chain.score, "hits_taken": _hits_taken,
 		"bites": _player.health.bites, "hp_left": _player.health.hp, "grenade_kills": _grenade_kills,
 		"build": BuildInfo.label(), "autoshoot": _auto_shoot,
