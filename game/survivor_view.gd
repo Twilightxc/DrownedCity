@@ -3,26 +3,36 @@ extends Node3D
 ## A survivor's body on screen (PHASE1 1.5+ A2): the skinned model from tools/blender/kit_survivor.py, two clip
 ## layers and the gun in the right hand. The lower layer (legs, or the whole body for roll / prone / downed)
 ## and the upper layer (spine, head and arms: aim, reload, sprint carry) blend through a bone filter, so the
-## legs walk while the arms keep aiming. Faces +Z: put it under the fighter's aim marker.
+## legs walk while the arms keep aiming. Walking and crouch-walking blend four clips by the direction of travel
+## against the aim; a sprint or a roll turns the body to where it goes. The left hand is IK: on the gun, or
+## walked through a reload (REACH) while the mag leaves the gun, drops and a new one comes in. Faces +Z: put it
+## under the fighter's aim marker.
 
 const MODEL: PackedScene = preload("res://assets/models/survivor.glb")
 const SURFACE_MATERIAL: Material = preload("res://game/level/style15_surface.tres")
 const SKELETON_PATH: String = "survivor_rig/Skeleton3D"
 const UPPER_BONES: PackedStringArray = ["torso", "head", "arm_l", "fore_l", "hand_l", "arm_r", "fore_r", "hand_r"]
 const LOWER_CLIPS: PackedStringArray = ["idle", "walk", "run", "crouch_idle", "crouch_walk", "prone_idle", "crawl",
-	"roll", "downed"]
+	"roll", "downed"]  ## states; "walk" and "crouch_walk" are WALK_SETS
 const UPPER_CLIPS: PackedStringArray = ["aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_pistol",
 	"reload_rifle", "reload_shell"]
-const LOOP_CLIPS: PackedStringArray = ["idle", "walk", "run", "crouch_idle", "crouch_walk", "prone_idle", "crawl",
-	"downed", "aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_shell"]
+## A walking state's four clips: ahead, back, left, right of the aim (blend positions (0, 1), (0, -1), (-1, 0), (1, 0)).
+const WALK_SETS: Dictionary[String, Array] = {  # Array, not PackedStringArray: a typed const dict of those reads back empty strings in 4.7
+	"walk": ["walk_f", "walk_b", "walk_l", "walk_r"],
+	"crouch_walk": ["crouch_f", "crouch_b", "crouch_l", "crouch_r"],
+}
+const LOOP_CLIPS: PackedStringArray = ["idle", "walk_f", "walk_b", "walk_l", "walk_r", "run", "crouch_idle", "crouch_f",
+	"crouch_b", "crouch_l", "crouch_r", "prone_idle", "crawl", "downed", "aim_pistol", "aim_rifle", "carry_high",
+	"carry_port", "reload_shell"]
 const FULL_BODY: PackedStringArray = ["roll", "prone_idle", "crawl", "downed"]  ## the arms follow the legs' clip
 ## m/s each moving clip's stride matches at 1× (kit_survivor.py); faster or slower movement scales the clip
 const CLIP_SPEED: Dictionary[StringName, float] = {&"walk": 1.4, &"run": 4.2, &"crouch_walk": 0.9, &"crawl": 0.6}
 const MOVING_SPEED: float = 0.25  ## m/s: slower than this stands still
 const XFADE_SEC: float = 0.15
 const GRIP_BLEND: float = 12.0  ## 1/s: how fast the gun turns to a new clip's hold
+const TURN_RATE: float = 12.0  ## 1/s: the body turns toward a sprint or roll this fast, and back to the aim
 const IK_FADE: float = 6.0  ## 1/s: the left hand leaves / returns to the gun this fast
-const LEFT_HAND_BUSY: PackedStringArray = ["reload_pistol", "reload_rifle", "reload_shell", "roll", "downed"]
+const LEFT_HAND_BUSY: PackedStringArray = ["roll", "downed"]
 ## Where the gun points in each clip that sets its own hold, in the body's space (+Z ahead, +Y up, +X left).
 ## Other clips keep the aim hold and the gun simply follows the hand (reloads).
 const HOLD_DIR: Dictionary[StringName, Vector3] = {
@@ -32,6 +42,26 @@ const HOLD_DIR: Dictionary[StringName, Vector3] = {
 	&"prone_idle": Vector3(0.0, 0.0, 1.0),  # prone: level along the ground (crawl uses it too)
 }
 const PRONE_CLIPS: PackedStringArray = ["prone_idle", "crawl"]
+## The left hand through a reload (J: make reloads read clearly): [phase, point] keys, eased between. Points are
+## on the gun (support, mag, mag_low, handle, handle_back, port, port_low) or on the torso (pouch, belt).
+const REACH: Dictionary[StringName, Array] = {
+	&"reload_rifle": [[0.0, &"support"], [0.12, &"mag"], [0.22, &"mag_low"], [0.36, &"pouch"], [0.55, &"mag_low"],
+		[0.66, &"mag"], [0.76, &"handle"], [0.84, &"handle_back"], [1.0, &"support"]],
+	&"reload_pistol": [[0.0, &"support"], [0.12, &"mag"], [0.2, &"mag_low"], [0.38, &"belt"], [0.56, &"mag_low"],
+		[0.66, &"mag"], [0.78, &"handle"], [0.88, &"handle_back"], [1.0, &"support"]],
+	&"reload_shell": [[0.0, &"belt"], [0.45, &"port_low"], [0.6, &"port"], [1.0, &"belt"]],
+}
+## Mag swap in a reload's phase: [grab the old mag, drop it, take a new one, seat it]. A shell: [-, -, take, seat].
+const SWAP: Dictionary[StringName, Array] = {
+	&"reload_rifle": [0.13, 0.24, 0.38, 0.66], &"reload_pistol": [0.13, 0.22, 0.4, 0.66],
+	&"reload_shell": [-1.0, -1.0, 0.03, 0.62],
+}
+const TORSO_POINTS: Dictionary[StringName, Vector3] = {
+	&"pouch": Vector3(0.12, 0.15, 0.17),  # vest front, left (torso bone space)
+	&"belt": Vector3(0.2, -0.05, 0.08),   # left hip
+}
+const DROPPED_MAX: int = 6  ## dropped mags kept on the floor at once
+const DROPPED_SEC: float = 6.0
 
 enum Stance { STAND, CROUCH, PRONE }
 
@@ -44,15 +74,21 @@ var gun_view: GunView
 var skeleton: Skeleton3D
 var lower: StringName = &""
 var upper: StringName = &""
+var hand_item: Node3D  ## the mag or shell in the left hand during a reload (null when nothing)
 var _model: Node3D
 var _anims: AnimationPlayer
 var _tree: AnimationTree
 var _mount: Node3D
+var _hand_l_mount: Node3D
 var _grip: Dictionary[StringName, Transform3D] = {}  ## HOLD_DIR clip → hand-to-gun transform
 var _hold: StringName = &"aim_rifle"  ## the aim clip of the gun in hand
 var _grip_target: Transform3D = Transform3D.IDENTITY
 var _ik: LeftHandIK
-var _support: Vector3 = Vector3.ZERO  ## the gun's support point in its own space; zero = no model
+var _gun: Gun
+var _model_gun: GunModel
+var _target_yaw: float = 0.0
+var _reload_phase: float = -1.0  ## last frame's phase of the reload clip, < 0 = none
+var _dropped: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -72,6 +108,12 @@ func _ready() -> void:
 	hand.add_child(_mount)
 	gun_view = GunView.new()
 	_mount.add_child(gun_view)
+	var hand_l: BoneAttachment3D = BoneAttachment3D.new()
+	hand_l.bone_name = "hand_l"
+	skeleton.add_child(hand_l)
+	_hand_l_mount = Node3D.new()
+	_hand_l_mount.transform = Transform3D(Basis(Vector3.RIGHT, PI), Vector3(0.0, -0.06, 0.0))  # mag top to the fingers
+	hand_l.add_child(_hand_l_mount)
 	_ik = LeftHandIK.new()
 	_ik.influence = 0.0
 	skeleton.add_child(_ik)
@@ -82,10 +124,21 @@ func _ready() -> void:
 ## The gun in hand; pistols and SMGs are held like a pistol, the rest like a rifle.
 func set_gun(gun: Gun) -> void:
 	gun_view.show_gun(gun)
-	_support = gun.config.model.support if gun != null and gun.config.model != null else Vector3.ZERO
+	_gun = gun
+	_model_gun = gun.config.model if gun != null else null
 	_hold = _aim_clip(gun)
 	_grip_target = _grip[_hold]
 	_mount.transform = _grip_target
+	_end_reload()
+	if hand_item != null:
+		hand_item.queue_free()
+		hand_item = null
+	var scene: PackedScene = gun_view.hand_item_scene()
+	if scene != null:
+		hand_item = scene.instantiate() as Node3D
+		hand_item.visible = false
+		_hand_l_mount.add_child(hand_item)
+		Style15Level.apply_materials(hand_item, SURFACE_MATERIAL)
 
 
 ## Picks both layers from what the fighter is doing. `velocity` and `facing` are on the ground plane (m/s, unit).
@@ -106,11 +159,16 @@ func drive(velocity: Vector2, facing: Vector2, gun: Gun, is_downed: bool) -> voi
 	var low_speed: float = 1.0
 	if CLIP_SPEED.has(low):
 		low_speed = speed / CLIP_SPEED[low]
-		if facing != Vector2.ZERO and velocity.dot(facing) < -0.2 * speed:
-			low_speed = -low_speed  # backing away while aiming: the legs step backwards
+	if WALK_SETS.has(String(low)) and facing != Vector2.ZERO:
+		var right: Vector2 = Vector2(-facing.y, facing.x)  # the body's right on the ground plane
+		_tree.set("parameters/lower_%s/blend_position" % low, Vector2(velocity.dot(right), velocity.dot(facing)) / speed)
+	# A sprint or a roll faces where it goes; everything else faces the aim.
+	_target_yaw = 0.0
+	if (rolling or (sprinting and low == &"run")) and moving and facing != Vector2.ZERO:
+		_target_yaw = wrapf(atan2(velocity.x, velocity.y) - atan2(facing.x, facing.y), -PI, PI)
 	var up: StringName = _aim_clip(gun) if gun != null else &"aim_rifle"
 	var up_speed: float = 1.0
-	if gun != null and gun.is_reloading():
+	if gun != null and gun.is_reloading() and not gun.jammed:
 		up = &"reload_pistol" if up == &"aim_pistol" else &"reload_shell" if gun.config.reload_per_round else &"reload_rifle"
 		up_speed = _anims.get_animation(up).length / maxf(gun.reload_sec, 0.05)
 	elif sprinting and low == &"run":
@@ -137,15 +195,98 @@ func animate(low: StringName, low_speed: float, up: StringName, up_speed: float,
 
 func _process(delta: float) -> void:
 	_mount.transform = _mount.transform.interpolate_with(_grip_target, clampf(delta * GRIP_BLEND, 0.0, 1.0))
-	_ik.support_in_hand = _mount.transform * _support if _support != Vector3.ZERO else Vector3.ZERO
-	var busy: bool = _support == Vector3.ZERO or String(upper) in LEFT_HAND_BUSY or String(lower) in LEFT_HAND_BUSY
+	rotation.y = lerp_angle(rotation.y, _target_yaw, clampf(delta * TURN_RATE, 0.0, 1.0))
+	_ik.gun_in_hand = _mount.transform
+	_ik.enabled = _model_gun != null
+	var busy: bool = String(lower) in LEFT_HAND_BUSY
 	_ik.influence = move_toward(_ik.influence, 0.0 if busy else 1.0, delta * IK_FADE)
+	if REACH.has(upper) and _gun != null and _gun.is_reloading():
+		_step_reload(1.0 - _gun.reload_left / maxf(_gun.reload_sec, 0.001))
+	else:
+		_end_reload()
+		var at: Array = _point(&"support")
+		_ik.hold(at[0], at[1])
 
 
 ## Plays the current upper clip from the start again (the pose gallery repeats one-shots).
 func replay() -> void:
 	_tree.set(&"parameters/upper/transition_request", String(upper))
 	_tree.set(&"parameters/lower/transition_request", String(lower))
+
+
+## Moves the left hand along REACH and swaps the mag at the SWAP phases.
+func _step_reload(phase: float) -> void:
+	var keys: Array = REACH[upper]
+	for i: int in keys.size() - 1:
+		if phase <= keys[i + 1][0] or i == keys.size() - 2:
+			var a: Array = _point(keys[i][1])
+			var b: Array = _point(keys[i + 1][1])
+			_ik.from_space = a[0]
+			_ik.from_point = a[1]
+			_ik.to_space = b[0]
+			_ik.to_point = b[1]
+			_ik.blend = clampf((phase - keys[i][0]) / maxf(keys[i + 1][0] - keys[i][0], 0.001), 0.0, 1.0)
+			break
+	var swap: Array = SWAP[upper]
+	var out: bool = swap[0] >= 0.0 and phase >= swap[0] and phase < swap[3]
+	gun_view.set_mag_visible(not out)
+	if hand_item != null:
+		hand_item.visible = (phase >= swap[0] and phase < swap[1]) or (phase >= swap[2] and phase < swap[3])
+		if swap[1] >= 0.0 and _reload_phase < swap[1] and phase >= swap[1]:
+			_drop(hand_item)
+	_reload_phase = phase
+
+
+func _end_reload() -> void:
+	_reload_phase = -1.0
+	gun_view.set_mag_visible(true)
+	if hand_item != null:
+		hand_item.visible = false
+
+
+## A copy of the empty mag falls from the left hand to the floor and stays a while.
+func _drop(item: Node3D) -> void:
+	var scene: PackedScene = gun_view.hand_item_scene()
+	if scene == null or not is_inside_tree():
+		return
+	var mag: Node3D = scene.instantiate() as Node3D
+	mag.top_level = true
+	add_child(mag)
+	Style15Level.apply_materials(mag, SURFACE_MATERIAL)
+	mag.global_transform = item.global_transform
+	var floor_y: float = global_position.y + 0.02
+	var t: Tween = mag.create_tween().set_parallel()
+	t.tween_property(mag, "global_position:y", floor_y, 0.35).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	t.tween_property(mag, "global_rotation", Vector3(PI / 2, randf() * TAU, 0.0), 0.35)
+	t.chain().tween_interval(DROPPED_SEC)
+	t.chain().tween_callback(mag.queue_free)
+	_dropped.append(mag)
+	while _dropped.size() > DROPPED_MAX:
+		var old: Node3D = _dropped.pop_front()
+		if is_instance_valid(old):
+			old.queue_free()
+
+
+## A REACH point as [LeftHandIK.Space, position]: on the gun (its own space) or on the torso. Points a gun lacks
+## fall back to its support point.
+func _point(name: StringName) -> Array:
+	if TORSO_POINTS.has(name):
+		return [LeftHandIK.Space.TORSO, TORSO_POINTS[name]]
+	var m: GunModel = _model_gun
+	if m == null:
+		return [LeftHandIK.Space.GUN, Vector3.ZERO]
+	var down: Vector3 = Vector3.DOWN
+	match name:
+		&"mag", &"mag_low":
+			if m.mounts.has("mag"):
+				return [LeftHandIK.Space.GUN, m.mounts["mag"] + down * (0.1 if name == &"mag" else 0.3)]
+		&"handle", &"handle_back":
+			if m.hand_points.has("handle"):
+				return [LeftHandIK.Space.GUN, m.hand_points["handle"] + Vector3.BACK * (0.0 if name == &"handle" else -0.1)]
+		&"port", &"port_low":
+			if m.hand_points.has("port"):
+				return [LeftHandIK.Space.GUN, m.hand_points["port"] + down * (0.02 if name == &"port" else 0.15)]
+	return [LeftHandIK.Space.GUN, m.support]
 
 
 func _aim_clip(gun: Gun) -> StringName:
@@ -183,9 +324,24 @@ func _build_tree() -> void:
 		bt.add_node(name, pick)
 		for i: int in clips.size():
 			pick.set_input_name(i, clips[i])
-			var a: AnimationNodeAnimation = AnimationNodeAnimation.new()
-			a.animation = clips[i]
-			bt.add_node(name + "_" + clips[i], a)
+			var node: AnimationRootNode
+			if WALK_SETS.has(clips[i]):
+				var space: AnimationNodeBlendSpace2D = AnimationNodeBlendSpace2D.new()
+				space.auto_triangles = false
+				var names: Array = WALK_SETS[clips[i]]
+				var at: Array[Vector2] = [Vector2(0, 1), Vector2(0, -1), Vector2(-1, 0), Vector2(1, 0)]
+				for k: int in names.size():
+					var clip: AnimationNodeAnimation = AnimationNodeAnimation.new()
+					clip.animation = names[k]
+					space.add_blend_point(clip, at[k], -1, StringName(names[k]))
+				space.add_triangle(0, 3, 1)  # ahead, right, back
+				space.add_triangle(0, 1, 2)  # ahead, back, left
+				node = space
+			else:
+				var a: AnimationNodeAnimation = AnimationNodeAnimation.new()
+				a.animation = clips[i]
+				node = a
+			bt.add_node(name + "_" + clips[i], node)
 			bt.connect_node(name, i, name + "_" + clips[i])
 		bt.add_node(name + "_speed", AnimationNodeTimeScale.new())
 		bt.connect_node(name + "_speed", 0, name)
