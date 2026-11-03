@@ -89,6 +89,9 @@ of it taken from those milestones.
       the right hand. Skeleton3D + AnimationTree, not VAT (≤ 6 people on screen). Hand-keyed clips: idle, walk,
       run, crouch idle / walk, prone idle / crawl, roll, reload per class (pistol, rifle, shotgun shell by shell),
       downed. Replaces the capsule for the player and the teammates. Male / female, build and outfits stay in 1.8.
+      Sprint carry per gun (J 2026-11-03), from `WeaponConfig.carry_pose`: pistol / SMG at high ready, both hands,
+      muzzle up; long guns (AR, shotgun, DMR) at port arms, across the chest in the crook of the arm, military
+      style. Walking and standing keep the aim pose (no shooting while sprinting, A3).
 - [ ] **A3 Stances and movement:** C crouch (toggle), Z prone (toggle), Shift sprint (hold), Space dodge roll
       (not Ctrl: Ctrl+R / Ctrl+W are browser shortcuts). Pad: L3 sprint, B roll, crouch / prone on the D-pad;
       fire mode moves off L3. Per stance in `data/combat/stances.tres`: speed, spread, footstep and shot noise,
@@ -124,7 +127,8 @@ Order follows the loop. Hours from GDD §17 (J's time).
 Part A (combat, 1.1–1.5) ≈ 80 h, so the total is ≈ 750 h.
 
 ## Settled with J
-- 2026-11-03: 1.5+ before the gate; CC0 sound packs; roll on Space; 2 AI teammates in the arena.
+- 2026-11-03: 1.5+ before the gate; CC0 sound packs; roll on Space; 2 AI teammates in the arena. Sprint carry:
+  pistol / SMG muzzle up (high ready), long guns across the chest (port arms).
 
 ### 2026-10-29
 - Demo zombie types: Walker, Runner, Armored, Bloater.
