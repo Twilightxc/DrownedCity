@@ -1,6 +1,6 @@
 # phase1/hud
 
-- **PR:** see below (pushed? yes)
+- **PR:** #46 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 7b8e6ec
 - **Updated:** 2026-11-03
