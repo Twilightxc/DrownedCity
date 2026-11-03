@@ -145,9 +145,12 @@ func add_death(d: Horde.Death) -> int:
 	var tint: Color = d.tint
 	if d.burned:
 		tint = Color(tint.r * config.charred_tint, tint.g * config.charred_tint, tint.b * config.charred_tint)
-	# Blasts throw the body backwards, away from the centre: face the blast, play death_blown, slide.
-	var facing: Vector2 = -d.push if d.blast else d.heading
-	var i: int = _add(d.position, facing, d.variant, tint, 1 if d.blast else 0, hide | d.hidden, 0.0)
+	# Blasts throw the body away from the centre and it slides. A blast in front knocks it over backwards
+	# (faces the blast, death_blown); one from behind throws it on its face (keeps facing away, death).
+	var from_behind: bool = d.blast and d.heading.dot(d.push) > 0.0
+	var facing: Vector2 = d.push if from_behind else -d.push if d.blast else d.heading
+	var clip: int = 1 if d.blast and not from_behind else 0
+	var i: int = _add(d.position, facing, d.variant, tint, clip, hide | d.hidden, 0.0)
 	_scale[i] = d.scale
 	if d.blast:
 		_start_slide(i, d.push)

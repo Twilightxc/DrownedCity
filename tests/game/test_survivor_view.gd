@@ -19,7 +19,11 @@ func _gun(slot: int) -> Gun:
 func test_every_clip_exists_and_loops_where_it_should() -> void:
 	var anims: AnimationPlayer = _body._anims
 	for clip: String in SurvivorView.LOWER_CLIPS + SurvivorView.UPPER_CLIPS:
-		assert_true(anims.has_animation(clip), clip)
+		if SurvivorView.WALK_SETS.has(clip):
+			for dir_clip: String in SurvivorView.WALK_SETS[clip]:
+				assert_true(anims.has_animation(dir_clip), dir_clip)
+		else:
+			assert_true(anims.has_animation(clip), clip)
 	for clip: String in SurvivorView.LOOP_CLIPS:
 		assert_eq(anims.get_animation(clip).loop_mode, Animation.LOOP_LINEAR, clip)
 	assert_eq(anims.get_animation("roll").loop_mode, Animation.LOOP_NONE)
@@ -34,7 +38,11 @@ func test_the_legs_follow_movement_and_the_arms_the_gun() -> void:
 	assert_eq(_body.lower, &"walk")
 	assert_almost_eq(_body._tree.get(&"parameters/lower_speed/scale"), 1.0, 0.01, "stride matches 1.4 m/s")
 	_body.drive(Vector2(0, 1.4), Vector2.UP, ar, false)
-	assert_lt(_body._tree.get(&"parameters/lower_speed/scale"), 0.0, "backing away: legs step backwards")
+	var back: Vector2 = _body._tree.get(&"parameters/lower_walk/blend_position")
+	assert_lt(back.y, -0.9, "backing away: the backwards walk")
+	_body.drive(Vector2(1.4, 0), Vector2.UP, ar, false)  # facing -Z (up the screen), moving +X
+	var side: Vector2 = _body._tree.get(&"parameters/lower_walk/blend_position")
+	assert_gt(absf(side.x), 0.9, "sideways: a strafe clip")
 	var pistol: Gun = _gun(1)
 	_body.set_gun(pistol)
 	_body.sprinting = true
@@ -101,7 +109,7 @@ func test_the_left_hand_reaches_the_support_point_and_lets_go_to_reload() -> voi
 		await wait_physics_frames(40)
 		await sk.skeleton_updated  # modifier results only exist inside the skeleton's update
 		var palm: Vector3 = sk.get_bone_global_pose(sk.find_bone("hand_l")) * Vector3(0, -LeftHandIK.PALM_M, 0)
-		var support: Vector3 = sk.get_bone_global_pose(sk.find_bone("hand_r")) * _body._ik.support_in_hand
+		var support: Vector3 = _body._ik.target(sk)
 		assert_lt(palm.distance_to(support), 0.08, "slot %d: left palm on the gun" % slot)
 	var ar: Gun = _gun(0)
 	_body.set_gun(ar)
@@ -109,4 +117,38 @@ func test_the_left_hand_reaches_the_support_point_and_lets_go_to_reload() -> voi
 	ar.reload_left = ar.reload_sec
 	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
 	await wait_physics_frames(40)
-	assert_eq(_body._ik.influence, 0.0, "reloading: the left hand fetches the mag")
+	assert_eq(_body._ik.influence, 1.0, "reloading: the IK walks the left hand to the mag and back")
+
+
+func test_a_rifle_reload_takes_the_mag_out_drops_it_and_seats_a_new_one() -> void:
+	var ar: Gun = _gun(3)  # the DMR: a plain mag
+	_body.set_gun(ar)
+	ar.ammo = 0
+	ar.reload_left = ar.reload_sec
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
+	var seen: Dictionary = {}
+	for phase: float in [0.05, 0.18, 0.3, 0.5, 0.8]:
+		ar.reload_left = ar.reload_sec * (1.0 - phase)
+		_body._process(0.016)
+		seen[phase] = [_body.gun_view.mag_node.visible, _body.hand_item.visible]
+	assert_eq(seen[0.05], [true, false], "mag still in")
+	assert_eq(seen[0.18], [false, true], "old mag in the left hand")
+	assert_eq(seen[0.3], [false, false], "dropped, reaching for a new one")
+	assert_eq(seen[0.5], [false, true], "new mag on its way")
+	assert_eq(seen[0.8], [true, false], "seated")
+	assert_eq(_body._dropped.size(), 1, "the empty mag fell to the floor")
+
+
+func test_a_sprint_turns_the_body_to_where_it_runs() -> void:
+	var pistol: Gun = _gun(1)
+	_body.set_gun(pistol)
+	_body.sprinting = true
+	_body.drive(Vector2(4.2, 0), Vector2.UP, pistol, false)
+	for i: int in 30:
+		_body._process(0.05)
+	assert_almost_eq(absf(_body.rotation.y), PI / 2, 0.05, "aim up the screen, running sideways")
+	_body.sprinting = false
+	_body.drive(Vector2.ZERO, Vector2.UP, pistol, false)
+	for i: int in 30:
+		_body._process(0.05)
+	assert_almost_eq(_body.rotation.y, 0.0, 0.05, "back to the aim")

@@ -14,6 +14,10 @@ Each gun also gets a GunModel .tres: its muzzle, where the left hand holds it (s
 attachment slot (muzzle = the muzzle, optic, under, mag) in Godot space. An attachment's origin is its mount point: the silencer starts at the muzzle
 and runs forward, the red dot sits on the top rail, the flashlight hangs under the barrel, the extended
 mag hangs from the mag well over the standard mag.
+
+Mags are their own meshes (MAGS, PHASE1 1.5+ A2 reload): the gun shows its mag on the "mag" mount and hides it
+while the left hand swaps it; the pistol shows only its base plate under the grip, the whole mag in the hand.
+The shotgun has no mag: its left hand carries one shell at a time to the loading port ("port").
 """
 import math
 import os
@@ -27,7 +31,8 @@ SCALE = 1.3  # readable from the iso camera; the character is 1.6 m
 
 K.PALETTE.update({
     "gun_black": "#6a7075", "gun_dark": "#868d92", "polymer": "#5f6468", "steel": "#b6bec2",
-    "gun_wood": "#9a6438", "gun_wood_dark": "#784c2c", "lens": "#3d7480",
+    "gun_wood": "#9a6438", "gun_wood_dark": "#784c2c", "lens": "#3d7480", "shell_red": "#b0392b",
+    "brass": "#c9a14a",
 })
 
 SILENCER_LENGTH = 0.17  # m before SCALE: the muzzle flash moves this far forward
@@ -39,14 +44,35 @@ def barrel(mb, y0, y1, z, radius, col, segments=8):
         mb.cylinder((0, 0, 0), radius, abs(y0 - y1), col, segments=segments)
 
 
+PISTOL_RAKE = -0.3
+PISTOL_MAG_WELL = (0.0, 0.012 - 0.1 * math.sin(PISTOL_RAKE), -0.005 - 0.1 * math.cos(PISTOL_RAKE))  # grip bottom
+
+
 def pistol(mb):
     mb.box((0, -0.06, 0.035), (0.03, 0.19, 0.035), "gun_black")          # slide
     mb.box((0, -0.05, 0.006), (0.028, 0.15, 0.024), "polymer")           # frame
     mb.box((0, -0.035, -0.012), (0.012, 0.035, 0.012), "polymer")        # trigger guard
-    with mb.transform((0, 0.012, -0.005), (-0.3, 0.0, 0.0)):
-        mb.box((0, 0, -0.05), (0.03, 0.045, 0.1), "polymer")             # grip, raked back
+    with mb.transform((0, 0.012, -0.005), (PISTOL_RAKE, 0.0, 0.0)):
+        mb.box((0, 0, -0.05), (0.03, 0.045, 0.1), "polymer")             # grip, raked back (mag: mag_pistol_9mm)
     return {"muzzle": (0, -0.155, 0.035), "optic": (0, -0.03, 0.0525), "under": (0, -0.1, -0.006),
-            "support": (0.03, -0.005, -0.05)}  # the left hand cups the right on the grip
+            "mag": PISTOL_MAG_WELL,
+            "support": (0.03, -0.005, -0.05),  # the left hand cups the right on the grip
+            "handle": (0.0, 0.02, 0.055)}      # back of the slide: racked after a reload
+
+
+def mag_pistol(mb):
+    """On the gun only the base plate shows under the grip."""
+    with mb.transform((0, 0, 0), (PISTOL_RAKE, 0.0, 0.0)):
+        mb.box((0, 0, -0.008), (0.032, 0.048, 0.016), "gun_black")
+    return {}
+
+
+def mag_pistol_hand(mb):
+    """The whole mag, held in the left hand during a reload."""
+    with mb.transform((0, 0, 0), (PISTOL_RAKE, 0.0, 0.0)):
+        mb.box((0, 0, 0.045), (0.024, 0.036, 0.09), "gun_dark")
+        mb.box((0, 0, -0.008), (0.032, 0.048, 0.016), "gun_black")
+    return {}
 
 
 def ar(mb):
@@ -60,10 +86,16 @@ def ar(mb):
     mb.box((0, 0.22, 0.012), (0.036, 0.14, 0.075), "polymer")            # stock
     with mb.transform((0, 0.03, -0.01), (-0.35, 0.0, 0.0)):
         mb.box((0, 0, -0.04), (0.03, 0.035, 0.08), "polymer")            # pistol grip
-    with mb.transform((0, -0.1, -0.015), (0.18, 0.0, 0.0)):
-        mb.box((0, 0, -0.06), (0.026, 0.06, 0.12), "gun_dark")           # 30-round mag
     return {"muzzle": (0, -0.615, 0.026), "optic": (0, -0.1, 0.069), "under": (0, -0.34, -0.002),
-            "mag": (0, -0.1, -0.015), "support": (0, -0.28, -0.005)}  # under the handguard
+            "mag": (0, -0.1, -0.015), "support": (0, -0.28, -0.005),  # under the handguard
+            "handle": (0.0, 0.07, 0.062)}  # charging handle, back of the receiver
+
+
+def mag_ar(mb):
+    """30-round mag; origin = the mag well (the gun's "mag" mount)."""
+    with mb.transform((0, 0, 0), (0.18, 0.0, 0.0)):
+        mb.box((0, 0, -0.06), (0.026, 0.06, 0.12), "gun_dark")
+    return {}
 
 
 def shotgun(mb):
@@ -76,7 +108,16 @@ def shotgun(mb):
         mb.box((0, 0.03, -0.015), (0.036, 0.08, 0.05), "gun_wood_dark")  # wrist
         mb.box((0, 0.2, -0.03), (0.04, 0.26, 0.075), "gun_wood")         # stock
     return {"muzzle": (0, -0.72, 0.04), "optic": (0, -0.05, 0.0525), "under": (0, -0.64, 0.016),
-            "support": (0, -0.27, -0.01)}  # on the back of the pump
+            "support": (0, -0.27, -0.01),  # on the back of the pump
+            "port": (0, -0.1, -0.016)}     # loading port under the receiver
+
+
+def shell_12g(mb):
+    """One shell, held in the left hand while loading."""
+    with mb.transform((0, 0, 0), (math.pi / 2, 0.0, 0.0)):
+        mb.cylinder((0, 0, 0.0), 0.011, 0.055, "shell_red", segments=8)
+        mb.cylinder((0, 0, -0.032), 0.012, 0.012, "brass", segments=8)
+    return {}
 
 
 def dmr(mb):
@@ -88,10 +129,16 @@ def dmr(mb):
     barrel(mb, -0.45, -0.73, 0.036, 0.01, "gun_dark")
     mb.box((0, -0.73, 0.036), (0.024, 0.035, 0.024), "gun_black")        # muzzle brake
     mb.box((0, 0.04, -0.03), (0.012, 0.045, 0.012), "gun_black")         # trigger guard
-    with mb.transform((0, -0.08, -0.028), (0.08, 0.0, 0.0)):
-        mb.box((0, 0, -0.045), (0.026, 0.07, 0.09), "gun_dark")          # 20-round mag
     return {"muzzle": (0, -0.75, 0.036), "optic": (0, -0.05, 0.055), "under": (0, -0.4, -0.028),
-            "mag": (0, -0.08, -0.028), "support": (0, -0.25, -0.03)}  # under the fore-end
+            "mag": (0, -0.08, -0.028), "support": (0, -0.25, -0.03),  # under the fore-end
+            "handle": (-0.026, -0.12, 0.04)}  # operating handle on the right side
+
+
+def mag_dmr(mb):
+    """20-round mag; origin = the mag well."""
+    with mb.transform((0, 0, 0), (0.08, 0.0, 0.0)):
+        mb.box((0, 0, -0.045), (0.026, 0.07, 0.09), "gun_dark")
+    return {}
 
 
 def silencer(mb):
@@ -121,6 +168,12 @@ def flashlight(mb):
 
 
 GUNS = [("gun_pistol_9mm", pistol), ("gun_ar_556", ar), ("gun_shotgun_12g", shotgun), ("gun_dmr_308", dmr)]
+# The mag a gun loads (shown on its "mag" mount, hidden while it is out) and what the left hand holds in a reload.
+MAGS = [("mag_pistol_9mm", mag_pistol), ("mag_pistol_9mm_hand", mag_pistol_hand), ("mag_ar_556", mag_ar),
+        ("mag_dmr_308", mag_dmr), ("shell_12g", shell_12g)]
+MAG_OF = {"gun_pistol_9mm": ("mag_pistol_9mm", "mag_pistol_9mm_hand"), "gun_ar_556": ("mag_ar_556", "mag_ar_556"),
+          "gun_dmr_308": ("mag_dmr_308", "mag_dmr_308"), "gun_shotgun_12g": ("", "shell_12g")}
+HAND_POINTS = ("support", "handle", "port")  # where the left hand goes; not attachment mounts
 ATTACHMENTS = [("att_silencer", silencer), ("att_red_dot", red_dot), ("att_extended_mag", extended_mag),
                ("att_flashlight", flashlight)]
 
@@ -132,22 +185,30 @@ def godot_vec(p):
 
 
 def write_gun_model(out_dir, name, points):
-    mounts = ", ".join(f'"{k}": {godot_vec(v)}' for k, v in points.items() if k != "support")
+    mounts = ", ".join(f'"{k}": {godot_vec(v)}' for k, v in points.items() if k not in HAND_POINTS)
+    hand = ", ".join(f'"{k}": {godot_vec(v)}' for k, v in points.items() if k in HAND_POINTS and k != "support")
+    mag, mag_hand = MAG_OF[name]
+    res = [("2_mesh", name)] + ([("3_mag", mag)] if mag else []) + [("4_hand", mag_hand)]
+    lines = [f'[gd_resource type="Resource" script_class="GunModel" load_steps={len(res) + 2} format=3]', "",
+             '[ext_resource type="Script" path="res://combat/gun_model.gd" id="1_model"]']
+    lines += [f'[ext_resource type="PackedScene" path="res://assets/models/{n}.glb" id="{rid}"]' for rid, n in res]
+    lines += ["", "[resource]", 'script = ExtResource("1_model")', 'mesh_scene = ExtResource("2_mesh")']
+    if mag:
+        lines.append('mag_scene = ExtResource("3_mag")')
+    lines += ['mag_hand_scene = ExtResource("4_hand")',
+              f'muzzle = {godot_vec(points["muzzle"])}',
+              f'support = {godot_vec(points["support"])}',
+              f'hand_points = Dictionary[String, Vector3]({{{hand}}})',
+              f'mounts = Dictionary[String, Vector3]({{{mounts}}})', ""]
     with open(os.path.join(out_dir, name + ".tres"), "w", encoding="utf-8", newline="\n") as fh:
-        fh.write('[gd_resource type="Resource" script_class="GunModel" load_steps=3 format=3]\n\n'
-                 '[ext_resource type="Script" path="res://combat/gun_model.gd" id="1_model"]\n'
-                 f'[ext_resource type="PackedScene" path="res://assets/models/{name}.glb" id="2_mesh"]\n\n'
-                 '[resource]\nscript = ExtResource("1_model")\nmesh_scene = ExtResource("2_mesh")\n'
-                 f'muzzle = {godot_vec(points["muzzle"])}\n'
-                 f'support = {godot_vec(points["support"])}\n'
-                 f'mounts = Dictionary[String, Vector3]({{{mounts}}})\n')
+        fh.write("\n".join(lines))
 
 
 if __name__ == "__main__":
     a = K.args()
     out = a[0] if a else os.path.join(os.path.dirname(__file__), "..", "..", "assets", "models")
     only = set(a[1:])
-    for name, fn in GUNS + ATTACHMENTS:
+    for name, fn in GUNS + ATTACHMENTS + MAGS:
         if only and name not in only:
             continue
         K.reset(17)

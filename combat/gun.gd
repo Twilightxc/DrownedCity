@@ -43,6 +43,7 @@ var reload_left: float = 0.0
 var shots_fired: int = 0
 # Counters the presentation polls for sounds (PHASE1 1.5+ A1): a whole-mag reload started, a shell went in,
 # the trigger was pulled on an empty gun with nothing left to load.
+var stance_spread_mul: float = 1.0  ## set by the fighter each frame: steadier crouched or prone (1.5+ A3)
 var reload_sounds: int = 0
 var dry_fires: int = 0
 
@@ -114,7 +115,7 @@ func start_reload() -> bool:
 
 ## Spread of the next shot, ± degrees.
 func shot_spread_deg() -> float:
-	var s: float = spread_deg + bloom_deg
+	var s: float = (spread_deg + bloom_deg) * stance_spread_mul
 	return s * config.burst_spread_mul if mode() == WeaponConfig.FireMode.BURST else s
 
 

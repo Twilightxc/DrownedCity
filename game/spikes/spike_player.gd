@@ -7,7 +7,8 @@ extends Node3D
 ## physics body.
 
 signal fired(from: Vector3, to: Vector3)  ## one per pellet (tracers)
-signal noise(at: Vector2, radius: float)  ## one per shot: what sleepers can hear (GDD §9)
+signal noise(at: Vector2, radius: float)  ## a shot, a step or a roll: what sleepers can hear (GDD §9)
+signal footstep(at: Vector2, noise_m: float)  ## one per step (1.5+ A3): its sound, as loud as its noise
 signal device_changed(pad: bool)
 signal restart_requested  ## reload / X pressed while dead
 signal shot(gun: Gun)  ## one per round fired (muzzle flash, casings, shake)
@@ -27,6 +28,7 @@ const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 @export var throwables: Array[ThrowableConfig] = []  ## more than one: "throwable_next" cycles them (shared count)
 @export var controls: TwinStickConfig
 @export var gun_hold: Vector3 = Vector3(-0.12, 0.95, 0.34)  ## the right hand in the aim marker's space (+Z = aim)
+@export var movement: MovementConfig = preload("res://data/combat/movement.tres")  ## stances, sprint, roll (1.5+ A3)
 @export var survivor_body: bool = true  ## the skinned survivor (1.5+ A2) instead of the capsule; the gun in its hand
 
 var grid: NavGrid
@@ -67,6 +69,8 @@ var _throw_ring: MeshInstance3D
 @onready var _aim_marker: Node3D = $AimMarker
 var gun_view: GunView
 var body: SurvivorView  ## null with survivor_body off
+var motion: FighterMotion  ## stance, sprint, roll, stamina
+var _step_left: float = 0.0
 
 
 func setup(nav: NavGrid, crowd: Horde, cam: Camera3D, y: float) -> void:
@@ -92,6 +96,7 @@ func _arm() -> void:
 		for slot: WeaponSlot in loadout.slots:
 			guns.append(Gun.new(slot.weapon, slot.attachments, pouch))
 	gun = guns[0]
+	motion = FighterMotion.new(movement)
 	_show_gun()
 	var worn: Array[ArmorConfig] = []
 	if loadout != null:
@@ -119,6 +124,14 @@ func _show_gun() -> void:
 	var barrel: Node3D = _aim_marker.get_node_or_null("Barrel") as Node3D
 	if barrel != null:
 		barrel.visible = gun.config.model == null
+
+
+## Height of tracers and the aim line: the gun's muzzle (low when crouched or prone), else MUZZLE_HEIGHT.
+## Hits are worked out on the ground plane, so this is only what you see.
+func _muzzle_y() -> float:
+	if gun_view != null and gun != null and gun.config.model != null:
+		return gun_view.muzzle_position().y
+	return ground_y + MUZZLE_HEIGHT
 
 
 ## Where the flash and casings come from: the gun's muzzle, or the placeholder's tip.
@@ -259,13 +272,37 @@ func _unhandled_input(event: InputEvent) -> void:
 		next_throwable()
 	elif event.is_action_pressed("interact") and interact_target != null:
 		interact_target.call("interact", self)
+	elif event.is_action_pressed("crouch"):
+		motion.toggle_crouch()
+	elif event.is_action_pressed("prone"):
+		motion.toggle_prone()
+	elif event.is_action_pressed("roll"):
+		roll()
+
+
+## Dodge roll along the movement input, or along the aim when standing still.
+func roll() -> bool:
+	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
+	var dir: Vector2 = AimMath.screen_to_world(input, camera.global_basis) if input != Vector2.ZERO else aim_dir
+	if not motion.try_roll(dir.normalized()):
+		return false
+	noise.emit(ground_position(), movement.roll_noise_m)
+	footstep.emit(ground_position(), movement.roll_noise_m)
+	return true
 
 
 func _process(delta: float) -> void:
 	if grid == null:
 		return
 	health.step(delta)
+	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
+	motion.step(delta, Input.is_action_pressed("sprint"), input != Vector2.ZERO, Input.is_action_pressed("fire"))
+	health.dodging = motion.has_iframes()
+	gun.stance_spread_mul = motion.spread_mul()
 	if body != null:
+		body.stance = motion.stance as SurvivorView.Stance
+		body.sprinting = motion.sprinting
+		body.rolling = motion.is_rolling()
 		body.drive(velocity, aim_dir, gun, not health.is_alive())
 	if not health.is_alive():
 		velocity = Vector2.ZERO
@@ -284,9 +321,9 @@ func _process(delta: float) -> void:
 
 func _move(delta: float) -> void:
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
-	var desired: Vector2 = AimMath.screen_to_world(input, camera.global_basis) * controls.move_speed * health.speed_mul()
+	var desired: Vector2 = AimMath.screen_to_world(input, camera.global_basis) * controls.move_speed 		* health.speed_mul() * motion.speed_mul()
 	var rate: float = controls.move_accel if desired != Vector2.ZERO else controls.move_decel
-	velocity = velocity.move_toward(desired, rate * delta)
+	velocity = motion.roll_velocity() if motion.is_rolling() else velocity.move_toward(desired, rate * delta)
 	if velocity == Vector2.ZERO:
 		return
 	var step: Vector2 = velocity * delta
@@ -302,6 +339,11 @@ func _move(delta: float) -> void:
 		velocity.y = 0.0
 	position.x = np.x
 	position.z = np.y
+	_step_left -= np.distance_to(p)
+	if _step_left <= 0.0 and not motion.is_rolling():
+		_step_left = motion.step_m()
+		noise.emit(np, motion.step_noise_m())
+		footstep.emit(np, motion.step_noise_m())
 
 
 func _can_stand(p: Vector2) -> bool:
@@ -341,7 +383,7 @@ func _mouse_on_plane(plane_y: float) -> Variant:
 
 
 func _update_weapon(delta: float) -> void:
-	var trigger: bool = not aim_locked and (Input.is_action_pressed("fire") or auto_trigger)
+	var trigger: bool = not aim_locked and (Input.is_action_pressed("fire") or auto_trigger) and motion.can_shoot()
 	if using_pad and controls.pad_auto_fire and not aim_locked and _aim_stick.length() >= controls.auto_fire_threshold:
 		trigger = true
 	for i: int in gun.step(delta, trigger, _rng):
@@ -354,7 +396,7 @@ func _update_weapon(delta: float) -> void:
 func _fire() -> void:
 	shots_fired += 1
 	var cfg: WeaponConfig = gun.config
-	var muzzle_y: float = ground_y + MUZZLE_HEIGHT
+	var muzzle_y: float = _muzzle_y()
 	_shot_damage.clear()
 	_shot_knock.clear()
 	for dir: Vector2 in gun.pellet_dirs(aim_dir, _rng):
@@ -443,7 +485,7 @@ func _draw_aim_line() -> void:
 		return
 	var to: Vector2 = from + aim_dir * length
 	var side: Vector2 = aim_dir.orthogonal() * AIM_LINE_WIDTH * 0.5
-	var y: float = ground_y + MUZZLE_HEIGHT
+	var y: float = _muzzle_y()
 	var color: Color = AIM_LINE_ASSIST_COLOR if assist_target >= 0 else AIM_LINE_COLOR
 	var tail: Color = Color(color, 0.0)
 	_aim_line.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)

@@ -3,6 +3,21 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.5+ A3 Stances and movement — 🟡 built (2026-11-03), waiting for J's feel test
+
+Live: `?spike=arena` (C crouch, Z prone, Shift sprint, Space roll; the HUD shows stamina and the stance). The
+numbers are in `data/combat/movement.tres`.
+
+| Item | Stand / crouch / prone | Notes |
+| --- | --- | --- |
+| Speed × | 1.0 / 0.55 / 0.22 | sprint × 1.6 (7.2 m/s), drains 18 stamina/s, needs 15 to start; shooting stops it |
+| Spread × | 1.0 / 0.7 / 0.5 | `Gun.stance_spread_mul`; the crosshair widens and narrows with it |
+| Step noise | 6 / 2.5 / 1 m every 0.75 / 0.55 / 0.45 m | sprint 12 m; the footstep sound is as loud as its noise |
+| Seen from × | 1.0 / 0.65 / 0.35 | `Horde.perceive(seen_mul)`; the roof horde always hunts, so it shows inside buildings (`?spike=interior`) |
+| Roll | 3 m in 0.54 s, i-frames 0.35 s, cooldown 0.6 s, 25 stamina, 5 m noise | not from prone; zombie hits and blasts miss during the i-frames (fire and gas still burn) |
+| Stamina | 100, +22/s after 0.8 s | |
+| Desktop bot run | crouch → crawl 0.99 m/s → sprint 7.2 m/s (stamina 100 → 86) → roll (i-frames, stamina 61) | body clips follow each state |
+
 ## 1.5+ A2 Survivor body — 🟡 built (2026-11-03), waiting for J's look
 
 Live: `?spike=poses` (every clip, labelled; Q / E turn, wheel zooms) and the player in `?spike=arena`.
@@ -13,6 +28,7 @@ Live: `?spike=poses` (every clip, labelled; Q / E turn, wheel zooms) and the pla
 | Clips | hand-keyed: idle, walk, run, crouch idle / walk, prone, crawl, roll, downed; aim pistol / rifle, sprint high ready (pistol, SMG) and port arms (long guns), reload pistol / rifle / shell |
 | Layers | `SurvivorView`: AnimationTree, legs' clip × arms' clip through a Blend2 bone filter; moving clips scale to the speed (backwards when backing away); reloads stretch to the gun's reload time |
 | Gun | on `hand_r`; the hold per clip is measured from the pose, so it stays level in the aim and points up / across the chest when sprinting |
+| J's round 2 (2026-11-03) | walk / crouch-walk blend four clips (ahead, back, left, right of the aim); sprint and roll turn the body to where it goes; the body casts a shadow again (survivor.glb.import: shadow meshes and LODs off); reloads: the gun comes off the shoulder tipped toward the left hand, which the IK walks to the mag well → floor (the empty mag drops and stays 6 s) → vest pouch / belt → mag well → charging handle or slide; a shotgun shell goes from the belt into the loading port; mags are their own meshes (kit_guns.py MAGS) |
 | Pose fixes (J) | standing: right foot a step back and turned out; crouch = kneeling (right knee on the floor, left knee up), crouch walk stays a squat; prone: legs apart, toes turned out; prone aim propped on both elbows, chest up, the stock in the shoulder and the gun level at head height (arm angles solved by FK), with its own measured hold |
 | Left hand | J: "แขนซ้ายไม่จับปืนเลย" → `LeftHandIK` (SkeletonModifier3D, two-bone IK) puts the left palm on the gun's support point (handguard, pump, fore-end; a pistol: the right hand), within 6 cm on all four guns; fades out for reloads, roll, downed |
 | Picture | `docs/art/09_survivor_poses.png` |

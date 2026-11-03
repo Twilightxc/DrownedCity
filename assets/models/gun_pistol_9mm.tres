@@ -1,11 +1,16 @@
-[gd_resource type="Resource" script_class="GunModel" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="GunModel" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://combat/gun_model.gd" id="1_model"]
 [ext_resource type="PackedScene" path="res://assets/models/gun_pistol_9mm.glb" id="2_mesh"]
+[ext_resource type="PackedScene" path="res://assets/models/mag_pistol_9mm.glb" id="3_mag"]
+[ext_resource type="PackedScene" path="res://assets/models/mag_pistol_9mm_hand.glb" id="4_hand"]
 
 [resource]
 script = ExtResource("1_model")
 mesh_scene = ExtResource("2_mesh")
+mag_scene = ExtResource("3_mag")
+mag_hand_scene = ExtResource("4_hand")
 muzzle = Vector3(0.0000, 0.0455, 0.2015)
 support = Vector3(0.0390, -0.0650, 0.0065)
-mounts = Dictionary[String, Vector3]({"muzzle": Vector3(0.0000, 0.0455, 0.2015), "optic": Vector3(0.0000, 0.0683, 0.0390), "under": Vector3(0.0000, -0.0078, 0.1300)})
+hand_points = Dictionary[String, Vector3]({"handle": Vector3(0.0000, 0.0715, -0.0260)})
+mounts = Dictionary[String, Vector3]({"muzzle": Vector3(0.0000, 0.0455, 0.2015), "optic": Vector3(0.0000, 0.0683, 0.0390), "under": Vector3(0.0000, -0.0078, 0.1300), "mag": Vector3(0.0000, -0.1307, -0.0540)})

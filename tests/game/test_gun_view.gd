@@ -48,4 +48,4 @@ func test_switching_guns_swaps_the_model() -> void:
 	var s: WeaponSlot = LOADOUT.slots[3]
 	view.show_gun(Gun.new(s.weapon, s.attachments))
 	await wait_process_frames(1)  # the old model is freed at the end of the frame
-	assert_eq(view.get_child_count(), 1, "only the DMR, no leftovers")
+	assert_eq(view.get_child_count(), 2, "only the DMR and its mag, no leftovers")

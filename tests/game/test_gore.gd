@@ -153,6 +153,11 @@ func test_blast_corpse_faces_the_blast() -> void:
 	_corpses.add_death(_death(true))
 	assert_eq(_corpses._clip[0], 1, "death_blown clip")
 	assert_eq(_corpses._head[0], Vector2(-1, 0), "faces the blast, falls away from it")
+	var behind: Horde.Death = _death(true)
+	behind.heading = Vector2(1, 0)  # walking away from the blast, pushed the same way
+	_corpses.add_death(behind)
+	assert_eq(_corpses._clip[1], 0, "hit from behind: falls on its face (death)")
+	assert_eq(_corpses._head[1], Vector2(1, 0), "keeps facing away from the blast")
 
 
 func test_pool_ring_reuses_oldest() -> void:

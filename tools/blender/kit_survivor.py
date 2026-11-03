@@ -12,11 +12,14 @@ convention for every part (same as kit_zombie): figure faces -Y (Godot +Z, the a
 rx < 0 swings a hanging limb forward, rx > 0 leans the torso / pelvis / head forward, rx > 0 on a shin bends
 the knee, rx < 0 on a forearm bends the elbow forward. Angles in radians.
 
-Clips (24 fps). Lower body / full body: idle, walk, run, crouch_idle, crouch_walk, prone_idle, crawl, roll, downed.
+Clips (24 fps). Lower body / full body: idle, walk_f / b / l / r, run, crouch_idle, crouch_f / b / l / r, prone_idle,
+crawl, roll, downed (the game blends the four walks by the direction of travel against the aim).
 Upper body (spine, head, arms, hands): aim_pistol, aim_rifle, carry_high (pistol / SMG sprint: high ready,
 muzzle up), carry_port (long gun sprint: port arms, across the chest), reload_pistol, reload_rifle,
 reload_shell. The gun hangs on hand_r; the game keeps it level in the aim pose (it measures the hand there).
 Loop clips start and end on the same pose; the game sets their loop mode (LOOP_CLIPS below).
+survivor.glb.import keeps generate_lods and create_shadow_meshes off: with them on, the Compatibility renderer
+drew no shadow at all for the skinned body.
 """
 import math
 import os
@@ -139,6 +142,37 @@ def run(u):
     return p, (0, 0, -0.06 + 0.05 * abs(math.cos(t)))
 
 
+def _strafe(p, t, side, swing=0.3, knee=0.6):
+    """Side-step: both legs swing across together, the leading knee lifts. side = +1 left (+X), -1 right."""
+    s = math.sin(t)
+    p["thigh_l"] = (-0.05, -side * swing * s, 0.0)
+    p["thigh_r"] = (-0.05, -side * swing * s, 0.0)
+    p["shin_l"] = (0.1 + knee * max(0.0, side * math.sin(t + 1.0)), 0.0, 0.0)
+    p["shin_r"] = (0.1 + knee * max(0.0, -side * math.sin(t + 1.0)), 0.0, 0.0)
+    p["pelvis"] = (0.0, 0.05 * side * s, 0.0)
+
+
+def walk_l(u):
+    t = u * math.tau
+    p = {"torso": (0.04, 0.0, 0.0)}
+    _strafe(p, t, 1.0)
+    _arms_down(p)
+    return p, (0, 0, -0.02 + 0.015 * abs(math.cos(t)))
+
+
+def walk_r(u):
+    t = u * math.tau
+    p = {"torso": (0.04, 0.0, 0.0)}
+    _strafe(p, t, -1.0)
+    _arms_down(p)
+    return p, (0, 0, -0.02 + 0.015 * abs(math.cos(t)))
+
+
+def walk_b(u):
+    """Backing away: the forward walk played in reverse."""
+    return walk(1.0 - u)
+
+
 CROUCH_DROP = 0.34  # squat (crouch walk)
 KNEEL_HIP = 0.5    # kneeling: the right knee on the ground
 
@@ -183,6 +217,31 @@ def crouch_walk(u):
     p["shin_r"] = (2.0 + 0.3 * max(0.0, math.sin(t + math.pi + 1.3)), 0.0, 0.0)
     _arms_down(p, 0.15 * math.sin(t))
     return p, (0, 0, -CROUCH_DROP + 0.02 * abs(math.cos(t)))
+
+
+def _crouch_strafe(u, side):
+    t = u * math.tau
+    p = {}
+    _crouch(p)
+    s = math.sin(t)
+    p["thigh_l"] = (-1.3, -side * 0.25 * s + 0.1, 0.0)
+    p["thigh_r"] = (-1.3, -side * 0.25 * s - 0.1, 0.0)
+    p["shin_l"] = (2.0 + 0.25 * max(0.0, side * math.sin(t + 1.0)), 0.0, 0.0)
+    p["shin_r"] = (2.0 + 0.25 * max(0.0, -side * math.sin(t + 1.0)), 0.0, 0.0)
+    _arms_down(p)
+    return p, (0, 0, -CROUCH_DROP + 0.015 * abs(math.cos(t)))
+
+
+def crouch_l(u):
+    return _crouch_strafe(u, 1.0)
+
+
+def crouch_r(u):
+    return _crouch_strafe(u, -1.0)
+
+
+def crouch_b(u):
+    return crouch_walk(1.0 - u)
 
 
 PRONE_HIP = 0.16
@@ -315,48 +374,50 @@ def carry_port(u):
 
 
 def reload_pistol(u):
-    """Gun tilts in, left hand drops to the belt for a mag and slaps it home."""
+    """The pistol comes in to the chest and tips up so the grip faces the left hand (which the game's IK walks
+    through: mag out, drop, belt, new mag in, rack the slide)."""
     p = {}
     _aim_pistol(p)
-    tilt = _keys([(0.0, 0.0), (0.15, 0.6), (0.85, 0.6), (1.0, 0.0)], u)
-    p["arm_r"] = (-1.4 + tilt, 0.0, 0.4 + 0.3 * tilt)
-    p["fore_r"] = (-0.2 - 0.6 * tilt, 0.0, 0.0)
-    reach = _keys([(0.0, 0.0), (0.2, 0.0), (0.4, 1.0), (0.6, 1.0), (0.8, 0.0), (1.0, 0.0)], u)
-    p["arm_l"] = (_ease(-1.35, 0.25, reach), 0.0, _ease(0.42, -0.05, reach))
-    p["fore_l"] = (_ease(-0.25, -0.5, reach), 0.0, _ease(0.25, 0.0, reach))
+    tilt = _keys([(0.0, 0.0), (0.12, 1.0), (0.85, 1.0), (1.0, 0.0)], u)
+    p["arm_r"] = (-1.4 + 0.75 * tilt, 0.0, 0.4 + 0.25 * tilt)
+    p["fore_r"] = (-0.2 - 0.9 * tilt, 0.0, 0.0)
+    p["hand_r"] = (0.0, 0.0, 0.7 * tilt)  # roll the gun so the mag well faces the left hand
+    p["head"] = (0.35 * tilt, 0.0, 0.0)  # looks down at the gun
     return p, (0, 0, 0)
 
 
 def reload_rifle(u):
-    """Mag out, left hand to the vest pouch, new mag in, slap the charging handle."""
+    """The rifle comes off the shoulder, muzzle up and rolled so the mag well faces the left hand (the game's
+    IK: mag out, drop, vest pouch, new mag in, pull the charging handle)."""
     p = {}
     _aim_rifle(p)
-    tilt = _keys([(0.0, 0.0), (0.1, 0.45), (0.9, 0.45), (1.0, 0.0)], u)
-    p["arm_r"] = (-0.3 + tilt, 0.0, 0.45)
-    p["fore_r"] = (-1.6 - 0.3 * tilt, 0.0, 0.35)
-    p["torso"] = (0.06 + 0.15 * tilt, 0.0, -0.25)
-    reach = _keys([(0.0, 0.0), (0.15, 0.0), (0.35, 1.0), (0.55, 1.0), (0.75, 0.0), (0.85, 0.0), (0.92, 0.4),
-                   (1.0, 0.0)], u)
-    p["arm_l"] = (_ease(-1.35, -0.3, reach), 0.0, _ease(0.2, 0.05, reach))
-    p["fore_l"] = (_ease(-0.2, -1.5, reach), 0.0, _ease(0.35, 0.0, reach))
+    tilt = _keys([(0.0, 0.0), (0.1, 1.0), (0.88, 1.0), (1.0, 0.0)], u)
+    p["arm_r"] = (-0.3 + 0.35 * tilt, 0.0, 0.45)
+    p["fore_r"] = (-1.6 - 0.45 * tilt, 0.0, 0.35)
+    p["hand_r"] = (0.0, 0.0, 0.6 * tilt)
+    p["torso"] = (0.06 + 0.2 * tilt, 0.0, -0.25 + 0.15 * tilt)
+    p["head"] = (0.05 + 0.35 * tilt, 0.0, 0.2)
     return p, (0, 0, 0)
 
 
 def reload_shell(u):
-    """One shell: left hand down to the belt, up under the receiver, push it in. Loops per shell."""
+    """The shotgun held low and rolled, loading port up toward the left hand (the game's IK: a shell from the
+    belt into the port). Loops once per shell."""
     p = {}
     _aim_rifle(p)
-    p["arm_r"] = (-0.5, 0.0, 0.35)
-    reach = _keys([(0.0, 0.0), (0.35, 1.0), (0.7, 0.0), (1.0, 0.0)], u)
-    p["arm_l"] = (_ease(-0.9, 0.0, reach), 0.0, _ease(0.3, 0.0, reach))
-    p["fore_l"] = (_ease(-0.8, -0.6, reach), 0.0, 0.0)
+    p["arm_r"] = (-0.15, 0.0, 0.45)
+    p["fore_r"] = (-1.9, 0.0, 0.35)
+    p["hand_r"] = (0.0, 0.0, 0.8)
+    p["head"] = (0.4, 0.0, 0.2)
     return p, (0, 0, 0)
 
 
 # name: (function, frames, loop)
 CLIPS = {
-    "idle": (idle, 48, True), "walk": (walk, 24, True), "run": (run, 16, True),
-    "crouch_idle": (crouch_idle, 48, True), "crouch_walk": (crouch_walk, 28, True),
+    "idle": (idle, 48, True), "walk_f": (walk, 24, True), "walk_b": (walk_b, 24, True),
+    "walk_l": (walk_l, 24, True), "walk_r": (walk_r, 24, True), "run": (run, 16, True),
+    "crouch_idle": (crouch_idle, 48, True), "crouch_f": (crouch_walk, 28, True), "crouch_b": (crouch_b, 28, True),
+    "crouch_l": (crouch_l, 28, True), "crouch_r": (crouch_r, 28, True),
     "prone_idle": (prone_idle, 48, True), "crawl": (crawl, 32, True), "roll": (roll, 14, False),
     "downed": (downed, 48, True),
     "aim_pistol": (aim_pistol, 48, True), "aim_rifle": (aim_rifle, 48, True),

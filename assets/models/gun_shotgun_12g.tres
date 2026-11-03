@@ -1,11 +1,14 @@
-[gd_resource type="Resource" script_class="GunModel" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="GunModel" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://combat/gun_model.gd" id="1_model"]
 [ext_resource type="PackedScene" path="res://assets/models/gun_shotgun_12g.glb" id="2_mesh"]
+[ext_resource type="PackedScene" path="res://assets/models/shell_12g.glb" id="4_hand"]
 
 [resource]
 script = ExtResource("1_model")
 mesh_scene = ExtResource("2_mesh")
+mag_hand_scene = ExtResource("4_hand")
 muzzle = Vector3(0.0000, 0.0520, 0.9360)
 support = Vector3(0.0000, -0.0130, 0.3510)
+hand_points = Dictionary[String, Vector3]({"port": Vector3(0.0000, -0.0208, 0.1300)})
 mounts = Dictionary[String, Vector3]({"muzzle": Vector3(0.0000, 0.0520, 0.9360), "optic": Vector3(0.0000, 0.0683, 0.0650), "under": Vector3(0.0000, 0.0208, 0.8320)})

@@ -11,7 +11,7 @@ var _event_of: Array[StringName] = []  ## per player: the event it plays
 var _started: PackedFloat64Array = PackedFloat64Array()  ## per player: when it started (s)
 var played: Dictionary[StringName, int] = {}  ## plays per event since setup (debug overlay, tests)
 var _last_play: Dictionary[StringName, float] = {}
-var _delayed: Array[Array] = []  ## [time, event, position, pitch, max_distance]
+var _delayed: Array[Array] = []  ## [time, event, position, pitch, max_distance, gain_db]
 var _clock: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -41,18 +41,20 @@ func _process(delta: float) -> void:
 		var d: Array = _delayed[i]
 		if _clock >= d[0]:
 			_delayed.remove_at(i)
-			play(d[1], d[2], d[3], d[4])
+			play(d[1], d[2], d[3], d[4], 0.0, d[5])
 		else:
 			i += 1
 
 
 ## Plays `event` at `at`. `max_distance` < 0 takes the event's own; `delay` > 0 plays it later (a pump after a
 ## shot). Returns false when the event is unknown, has no takes or came too soon after the last one.
-func play(event: StringName, at: Vector3, pitch: float = 1.0, max_distance: float = -1.0, delay: float = 0.0) -> bool:
+## `gain_db` is added to the event's volume (a quiet crouched step).
+func play(event: StringName, at: Vector3, pitch: float = 1.0, max_distance: float = -1.0, delay: float = 0.0,
+		gain_db: float = 0.0) -> bool:
 	if bank == null or not bank.events.has(event):
 		return false
 	if delay > 0.0:
-		_delayed.append([_clock + delay, event, at, pitch, max_distance])
+		_delayed.append([_clock + delay, event, at, pitch, max_distance, gain_db])
 		return true
 	var e: SfxEvent = bank.events[event]
 	if e.streams.is_empty():
@@ -63,7 +65,7 @@ func play(event: StringName, at: Vector3, pitch: float = 1.0, max_distance: floa
 	var p: AudioStreamPlayer3D = _players[_pick_voice(event, e.max_voices)]
 	var range_m: float = e.max_distance_m if max_distance < 0.0 else max_distance
 	p.stream = e.streams[_rng.randi() % e.streams.size()]
-	p.volume_db = e.volume_db
+	p.volume_db = e.volume_db + gain_db
 	p.pitch_scale = maxf(pitch * (1.0 + _rng.randf_range(-e.pitch_jitter, e.pitch_jitter)), 0.05)
 	p.max_distance = range_m
 	p.unit_size = range_m * 0.25  # full volume close by, fading out toward max_distance
