@@ -11,6 +11,8 @@
 [ext_resource type="PackedScene" path="res://game/level/style15_level.tscn" id="8_level"]
 [ext_resource type="Resource" path="res://assets/vat/zombie_male.tres" id="10_male"]
 [ext_resource type="Resource" path="res://assets/vat/zombie_female.tres" id="11_female"]
+[ext_resource type="Resource" path="res://assets/vat/zombie_office.tres" id="40_office"]
+[ext_resource type="Resource" path="res://assets/vat/zombie_worker.tres" id="41_worker"]
 [ext_resource type="Script" path="res://combat/vat_model.gd" id="12_vatmodel"]
 [ext_resource type="Resource" path="res://data/fx/gore.tres" id="13_gore"]
 [ext_resource type="Resource" path="res://data/combat/fire.tres" id="14_fire"]
@@ -65,7 +67,7 @@ mesh = SubResource("Mesh_aim")
 
 [node name="HordeRenderer" type="Node3D" parent="."]
 script = ExtResource("6_renderer")
-models = Array[ExtResource("12_vatmodel")]([ExtResource("10_male"), ExtResource("11_female")])
+models = Array[ExtResource("12_vatmodel")]([ExtResource("10_male"), ExtResource("11_female"), ExtResource("40_office"), ExtResource("41_worker")])
 
 [node name="Tracers" type="MeshInstance3D" parent="."]
 script = ExtResource("7_tracers")

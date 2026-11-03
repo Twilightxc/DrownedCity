@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-04 | Survivor outfits are extra bodies in the one `survivor.glb` (same skeleton and clips; SurvivorView shows one); zombie variety is more VAT looks (4 Walker, 2 per special type), each one MultiMesh | J: no two characters alike, and variety within a type; one clip set keeps the download small; ~+10 draw calls for the zombie looks, still far under 250 |
 | 2026-11-03 | AI teammates are SpikePlayers with their input wishes (move, aim, fire, sprint) from a pure `TeammateBrain`; the horde takes `extra_targets` and each hunter goes for the nearest | One set of rules for every fighter (guns, stances, body, HUD); the brain is testable; the shared flow field already takes several goals |
 | 2026-11-03 | Low cover: blocked cells may carry a height (`NavGrid.low_cover`, from a prop's `metadata/cover_height`); rays pass when held above it: shots at the muzzle height, zombie sight at the target's body height. Movement still treats it as solid | J: shoot over the boxes from behind them; one number per prop, no 3D raycasts, works on the web's single thread |
 | 2026-11-03 | A shouldered long gun is placed by the shoulder, not the hand: `RightArmAim` puts the stock in the pocket and IKs the right arm to the grip; long guns are scaled 1.05 / 1.0 (pistol 1.3) | J: the stock belongs at shoulder height; at ×1.3 a rifle was longer than the arms could hold |

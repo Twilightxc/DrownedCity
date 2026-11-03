@@ -17,7 +17,8 @@ Live: `?spike=arena` (2 teammates), `?spike=arena&mates=0` (none, to compare). O
 | HUD | a card per teammate above the player's bars: name, HP (downed: countdown), stamina; greyed when dead. Over their heads only the reload / revive ring (J: no names over heads) |
 | No friendly fire | rounds test only the horde; grenades do hurt teammates |
 | Desktop bot run, wave 3 | cleared in ~25 s with the player on auto-shoot: Marco 36 kills, Jess 6 of 65; nobody hit. Marco may be too strong: J's call (`data/combat/teammate.tres`) |
-| Not yet | teammates don't revive the player, throw grenades, crouch or take gas / fire damage; same outfit as the player (outfits are 1.8) |
+| Looks (J 2026-11-04) | survivors: 3 outfits in one `survivor.glb` (one skeleton, one clip set): orange jacket (player), mustard work jacket + cap + beard (Marco), red hoodie + auburn ponytail (Jess); zombies: 10 looks: Walker male, female, office (shirt + tie, bald), dock worker (coveralls, beanie); a second look for each special type (hoodie Runner, riot-police Armored, darker Bloater). +5 VAT looks ≈ +0.9 MB; desktop wave 5: 51 zombies over all 10 looks, 90 draw calls, 92k primitives. Pictures: `docs/art/12_survivor_looks.png`, `docs/art/13_zombie_looks.png` |
+| Not yet | teammates don't revive the player, throw grenades, crouch or take gas / fire damage |
 
 ## 1.5+ A4 HUD — 🟡 built (2026-11-03), waiting for J's look
 

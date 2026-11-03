@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://combat/enemy_config.gd" id="1_cfg"]
 [ext_resource type="Script" path="res://combat/vat_model.gd" id="2_vat"]
 [ext_resource type="Resource" path="res://assets/vat/zombie_bloater.tres" id="3_look"]
+[ext_resource type="Resource" path="res://assets/vat/zombie_bloater_b.tres" id="4_look_b"]
 
 [resource]
 script = ExtResource("1_cfg")
@@ -18,7 +19,7 @@ sight_mul = 0.8
 gas_on_death = true
 gas_radius_m = 3.0
 gas_sec = 8.0
-models = Array[ExtResource("2_vat")]([ExtResource("3_look")])
+models = Array[ExtResource("2_vat")]([ExtResource("3_look"), ExtResource("4_look_b")])
 tints = PackedColorArray(1, 1, 1, 1, 1.05, 1, 0.9, 1)
 voice_sfx = &"zombie_groan"
 voice_pitch = 0.68

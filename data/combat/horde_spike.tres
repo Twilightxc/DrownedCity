@@ -24,3 +24,4 @@ spawn_counts = PackedInt32Array(50, 100, 200, 300)
 default_count_index = 2
 spawn_per_second = 120.0
 spawn_min_distance = 8.0
+variants = 4

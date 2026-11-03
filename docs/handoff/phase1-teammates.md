@@ -17,7 +17,11 @@
   `?mates=N`. HUD: names, mini HP bars, revive ring. Picture: `docs/art/11_teammates.png`.
 - J (2026-11-04): "เปลี่ยนชื่อเพื่อน ไม่ใช้ชื่อไทยและไม่แสดงบนหัวตัวละคร / มีแถบการ์ดเล็กๆแสดงพลังชีวิต สแตมิน่า ชื่อของเพื่อน /
   เพื่อนจะยิงศัตรูที่อยู่ใกล้ตัวเองมากที่สุดก่อน" → Marco and Jess; team cards above the player's bars; protect_weight 0.
-- 6 new tests, 215 total, all passing on desktop.
+- J (2026-11-04): "เปลี่ยนโมเดลตัวละคร ไม่ให้ซ้ำกัน / โมเดลซอมบี้ที่หลากหลายถึงแม้จะเป็นชนิดเดียวกัน" →
+  kit_survivor LOOKS = 3 (`SpikePlayer.body_look`, SurvivorView.set_look); kit_zombie: zombie_office, zombie_worker
+  (HordeConfig.variants = 4, style_spike renderer models) and zombie_runner_b / armored_b / bloater_b (EnemyConfig.models).
+  kit_zombie now writes each look's VatModel .tres; a new look's .glb.import still needs LODs and shadow meshes off.
+- 7 new tests, 216 total, all passing on desktop.
 
 ## Not done / next
 - Gate 1.G (J): play the arena 3× on the Arc, fun? ≥ 50 FPS at the biggest wave?

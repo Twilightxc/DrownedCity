@@ -16,7 +16,8 @@ create_shadow_meshes off: both rebuild index/vertex buffers from the rest pose, 
 Clips are hand-keyed stand-ins until J's Mixamo clips arrive; a Mixamo clip only has to supply the
 per-part rotations below (same parts, same joints), the bake stays the same.
 
-MODELS lists every horde mesh: the two Walker looks plus one per special type (GDD §9, PHASE1 1.2). Each type
+MODELS lists every horde mesh: four Walker looks plus two per special type (GDD §9, PHASE1 1.2; second looks
+J 2026-11-04, so a crowd of one type isn't all the same). Each type
 reads by silhouette first (pillar 5): the Runner is thin, bare-armed and sprints bent forward; the Armored is
 broad with a vest and a helmet (an extra part after SKELETON, so it can drop off); the Bloater is a swollen
 belly on short thick legs that waddles. Every type keeps the 11 SKELETON parts in the same order, so the
@@ -40,6 +41,11 @@ K.PALETTE.update({
     "armored_vest": "#2c3542", "armored_pants": "#3a4038", "armored_helmet": "#373f36",
     "armored_gear": "#22262a", "armored_visor": "#1b1d20",
     "bloater_skin": "#b2b46c", "bloater_boil": "#c39a55", "bloater_rag": "#5b5f63",
+    # second looks (J 2026-11-04: variety within a type); clothes stay cool and grey
+    "zombie_skin2": "#a4b48b", "office_shirt": "#9aa0a1", "office_tie": "#2b2f3a", "office_slacks": "#474a51",
+    "worker_coverall": "#4b6064", "worker_beanie": "#3a3e46", "worker_boot": "#26292c",
+    "runner_hoodie": "#4a5465", "riot_vest": "#3d4a5c", "riot_stripe": "#8a939b", "riot_helmet": "#4e5966",
+    "bloater_rag2": "#465250", "bloater_boil2": "#b88f58",
 })
 
 FPS = 24
@@ -329,12 +335,87 @@ def clip_table(walk_fn=walk, frames=24, stride=1.3):
 
 
 # name: (overall scale, shoulder, hip, head, boxes, extra parts, clips)
+def office_boxes(shoulder, hip, head):
+    """Walker: a stained office shirt and tie, slacks, bald."""
+    b = part_boxes(shoulder, hip, head)
+    b["torso"] = [((0, 0, 0.27), (0.4 * shoulder, 0.24, 0.5), "office_shirt"),
+                  ((0, -0.123, 0.33), (0.05, 0.02, 0.3), "office_tie"),
+                  ((-0.08, -0.123, 0.18), (0.1, 0.02, 0.12), "zombie_wound")]
+    b["pelvis"] = [((0, 0, 0.0), (0.34 * hip, 0.2, 0.2), "office_slacks")]
+    b["head"] = [((0, -0.01, 0.15), (0.22 * head, 0.24 * head, 0.26 * head), "zombie_skin2")]
+    for sd in "lr":
+        b[f"arm_{sd}"] = [((0, 0, -0.14), (0.1, 0.11, 0.3), "office_shirt")]
+        b[f"thigh_{sd}"] = [((0, 0, -0.21), (0.15, 0.16, 0.44), "office_slacks")]
+        b[f"shin_{sd}"] = [((0, 0, -0.2), (0.12, 0.13, 0.42), "office_slacks"),
+                           ((0, -0.05, -0.43), (0.12, 0.24, 0.07), "zombie_hair")]
+    return b
+
+
+def worker_boxes(shoulder, hip, head):
+    """Walker: a dock worker in coveralls, beanie and heavy boots, broad."""
+    b = part_boxes(shoulder, hip, head)
+    b["torso"] = [((0, 0, 0.27), (0.42 * shoulder, 0.26, 0.5), "worker_coverall"),
+                  ((0, -0.135, 0.38), (0.16, 0.02, 0.1), "worker_beanie")]
+    b["pelvis"] = [((0, 0, 0.0), (0.35 * hip, 0.21, 0.2), "worker_coverall")]
+    b["head"] = [((0, -0.01, 0.15), (0.23 * head, 0.24 * head, 0.26 * head), "zombie_skin"),
+                 ((0, 0.01, 0.27 * head), (0.24 * head, 0.25 * head, 0.09), "worker_beanie")]
+    for sd in "lr":
+        b[f"arm_{sd}"] = [((0, 0, -0.14), (0.11, 0.12, 0.3), "worker_coverall")]
+        b[f"thigh_{sd}"] = [((0, 0, -0.21), (0.16, 0.17, 0.44), "worker_coverall")]
+        b[f"shin_{sd}"] = [((0, 0, -0.2), (0.13, 0.14, 0.42), "worker_coverall"),
+                           ((0, -0.05, -0.42), (0.14, 0.26, 0.1), "worker_boot")]
+    return b
+
+
+def runner_hoodie_boxes(shoulder, hip, head):
+    """Runner: a torn hoodie, hood down, shorts and bare shins."""
+    b = runner_boxes(shoulder, hip, head)
+    b["torso"] = [((0, 0, 0.27), (0.35 * shoulder, 0.21, 0.5), "runner_hoodie"),
+                  ((0, 0.12, 0.47), (0.2, 0.06, 0.1), "runner_hoodie"),
+                  ((0.07, -0.11, 0.2), (0.1, 0.02, 0.12), "zombie_wound")]
+    for sd in "lr":
+        b[f"arm_{sd}"] = [((0, 0, -0.14), (0.085, 0.09, 0.3), "runner_hoodie")]
+    return b
+
+
+def riot_boxes(shoulder, hip, head):
+    """Armored: riot police, lighter vest with a reflective stripe and a grey-blue helmet."""
+    b = armored_boxes(shoulder, hip, head)
+    b["torso"] = [((0, 0, 0.27), (0.4 * shoulder, 0.24, 0.5), "armored_pants"),
+                  ((0, 0, 0.3), (0.46 * shoulder, 0.32, 0.4), "riot_vest"),
+                  ((0, -0.165, 0.36), (0.42 * shoulder, 0.02, 0.05), "riot_stripe"),
+                  ((0, 0.165, 0.36), (0.42 * shoulder, 0.02, 0.05), "riot_stripe")]
+    b["helmet"] = [((0, 0.01, 0.27 * head), (0.28 * head, 0.3 * head, 0.13), "riot_helmet"),
+                   ((0, 0.0, 0.2 * head), (0.3 * head, 0.32 * head, 0.04), "riot_helmet"),
+                   ((0, -0.15 * head, 0.17 * head), (0.26 * head, 0.02, 0.1), "armored_visor")]
+    return b
+
+
+def bloater_b_boxes(shoulder, hip, head):
+    """Bloater: darker rags, a lopsided belly, more boils."""
+    b = bloater_boxes(shoulder, hip, head)
+    b["torso"] = [((0, 0, 0.26), (0.46 * shoulder, 0.42, 0.5), "bloater_skin"),
+                  ((0.05, -0.21, 0.16), (0.38 * shoulder, 0.16, 0.32), "bloater_skin"),
+                  ((-0.12, -0.29, 0.24), (0.08, 0.03, 0.08), "bloater_boil2"),
+                  ((0.14, -0.28, 0.1), (0.07, 0.03, 0.07), "bloater_boil2"),
+                  ((-0.2 * shoulder, 0.08, 0.3), (0.06, 0.12, 0.08), "bloater_boil2"),
+                  ((0.18 * shoulder, 0.1, 0.38), (0.06, 0.1, 0.06), "bloater_boil2"),
+                  ((0, 0.04, 0.44), (0.42 * shoulder, 0.38, 0.1), "bloater_rag2")]
+    b["pelvis"] = [((0, 0, 0.0), (0.4 * hip, 0.3, 0.22), "bloater_rag2")]
+    return b
+
+
 MODELS = {
     "zombie_male": (1.0, 1.0, 1.0, 1.0, part_boxes, (), clip_table()),
     "zombie_female": (0.94, 0.84, 1.08, 0.94, part_boxes, (), clip_table()),
     "zombie_runner": (0.97, 0.88, 0.9, 0.95, runner_boxes, (), clip_table(sprint, 16, 2.6)),
     "zombie_armored": (1.04, 1.12, 1.05, 1.0, armored_boxes, ("helmet",), clip_table(march, 24, 1.2)),
     "zombie_bloater": (1.0, 1.3, 1.35, 0.85, bloater_boxes, (), clip_table(waddle, 28, 0.85)),
+    "zombie_office": (1.0, 0.98, 1.0, 1.0, office_boxes, (), clip_table()),
+    "zombie_worker": (1.03, 1.08, 1.05, 1.03, worker_boxes, (), clip_table()),
+    "zombie_runner_b": (0.95, 0.86, 0.88, 0.95, runner_hoodie_boxes, (), clip_table(sprint, 16, 2.6)),
+    "zombie_armored_b": (1.02, 1.1, 1.05, 1.0, riot_boxes, ("helmet",), clip_table(march, 24, 1.2)),
+    "zombie_bloater_b": (0.97, 1.24, 1.4, 0.85, bloater_b_boxes, (), clip_table(waddle, 28, 0.85)),
 }
 
 
@@ -473,6 +554,23 @@ def _write_clips(path, name, width, height, clip_rows):
                  f"frames = {frames}\nloops = {loops}\nstride = {strides}\n")
 
 
+def write_model(name, vat_dir):
+    """The VatModel .tres tying a look's mesh, textures and clips together (HordeConfig / EnemyConfig list these).
+    A new look's .glb.import also needs generate_lods and create_shadow_meshes off (see the module docstring)."""
+    lines = [
+        '[gd_resource type="Resource" script_class="VatModel" load_steps=6 format=3]', "",
+        '[ext_resource type="Script" path="res://combat/vat_model.gd" id="1_model"]',
+        f'[ext_resource type="PackedScene" path="res://assets/models/{name}.glb" id="2_mesh"]',
+        f'[ext_resource type="Texture2D" path="res://assets/vat/{name}_pos.exr" id="3_pos"]',
+        f'[ext_resource type="Texture2D" path="res://assets/vat/{name}_nrm.exr" id="4_nrm"]',
+        f'[ext_resource type="Resource" path="res://assets/vat/{name}_clips.tres" id="5_clips"]', "",
+        "[resource]", 'script = ExtResource("1_model")', 'mesh_scene = ExtResource("2_mesh")',
+        'positions = ExtResource("3_pos")', 'normals = ExtResource("4_nrm")', 'clips = ExtResource("5_clips")', "",
+    ]
+    with open(os.path.join(vat_dir, name + ".tres"), "w", encoding="utf-8", newline=chr(10)) as fh:
+        fh.write(chr(10).join(lines))
+
+
 if __name__ == "__main__":
     a = K.args()
     root = os.path.join(os.path.dirname(__file__), "..", "..", "assets")
@@ -493,3 +591,4 @@ if __name__ == "__main__":
         K.bake_vertex_ao(obj, distance=0.35, samples=32)
         K.export_glb(obj, models, variant, texcoords=True)
         bake_vat(variant, quads, skel, clips, vat)
+        write_model(variant, vat)
