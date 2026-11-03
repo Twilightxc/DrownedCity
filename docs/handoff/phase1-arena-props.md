@@ -1,6 +1,6 @@
 # phase1/arena-props
 
-- **PR:** see below (pushed? yes)
+- **PR:** #48 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 745bd16
 - **Updated:** 2026-11-04
