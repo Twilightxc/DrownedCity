@@ -1,6 +1,6 @@
 # phase1/walk-twist
 
-- **PR:** see below (pushed? yes)
+- **PR:** #45 (pushed? yes)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 94c44b7
 - **Updated:** 2026-11-03
