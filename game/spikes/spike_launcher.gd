@@ -6,6 +6,7 @@ extends Node
 
 const SPIKES: Dictionary[String, String] = {
 	"arena": "res://game/spikes/arena_spike.tscn",
+	"poses": "res://game/spikes/pose_spike.tscn",
 	"interior": "res://game/spikes/interior_spike.tscn",
 	"save": "res://game/spikes/save_spike.tscn",
 	"twinstick": "res://game/spikes/twin_stick_spike.tscn",

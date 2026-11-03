@@ -27,6 +27,7 @@ const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 @export var throwables: Array[ThrowableConfig] = []  ## more than one: "throwable_next" cycles them (shared count)
 @export var controls: TwinStickConfig
 @export var gun_hold: Vector3 = Vector3(-0.12, 0.95, 0.34)  ## the right hand in the aim marker's space (+Z = aim)
+@export var survivor_body: bool = true  ## the skinned survivor (1.5+ A2) instead of the capsule; the gun in its hand
 
 var grid: NavGrid
 var horde: Horde
@@ -65,6 +66,7 @@ var _throw_ring: MeshInstance3D
 
 @onready var _aim_marker: Node3D = $AimMarker
 var gun_view: GunView
+var body: SurvivorView  ## null with survivor_body off
 
 
 func setup(nav: NavGrid, crowd: Horde, cam: Camera3D, y: float) -> void:
@@ -110,7 +112,10 @@ func select_gun(i: int) -> void:
 func _show_gun() -> void:
 	if gun_view == null:
 		return
-	gun_view.show_gun(gun)
+	if body != null:
+		body.set_gun(gun)
+	else:
+		gun_view.show_gun(gun)
 	var barrel: Node3D = _aim_marker.get_node_or_null("Barrel") as Node3D
 	if barrel != null:
 		barrel.visible = gun.config.model == null
@@ -126,9 +131,17 @@ func muzzle_position() -> Vector3:
 func _ready() -> void:
 	if controls == null:
 		controls = TwinStickConfig.new()
-	gun_view = GunView.new()
-	gun_view.position = gun_hold
-	_aim_marker.add_child(gun_view)
+	if survivor_body:
+		body = SurvivorView.new()
+		_aim_marker.add_child(body)
+		gun_view = body.gun_view
+		var capsule: Node3D = get_node_or_null("Body") as Node3D
+		if capsule != null:
+			capsule.visible = false
+	else:
+		gun_view = GunView.new()
+		gun_view.position = gun_hold
+		_aim_marker.add_child(gun_view)
 	if gun != null:
 		_show_gun()
 	var line_mat: StandardMaterial3D = StandardMaterial3D.new()
@@ -252,6 +265,8 @@ func _process(delta: float) -> void:
 	if grid == null:
 		return
 	health.step(delta)
+	if body != null:
+		body.drive(velocity, aim_dir, gun, not health.is_alive())
 	if not health.is_alive():
 		velocity = Vector2.ZERO
 		auto_trigger = false
