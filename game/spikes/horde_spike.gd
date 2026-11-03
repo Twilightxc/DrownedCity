@@ -221,7 +221,7 @@ func _step_roof_horde(delta: float, target: Vector2) -> void:
 	_targeted.clear()
 	var extras: PackedVector2Array = PackedVector2Array()
 	for m: Teammate in _mates:
-		if m.health.is_alive():
+		if m.health.state != FighterHealth.State.DEAD:  # a downed one still draws them
 			_targeted.append(m)
 			extras.append(m.ground_position())
 			var mc: Vector2i = _grid.world_to_cell(m.ground_position())

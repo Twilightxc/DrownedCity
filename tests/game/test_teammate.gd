@@ -39,3 +39,30 @@ func test_revive_needs_the_player_to_stay_close_for_revive_sec() -> void:
 	assert_eq(mate.health.state, FighterHealth.State.ALIVE, "back up")
 	mate._update_revive(0.0)
 	assert_false(mate.is_in_group("interactable"))
+
+
+func test_a_downed_fighter_fights_on_with_the_pistol_and_gets_its_long_gun_back() -> void:
+	var cam: Camera3D = Camera3D.new()
+	add_child_autofree(cam)
+	var grid: NavGrid = NavGrid.new(20, 20)
+	var p: SpikePlayer = SpikePlayer.new()
+	p.loadout = preload("res://data/weapons/spike_loadout.tres")  # AR first, pistol second
+	_fighter(p, grid, cam, Vector2(10, 10))
+	await wait_physics_frames(2)
+	var long_gun: Gun = p.gun
+	assert_false(SpikePlayer.is_sidearm(long_gun))
+	assert_eq(p.health.config.downed_sec, 20.0, "J: longer on the ground")
+	p.health.take_hit(999, RandomNumberGenerator.new())
+	assert_eq(p.health.state, FighterHealth.State.DOWNED)
+	assert_true(SpikePlayer.is_sidearm(p.gun), "the pistol comes out")
+	p.select_gun(0)
+	assert_true(SpikePlayer.is_sidearm(p.gun), "no long gun while down")
+	p.auto_trigger = true
+	var before: int = p.shots_fired
+	for i: int in 20:
+		p._process(0.05)
+	assert_gt(p.shots_fired, before, "it shoots from the ground")
+	assert_eq(p.body.lower, &"downed_aim")
+	p.auto_trigger = false
+	p.health.revive()
+	assert_eq(p.gun, long_gun, "back on its feet: the long gun again")

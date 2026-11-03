@@ -295,6 +295,22 @@ def downed(u):
     return p, (0, 0, 0.22 - HIP_HEIGHT + 0.01 * math.sin(t))
 
 
+def downed_aim(u):
+    """Down but fighting (J 2026-11-04): on the back, propped up on the left elbow, the pistol held out over the
+    feet in the right hand (arm about level: the torso leans back 0.6, so the arm swings 0.97 forward)."""
+    t = u * math.tau
+    p = {"pelvis": (-1.35, 0.0, 0.05), "torso": (0.75 + 0.02 * math.sin(t), 0.0, -0.05), "head": (0.4, 0.0, 0.0)}
+    p["thigh_l"] = (-0.45, 0.0, 0.15)
+    p["shin_l"] = (0.8, 0.0, 0.0)
+    p["thigh_r"] = (-0.1, 0.0, -0.1)
+    p["shin_r"] = (0.2, 0.0, 0.0)
+    p["arm_l"] = (0.7, 0.0, -0.35)
+    p["fore_l"] = (-1.3, 0.0, 0.0)
+    p["arm_r"] = (-0.97, 0.0, 0.2)
+    p["fore_r"] = (-0.1, 0.0, 0.0)
+    return p, (0, 0, 0.26 - HIP_HEIGHT + 0.01 * math.sin(t))
+
+
 # Upper body: only UPPER bones matter (the game filters them onto the legs' clip).
 
 def _aim_pistol(p, lower=0.0):
@@ -402,7 +418,7 @@ CLIPS = {
     "idle": (idle, 48, True), "walk_f": (walk, 18, True), "walk_b": (walk_b, 18, True), "run": (run, 16, True),
     "crouch_idle": (crouch_idle, 48, True), "crouch_f": (crouch_walk, 28, True), "crouch_b": (crouch_b, 28, True),
     "prone_idle": (prone_idle, 48, True), "crawl": (crawl, 32, True), "roll": (roll, 14, False),
-    "downed": (downed, 48, True),
+    "downed": (downed, 48, True), "downed_aim": (downed_aim, 48, True),
     "aim_pistol": (aim_pistol, 48, True), "aim_rifle": (aim_rifle, 48, True),
     "carry_high": (carry_high, 16, True), "carry_port": (carry_port, 16, True),
     "reload_pistol": (reload_pistol, 29, False), "reload_rifle": (reload_rifle, 58, False),

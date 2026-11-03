@@ -71,6 +71,7 @@ var _throw_ring: MeshInstance3D
 var gun_view: GunView
 var body: SurvivorView  ## null with survivor_body off
 var motion: FighterMotion  ## stance, sprint, roll, stamina
+var _gun_before_down: Gun  ## the gun in hand when it went down (back in hand once revived)
 var _step_left: float = 0.0
 
 
@@ -103,12 +104,33 @@ func _arm() -> void:
 	if loadout != null:
 		worn = loadout.wearing
 	health = FighterHealth.new(fighter, worn)
+	health.state_changed.connect(_on_health_state)
+
+
+## Pistols and SMGs: what a downed fighter can still shoot one-handed.
+static func is_sidearm(g: Gun) -> bool:
+	return g != null and (g.config.weapon_class == "pistol" or g.config.weapon_class == "smg")
+
+
+## Down: the sidearm comes out (the long gun is remembered); back up: the long gun again.
+func _on_health_state(s: FighterHealth.State) -> void:
+	if s == FighterHealth.State.DOWNED:
+		_gun_before_down = gun
+		for k: int in guns.size():
+			if is_sidearm(guns[k]):
+				select_gun(k)
+				break
+	elif s == FighterHealth.State.ALIVE and _gun_before_down != null:
+		select_gun(guns.find(_gun_before_down))
+		_gun_before_down = null
 
 
 ## Takes gun `i` (0-based) in hand; a reload in progress is dropped.
 func select_gun(i: int) -> void:
 	if i < 0 or i >= guns.size() or guns[i] == gun:
 		return
+	if health != null and health.state == FighterHealth.State.DOWNED and not is_sidearm(guns[i]):
+		return  # down: one hand, the pistol only
 	gun.reload_left = 0.0
 	gun = guns[i]
 	_show_gun()
@@ -311,12 +333,22 @@ func _process(delta: float) -> void:
 		body.sprinting = motion.sprinting
 		body.rolling = motion.is_rolling()
 		body.drive(velocity, aim_dir, gun, not health.is_alive())
+	if health.state == FighterHealth.State.DOWNED:
+		# Down but fighting (J 2026-11-04): no moving or throwing, but aim and fire the pistol.
+		velocity = Vector2.ZERO
+		_throw_ring.visible = false
+		if not aim_locked:
+			_update_aim()
+		if is_sidearm(gun):
+			_update_weapon(delta)
+		_draw_aim_line()
+		return
 	if not health.is_alive():
 		velocity = Vector2.ZERO
 		auto_trigger = false
 		_throw_ring.visible = false
 		_aim_line.clear_surfaces()
-		return  # downed or dead: no moving, shooting or throwing
+		return  # dead
 	_move(delta)
 	if not aim_locked:
 		_update_aim()

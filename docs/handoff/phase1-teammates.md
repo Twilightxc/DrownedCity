@@ -21,7 +21,10 @@
   kit_survivor LOOKS = 3 (`SpikePlayer.body_look`, SurvivorView.set_look); kit_zombie: zombie_office, zombie_worker
   (HordeConfig.variants = 4, style_spike renderer models) and zombie_runner_b / armored_b / bloater_b (EnemyConfig.models).
   kit_zombie now writes each look's VatModel .tres; a new look's .glb.import still needs LODs and shadow meshes off.
-- 7 new tests, 216 total, all passing on desktop.
+- J (2026-11-04): "เวลาล้มนานขึ้นและสามารถยิงปืนพกได้" → downed_sec 20; SpikePlayer switches to the sidearm when
+  down (`is_sidearm`, `_on_health_state`), aims and fires it, gives the long gun back on revive; `downed_aim` clip
+  (kit_survivor) with its own gun hold; teammates think and shoot while down and stay horde targets.
+- 8 new tests, 217 total, all passing on desktop.
 
 ## Not done / next
 - Gate 1.G (J): play the arena 3× on the Arc, fun? ≥ 50 FPS at the biggest wave?

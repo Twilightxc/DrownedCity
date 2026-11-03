@@ -4,7 +4,7 @@ extends Resource
 
 @export var max_hp: int = 100
 @export var bite_chance: float = 0.15  ## per zombie hit, before armor (a bite risks infection, GDD §3)
-@export var downed_sec: float = 10.0  ## GDD §5: this long for a teammate to help; nobody comes = death
+@export var downed_sec: float = 20.0  ## GDD §5: this long for a teammate to help; nobody comes = death (J: 20 s, fighting with the pistol)
 @export var gas_dps: float = 12.0  ## at a fresh cloud's centre (GasField.strength_at = 1)
 @export var fire_dps: float = 15.0  ## standing in a burning cell
 @export var self_blast_mul: float = 0.5  ## your own grenade's damage to you (0 = off)

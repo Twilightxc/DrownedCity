@@ -34,11 +34,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if grid == null:
 		return
-	if health.is_alive() and leader != null and horde != null:
+	if health.state != FighterHealth.State.DEAD and leader != null and horde != null:  # down: still shoots
 		brain.think(delta, ground_position(), gun, _muzzle_over(), leader.ground_position(), leader.aim_dir, horde, grid)
 		if brain.want_reload:
 			start_reload()
-		_swap_if_dry()
+		if health.is_alive():
+			_swap_if_dry()
 	_update_revive(delta)
 	super._process(delta)
 
