@@ -1,6 +1,8 @@
-[gd_resource type="Resource" script_class="EnemyConfig" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="EnemyConfig" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://combat/enemy_config.gd" id="1_cfg"]
+[ext_resource type="Script" path="res://combat/vat_model.gd" id="2_vat"]
+[ext_resource type="Resource" path="res://assets/vat/zombie_armored.tres" id="3_look"]
 
 [resource]
 script = ExtResource("1_cfg")
@@ -14,5 +16,7 @@ stagger_mul = 0.3
 knockback_mul = 0.35
 sight_mul = 1.0
 gas_on_death = false
-scale = Vector3(1.18, 1.04, 1.18)
-tints = PackedColorArray(0.42, 0.5, 0.85, 1, 0.5, 0.55, 0.72, 1)
+helmet_hp = 40
+armor_after_helmet = 1
+models = Array[ExtResource("2_vat")]([ExtResource("3_look")])
+tints = PackedColorArray(1, 1, 1, 1, 0.9, 0.95, 1.05, 1)

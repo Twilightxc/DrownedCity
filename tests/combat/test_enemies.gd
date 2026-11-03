@@ -5,6 +5,8 @@ const WALKER: EnemyConfig = preload("res://data/enemies/walker.tres")
 const RUNNER: EnemyConfig = preload("res://data/enemies/runner.tres")
 const ARMORED: EnemyConfig = preload("res://data/enemies/armored.tres")
 const BLOATER: EnemyConfig = preload("res://data/enemies/bloater.tres")
+const MALE: VatModel = preload("res://assets/vat/zombie_male.tres")
+const FEMALE: VatModel = preload("res://assets/vat/zombie_female.tres")
 const PISTOL: WeaponConfig = preload("res://data/weapons/pistol_9mm.tres")
 const AR: WeaponConfig = preload("res://data/weapons/ar_556.tres")
 const DMR: WeaponConfig = preload("res://data/weapons/dmr_308.tres")
@@ -121,6 +123,51 @@ func test_deaths_carry_type_and_body_scale() -> void:
 	h.apply_damage(PackedInt32Array([0]), 999)
 	assert_eq(h.deaths[0].type, 3)
 	assert_eq(h.deaths[0].scale, BLOATER.scale)
+
+
+func test_each_special_type_spawns_with_its_own_look() -> void:
+	assert_eq(_config.look_range(0), Vector2i(0, 2), "walker: the shared male / female looks")
+	assert_eq(_config.look_range(1), Vector2i(2, 1), "runner")
+	assert_eq(_config.look_range(2), Vector2i(3, 1), "armored")
+	assert_eq(_config.look_range(3), Vector2i(4, 1), "bloater")
+	var shared: Array[VatModel] = [MALE, FEMALE]
+	var looks: Array[VatModel] = _config.looks(shared)
+	assert_eq(looks, [MALE, FEMALE, RUNNER.models[0], ARMORED.models[0], BLOATER.models[0]])
+	assert_eq(_config.looks(looks), looks, "idempotent: interior hordes pass the roof's list again")
+	var h: Horde = _horde(16)
+	for i: int in 8:
+		h.spawn(Vector2(5.5 + i * 2, 5.5), 0)
+	for t: int in [1, 2, 3]:
+		h.spawn(Vector2(5.5 + t * 2, 9.5), t)
+	for i: int in 8:
+		assert_lt(h.variant[i], 2, "walkers stay on the shared looks")
+	assert_eq(Array(h.variant.slice(8, 11)), [2, 3, 4])
+
+
+func test_the_helmet_drops_after_enough_damage_and_armor_falls_a_step() -> void:
+	var h: Horde = _horde()
+	h.spawn(Vector2(5.5, 5.5), 2)
+	assert_eq(h.hidden_parts(0), 0, "helmet on")
+	h.apply_damage(PackedInt32Array([0]), ARMORED.helmet_hp - 1, Vector2(5.5, 2.0))
+	assert_eq(h.armor[0], WeaponConfig.Armor.M)
+	assert_true(h.helmet_drops.is_empty())
+	h.apply_damage(PackedInt32Array([0]), 1, Vector2(5.5, 2.0))
+	assert_eq(h.armor[0], ARMORED.armor_after_helmet, "head exposed")
+	assert_eq(h.helmet_drops.size(), 1)
+	assert_gt(h.helmet_drops[0].push.y, 0.0, "knocked away from the shooter")
+	assert_eq(h.hidden_parts(0), 1 << Horde.HELMET_PART)
+	h.apply_damage(PackedInt32Array([0]), 999)
+	assert_eq(h.deaths[0].hidden, 1 << Horde.HELMET_PART, "the corpse has no helmet either")
+	assert_eq(h.helmet_drops.size(), 1, "drops once")
+
+
+func test_a_blast_knocks_the_helmet_off_at_once() -> void:
+	var h: Horde = _horde()
+	h.spawn(Vector2(5.5, 5.5), 2)
+	h.spawn(Vector2(8.5, 5.5), 0)
+	h.apply_damage(PackedInt32Array([0, 1]), 1, Vector2(6.5, 6.5), true)
+	assert_eq(h.helmet_drops.size(), 1, "only the armored one has a helmet")
+	assert_eq(h.hidden_parts(1), 0)
 
 
 func test_gas_clouds_fade_out_and_cap() -> void:

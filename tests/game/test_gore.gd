@@ -69,6 +69,30 @@ func test_dismember_hides_a_group_and_throws_the_limb() -> void:
 	assert_gt(_corpses._body[1].linear_velocity.x, 0.0, "thrown along the push")
 
 
+func test_a_dropped_helmet_flies_alone_and_stays_off_the_corpse() -> void:
+	_config.dismember_chance = 0.0
+	var d: Horde.Death = _death()
+	_corpses.add_helmet(d)
+	assert_eq(_corpses._hide[0], CorpseLayer.ALL_PARTS & ~CorpseLayer.HELMET, "only the helmet shows")
+	assert_eq(_corpses.body_count(), 1, "thrown as a rigid body")
+	d.hidden = CorpseLayer.HELMET
+	_corpses.add_death(d)
+	assert_eq(_corpses._hide[1], CorpseLayer.HELMET, "the body lies bareheaded")
+
+
+func test_baked_type_meshes_keep_the_skeleton_parts() -> void:
+	for type_name: String in ["runner", "armored", "bloater"]:
+		var model: VatModel = load("res://assets/vat/zombie_%s.tres" % type_name)
+		var clips: VatClips = model.clips
+		for clip: String in ["walk", "attack", "flinch", "death", "death_blown"]:
+			assert_gt(clips.index_of(clip), -1, "%s has %s" % [type_name, clip])
+		var parts: Dictionary[int, bool] = {}
+		for uv: Vector2 in model.extract_mesh().surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]:
+			parts[int(uv.y)] = true
+		assert_eq(parts.size(), 12 if type_name == "armored" else 11, "%s parts" % type_name)
+		assert_eq(model.positions.get_width(), clips.vertex_count, "%s VAT columns" % type_name)
+
+
 func test_limb_bodies_are_capped_oldest_freezes() -> void:
 	_config.dismember_chance = 1.0
 	_config.limb_body_cap = 2

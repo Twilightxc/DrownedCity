@@ -1,6 +1,6 @@
 """Style 1.5 horde zombie + vertex animation textures (VAT) -> assets/models, assets/vat
 
-usage: blender -b --factory-startup --python tools/blender/kit_zombie.py -- [models_dir] [vat_dir]
+usage: blender -b --factory-startup --python tools/blender/kit_zombie.py -- [models_dir] [vat_dir] [model ...]
 
 The zombie is a rigid-part figure (pelvis, torso, head, arms, legs): each part is a few boxes that
 turn about its joint. Clips are posed by forward kinematics per frame and every vertex position and
@@ -15,6 +15,12 @@ create_shadow_meshes off: both rebuild index/vertex buffers from the rest pose, 
 
 Clips are hand-keyed stand-ins until J's Mixamo clips arrive; a Mixamo clip only has to supply the
 per-part rotations below (same parts, same joints), the bake stays the same.
+
+MODELS lists every horde mesh: the two Walker looks plus one per special type (GDD §9, PHASE1 1.2). Each type
+reads by silhouette first (pillar 5): the Runner is thin, bare-armed and sprints bent forward; the Armored is
+broad with a vest and a helmet (an extra part after SKELETON, so it can drop off); the Bloater is a swollen
+belly on short thick legs that waddles. Every type keeps the 11 SKELETON parts in the same order, so the
+dismemberment groups and spot fires work on all of them.
 Origin = feet on the ground (z = 0); faces -Y in Blender, which is +Z (the velocity) in Godot.
 """
 import math
@@ -30,6 +36,10 @@ import kit_common as K  # noqa: E402
 K.PALETTE.update({
     "zombie_skin": "#93ad7a", "zombie_shirt": "#515865", "zombie_pants": "#3e434b",
     "zombie_hair": "#2d3032", "zombie_wound": "#4a2f2c",
+    "runner_top": "#5e4644", "runner_shorts": "#383c44",
+    "armored_vest": "#2c3542", "armored_pants": "#3a4038", "armored_helmet": "#373f36",
+    "armored_gear": "#22262a", "armored_visor": "#1b1d20",
+    "bloater_skin": "#b2b46c", "bloater_boil": "#c39a55", "bloater_rag": "#5b5f63",
 })
 
 FPS = 24
@@ -48,14 +58,9 @@ SKELETON = {
     "thigh_r": ("pelvis", (-0.1, 0.0, -0.06)),
     "shin_r": ("thigh_r", (0.0, 0.0, -0.42)),
 }
+## Parts some types add after SKELETON (their index continues it): the Armored helmet sits on the head.
+EXTRA_PARTS = {"helmet": ("head", (0.0, 0.0, 0.0))}
 HIP_HEIGHT = 0.9
-
-VARIANTS = {
-    # name: (overall scale, shoulder width scale, hip width scale, head scale)
-    "zombie_male": (1.0, 1.0, 1.0, 1.0),
-    "zombie_female": (0.94, 0.84, 1.08, 0.94),
-}
-
 
 def part_boxes(shoulder, hip, head):
     """Boxes per part in the part's own frame: (centre, size, colour)."""
@@ -78,9 +83,70 @@ def part_boxes(shoulder, hip, head):
     }
 
 
-def joints(shoulder, hip):
+def runner_boxes(shoulder, hip, head):
+    """Thin and bare-armed: a torn tank top, shorts, bare shins."""
+    b = part_boxes(shoulder, hip, head)
+    b["torso"] = [((0, 0, 0.27), (0.34 * shoulder, 0.2, 0.5), "runner_top"),
+                  ((-0.07, -0.105, 0.36), (0.1, 0.02, 0.14), "zombie_wound")]
+    b["pelvis"] = [((0, 0, 0.0), (0.3 * hip, 0.18, 0.2), "runner_shorts")]
+    for s in "lr":
+        b[f"arm_{s}"] = [((0, 0, -0.14), (0.075, 0.08, 0.3), "zombie_skin")]
+        b[f"fore_{s}"] = [((0, 0, -0.16), (0.07, 0.075, 0.32), "zombie_skin")]
+        b[f"thigh_{s}"] = [((0, 0, -0.1), (0.13, 0.14, 0.22), "runner_shorts"),
+                           ((0, 0, -0.31), (0.11, 0.12, 0.22), "zombie_skin")]
+        b[f"shin_{s}"] = [((0, 0, -0.2), (0.095, 0.105, 0.42), "zombie_skin"),
+                          ((0, -0.05, -0.43), (0.11, 0.22, 0.06), "zombie_hair")]
+    return b
+
+
+def armored_boxes(shoulder, hip, head):
+    """Riot police / soldier: a bulky vest, shoulder pads, knee pads, boots and a helmet (own part)."""
+    b = part_boxes(shoulder, hip, head)
+    b["torso"] = [((0, 0, 0.27), (0.4 * shoulder, 0.24, 0.5), "armored_pants"),
+                  ((0, 0, 0.3), (0.46 * shoulder, 0.32, 0.4), "armored_vest"),
+                  ((0, -0.165, 0.22), (0.3 * shoulder, 0.03, 0.14), "armored_gear")]
+    b["pelvis"] = [((0, 0, 0.0), (0.36 * hip, 0.22, 0.2), "armored_pants"),
+                   ((0, 0, 0.07), (0.38 * hip, 0.24, 0.06), "armored_gear")]
+    b["head"] = [((0, -0.01, 0.15), (0.22 * head, 0.24 * head, 0.26 * head), "zombie_skin")]
+    b["helmet"] = [((0, 0.01, 0.27 * head), (0.28 * head, 0.3 * head, 0.13), "armored_helmet"),
+                   ((0, 0.0, 0.2 * head), (0.3 * head, 0.32 * head, 0.04), "armored_helmet"),
+                   ((0, -0.15 * head, 0.17 * head), (0.24 * head, 0.02, 0.06), "armored_visor")]
+    for s in "lr":
+        b[f"arm_{s}"] = [((0, 0, -0.14), (0.11, 0.12, 0.3), "armored_pants"),
+                         ((0, 0, -0.02), (0.16, 0.16, 0.12), "armored_vest")]
+        b[f"fore_{s}"] = [((0, 0, -0.1), (0.1, 0.1, 0.2), "armored_pants"),
+                          ((0, 0, -0.24), (0.085, 0.09, 0.1), "zombie_skin")]
+        b[f"thigh_{s}"] = [((0, 0, -0.21), (0.16, 0.17, 0.44), "armored_pants")]
+        b[f"shin_{s}"] = [((0, 0, -0.2), (0.13, 0.14, 0.42), "armored_pants"),
+                          ((0, -0.07, -0.04), (0.13, 0.04, 0.12), "armored_gear"),
+                          ((0, -0.04, -0.4), (0.14, 0.26, 0.12), "armored_gear")]
+    return b
+
+
+def bloater_boxes(shoulder, hip, head):
+    """Drowned and swollen: a huge belly with boils, rags, short thick limbs, a small head."""
+    b = part_boxes(shoulder, hip, head)
+    b["torso"] = [((0, 0, 0.26), (0.46 * shoulder, 0.4, 0.5), "bloater_skin"),
+                  ((0, -0.2, 0.2), (0.4 * shoulder, 0.16, 0.36), "bloater_skin"),
+                  ((0.12, -0.285, 0.26), (0.08, 0.03, 0.08), "bloater_boil"),
+                  ((-0.14, -0.27, 0.12), (0.07, 0.03, 0.06), "bloater_boil"),
+                  ((0.2 * shoulder, 0.05, 0.34), (0.06, 0.12, 0.08), "bloater_boil"),
+                  ((0, 0.04, 0.44), (0.42 * shoulder, 0.36, 0.1), "bloater_rag")]
+    b["pelvis"] = [((0, 0, 0.0), (0.4 * hip, 0.3, 0.22), "bloater_rag")]
+    b["head"] = [((0, -0.01, 0.13), (0.24 * head, 0.24 * head, 0.24 * head), "bloater_skin"),
+                 ((0.06, -0.135 * head, 0.17), (0.05, 0.02, 0.05), "bloater_boil")]
+    for s in "lr":
+        b[f"arm_{s}"] = [((0, 0, -0.13), (0.14, 0.15, 0.28), "bloater_skin")]
+        b[f"fore_{s}"] = [((0, 0, -0.13), (0.12, 0.13, 0.26), "bloater_skin")]
+        b[f"thigh_{s}"] = [((0, 0, -0.21), (0.2, 0.21, 0.44), "bloater_rag")]
+        b[f"shin_{s}"] = [((0, 0, -0.2), (0.17, 0.18, 0.42), "bloater_skin"),
+                          ((0, -0.04, -0.43), (0.17, 0.26, 0.07), "zombie_hair")]
+    return b
+
+
+def joints(shoulder, hip, extra=()):
     out = {}
-    for part, (parent, j) in SKELETON.items():
+    for part, (parent, j) in list(SKELETON.items()) + [(p, EXTRA_PARTS[p]) for p in extra]:
         if j is not None:
             x, y, z = j
             if part.startswith("arm"):
@@ -197,14 +263,79 @@ def death_blown(f, n):
     return pose, root
 
 
-# name, builder, frames, loop, walk stride (m per cycle, 0 = time-driven)
-CLIPS = [
-    ("walk", walk, 24, True, 1.3),
-    ("attack", attack, 18, False, 0.0),
-    ("flinch", flinch, 8, False, 0.0),
-    ("death", death, 28, False, 0.0),
-    ("death_blown", death_blown, 24, False, 0.0),
-]
+def sprint(f, n):
+    """Runner: a bent-over sprint, knees high, arms flung back and forth."""
+    t = f / n * math.tau
+    pose = {}
+    pose["thigh_l"] = (-0.95 * math.sin(t) - 0.25, 0.0, 0.0)
+    pose["shin_l"] = (1.4 * max(0.0, math.sin(t + 1.2)) + 0.2, 0.0, 0.0)
+    pose["thigh_r"] = (0.95 * math.sin(t) - 0.25, 0.0, 0.0)
+    pose["shin_r"] = (1.4 * max(0.0, math.sin(t + math.pi + 1.2)) + 0.2, 0.0, 0.0)
+    pose["pelvis"] = (0.15, 0.0, 0.12 * math.sin(t))
+    pose["torso"] = (0.55 + 0.06 * math.sin(2 * t), 0.0, -0.15 * math.sin(t))
+    pose["head"] = (-0.35, 0.0, 0.1 * math.sin(t))
+    pose["arm_l"] = (1.0 * math.sin(t) - 0.6, 0.0, -0.2)
+    pose["arm_r"] = (-1.0 * math.sin(t) - 0.6, 0.0, 0.2)
+    pose["fore_l"] = (-0.9, 0.0, 0.0)
+    pose["fore_r"] = (-0.9, 0.0, 0.0)
+    root = (0.0, 0.0, HIP_HEIGHT - 0.05 + 0.03 * abs(math.sin(t)))
+    return pose, root
+
+
+def march(f, n):
+    """Armored: a heavy, even stomp; arms lower and stiffer than the Walker's reach."""
+    t = f / n * math.tau
+    pose = {}
+    pose["thigh_l"] = (-0.42 * math.sin(t), 0.0, 0.0)
+    pose["shin_l"] = (0.55 * max(0.0, math.sin(t + 1.4)), 0.0, 0.0)
+    pose["thigh_r"] = (0.42 * math.sin(t), 0.0, 0.0)
+    pose["shin_r"] = (0.55 * max(0.0, math.sin(t + math.pi + 1.4)), 0.0, 0.0)
+    pose["pelvis"] = (0.0, 0.0, 0.06 * math.sin(t))
+    pose["torso"] = (0.12, 0.04 * math.sin(t), -0.08 * math.sin(t))
+    pose["head"] = (0.05, 0.1, 0.05 * math.sin(t))
+    _base_arms(pose, t, -0.95, 0.06)
+    root = (0.0, 0.0, HIP_HEIGHT - 0.03 + 0.04 * abs(math.cos(t)))
+    return pose, root
+
+
+def waddle(f, n):
+    """Bloater: short steps, the body rocking side to side, arms held out from the belly."""
+    t = f / n * math.tau
+    pose = {}
+    pose["thigh_l"] = (-0.3 * math.sin(t), 0.0, 0.12)
+    pose["shin_l"] = (0.35 * max(0.0, math.sin(t + 1.4)), 0.0, 0.0)
+    pose["thigh_r"] = (0.3 * math.sin(t), 0.0, -0.12)
+    pose["shin_r"] = (0.35 * max(0.0, math.sin(t + math.pi + 1.4)), 0.0, 0.0)
+    pose["pelvis"] = (0.0, 0.16 * math.sin(t), 0.1 * math.sin(t))
+    pose["torso"] = (-0.08, 0.1 * math.sin(t), -0.05 * math.sin(t))
+    pose["head"] = (0.25, 0.15 * math.sin(t), 0.0)
+    pose["arm_l"] = (-0.7 + 0.1 * math.sin(t), 0.0, -0.45)
+    pose["arm_r"] = (-0.7 - 0.1 * math.sin(t), 0.0, 0.45)
+    pose["fore_l"] = (-0.5, 0.0, 0.0)
+    pose["fore_r"] = (-0.5, 0.0, 0.0)
+    root = (0.0, 0.0, HIP_HEIGHT - 0.02 + 0.03 * abs(math.cos(t)))
+    return pose, root
+
+
+def clip_table(walk_fn=walk, frames=24, stride=1.3):
+    """name, builder, frames, loop, walk stride (m per cycle, 0 = time-driven). The horde's WALK plays "walk"."""
+    return [
+        ("walk", walk_fn, frames, True, stride),
+        ("attack", attack, 18, False, 0.0),
+        ("flinch", flinch, 8, False, 0.0),
+        ("death", death, 28, False, 0.0),
+        ("death_blown", death_blown, 24, False, 0.0),
+    ]
+
+
+# name: (overall scale, shoulder, hip, head, boxes, extra parts, clips)
+MODELS = {
+    "zombie_male": (1.0, 1.0, 1.0, 1.0, part_boxes, (), clip_table()),
+    "zombie_female": (0.94, 0.84, 1.08, 0.94, part_boxes, (), clip_table()),
+    "zombie_runner": (0.97, 0.88, 0.9, 0.95, runner_boxes, (), clip_table(sprint, 16, 2.6)),
+    "zombie_armored": (1.04, 1.12, 1.05, 1.0, armored_boxes, ("helmet",), clip_table(march, 24, 1.2)),
+    "zombie_bloater": (1.0, 1.3, 1.35, 0.85, bloater_boxes, (), clip_table(waddle, 28, 0.85)),
+}
 
 
 # ---- mesh + bake ----------------------------------------------------------------------------
@@ -241,7 +372,7 @@ def build_corners(boxes):
 
 
 def rest_object(name, quads, skel):
-    """Mesh in the walk pose at frame 0 (what the importer sees; the shader replaces it)."""
+    """Mesh in the Walker's walk pose at frame 0 (what the importer sees; the shader replaces it)."""
     pose, root = walk(0, 1)
     mats = world_matrices(pose, root, skel)
     verts, faces = [], []
@@ -254,13 +385,14 @@ def rest_object(name, quads, skel):
     me.update()
     col = me.color_attributes.new("Col", "FLOAT_COLOR", "CORNER")
     uv = me.uv_layers.new(name="VatIndex")
-    parts = list(SKELETON)
+    parts = list(skel)
     for poly, (part, _c, _n, col_name) in zip(me.polygons, quads):
         rgba = K.color(col_name)
         for li in poly.loop_indices:
             col.data[li].color = rgba
-            # x: corner index = VAT column; y: part index for dismemberment masks (+0.5: no rounding edge)
-            uv.data[li].uv = (li + 0.5, parts.index(part) + 0.5)
+            # x: corner index = VAT column; y: part index for dismemberment masks (+0.5: no rounding edge).
+            # glTF flips V (v -> 1 - v), so 0.5 - part here reaches Godot as part + 0.5.
+            uv.data[li].uv = (li + 0.5, 0.5 - parts.index(part))
     me.color_attributes.active_color = col
     me.materials.append(bpy.data.materials[K.SURFACE])
     obj = bpy.data.objects.new(name, me)
@@ -272,11 +404,11 @@ def to_godot(v):
     return (v.x, v.z, -v.y)
 
 
-def bake_vat(name, quads, skel, vat_dir):
+def bake_vat(name, quads, skel, clips, vat_dir):
     width = len(quads) * 4
     rows = []  # per frame: list of (pos, nrm) per corner
     clip_rows = []
-    for clip_name, fn, frames, loop, stride in CLIPS:
+    for clip_name, fn, frames, loop, stride in clips:
         clip_rows.append((clip_name, len(rows), frames, loop, stride))
         for f in range(frames):
             pose, root = fn(f, frames)
@@ -346,10 +478,13 @@ if __name__ == "__main__":
     root = os.path.join(os.path.dirname(__file__), "..", "..", "assets")
     models = a[0] if a else os.path.join(root, "models")
     vat = a[1] if len(a) > 1 else os.path.join(root, "vat")
-    for variant, (scale, shoulder, hip, head) in VARIANTS.items():
+    only = set(a[2:])  # optional model names: rebuild just these
+    for variant, (scale, shoulder, hip, head, boxes, extra, clips) in MODELS.items():
+        if only and variant not in only:
+            continue
         K.reset(17)
-        skel = joints(shoulder, hip)
-        quads = build_corners(part_boxes(shoulder, hip, head))
+        skel = joints(shoulder, hip, extra)
+        quads = build_corners(boxes(shoulder, hip, head))
         if scale != 1.0:
             skel = {p: (par, None if j is None else tuple(c * scale for c in j)) for p, (par, j) in skel.items()}
             quads = [(p, [c * scale for c in cs], n, col) for p, cs, n, col in quads]
@@ -357,4 +492,4 @@ if __name__ == "__main__":
         obj = rest_object(variant, quads, skel)
         K.bake_vertex_ao(obj, distance=0.35, samples=32)
         K.export_glb(obj, models, variant, texcoords=True)
-        bake_vat(variant, quads, skel, vat)
+        bake_vat(variant, quads, skel, clips, vat)

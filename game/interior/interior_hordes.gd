@@ -49,7 +49,7 @@ func setup(p_layout: InteriorLayout, p_config: InteriorHordeConfig, p_horde_conf
 		var r: HordeRenderer = HordeRenderer.new()
 		r.models = models
 		add_child(r)
-		r.setup(capacity)
+		r.setup(capacity, horde_config)
 		r.visible = false
 		_renderers.append(r)
 		_populate(s)

@@ -13,6 +13,7 @@ enum State { DORMANT, SUSPICIOUS, HUNTING }
 const MAX_EVENTS: int = 512  ## per queue; older events are dropped if nobody drains them
 const KNOCK_DECAY: float = 9.0  ## 1/s
 const SPOT_PARTS: Vector2i = Vector2i(1, 10)  ## spot fires land on torso .. shin_r (kit_zombie SKELETON order)
+const HELMET_PART: int = 11  ## kit_zombie EXTRA_PARTS: the Armored helmet, right after SKELETON
 
 
 ## A zombie that just died, as the corpse layer needs it.
@@ -26,6 +27,7 @@ class Death:
 	var burned: bool  ## died burning: charred corpse
 	var type: int  ## index into config.types
 	var scale: Vector3 = Vector3.ONE  ## the type's body scale (the corpse keeps it)
+	var hidden: int = 0  ## part bits already gone (a dropped helmet)
 
 
 var config: HordeConfig
@@ -59,11 +61,13 @@ var lift: PackedFloat32Array  ## m above the horde's floor (stair flights inside
 var armor: PackedByteArray  ## WeaponConfig.Armor per agent (0 = none); set per enemy type
 var stagger_left: PackedFloat32Array  ## s a hit agent stands still (weapon stagger)
 var knock: PackedVector2Array  ## m/s shove from hits (GDD §6 "thrown back along the bullet"), fades fast
+var helmet_hp: PackedInt32Array  ## damage the helmet still takes before it drops; 0 = none (or dropped)
 
 ## Event queues (drained by game/fx): hit point + direction per bullet/blast hit, deaths.
 var hit_points: PackedVector2Array = PackedVector2Array()
 var hit_dirs: PackedVector2Array = PackedVector2Array()
 var deaths: Array[Death] = []
+var helmet_drops: Array[Death] = []  ## helmets knocked off living zombies (position, look, push)
 
 ## Totals since start, read by the presentation layer and reported to SimCore later.
 var kills: int = 0
@@ -92,6 +96,7 @@ func _init(cfg: HordeConfig, nav: NavGrid, max_agents: int, rng_seed: int = 0) -
 	tint.resize(max_agents)
 	heading.resize(max_agents)
 	variant.resize(max_agents)
+	helmet_hp.resize(max_agents)
 	anim.resize(max_agents)
 	anim_time.resize(max_agents)
 	slow_left.resize(max_agents)
@@ -145,7 +150,9 @@ func spawn(p: Vector2, enemy_type: int = 0, start: State = State.HUNTING) -> boo
 	var base: Color = t.tints[_rng.randi() % t.tints.size()] if t != null and not t.tints.is_empty() else Color.WHITE
 	tint[a] = Color(base.r * shade, base.g * shade, base.b * shade)
 	heading[a] = Vector2(0, 1)
-	variant[a] = _rng.randi() % maxi(config.variants, 1)
+	var looks: Vector2i = config.look_range(type[a])
+	variant[a] = looks.x + _rng.randi() % looks.y
+	helmet_hp[a] = t.helmet_hp if t != null else 0
 	anim[a] = Anim.WALK
 	anim_time[a] = _rng.randf()  # walk phase offset, so the crowd doesn't step in sync
 	slow_left[a] = 0.0
@@ -175,6 +182,7 @@ func kill(a: int) -> void:
 		tint[a] = tint[last]
 		heading[a] = heading[last]
 		variant[a] = variant[last]
+		helmet_hp[a] = helmet_hp[last]
 		anim[a] = anim[last]
 		anim_time[a] = anim_time[last]
 		slow_left[a] = slow_left[last]
@@ -207,6 +215,7 @@ func transfer(a: int, other: Horde) -> bool:
 	other.tint[b] = tint[a]
 	other.heading[b] = heading[a]
 	other.variant[b] = variant[a]
+	other.helmet_hp[b] = helmet_hp[a]
 	other.anim[b] = anim[a]
 	other.anim_time[b] = anim_time[a]
 	other.slow_left[b] = slow_left[a]
@@ -315,6 +324,10 @@ func apply_hits(agents: PackedInt32Array, damages: PackedInt32Array, source: Vec
 		if hp[a] <= 0:
 			dead.append(a)
 			continue
+		if helmet_hp[a] > 0:
+			helmet_hp[a] = 0 if blast else helmet_hp[a] - damages[i]
+			if helmet_hp[a] <= 0:
+				_drop_helmet(a, dir)
 		var t: EnemyConfig = type_of(a)
 		var slow_k: float = t.hit_slow_mul if t != null else 1.0
 		if slow_k > 0.0:
@@ -342,6 +355,25 @@ func clear_events() -> void:
 	hit_points.clear()
 	hit_dirs.clear()
 	deaths.clear()
+	helmet_drops.clear()
+
+
+## Part bits of agent `a` that are no longer drawn (HordeRenderer, corpses).
+func hidden_parts(a: int) -> int:
+	var t: EnemyConfig = type_of(a)
+	return (1 << HELMET_PART) if t != null and t.helmet_hp > 0 and helmet_hp[a] <= 0 else 0
+
+
+## GDD §9: the Armored's helmet comes off (enough damage, or any blast) and its armor drops a step.
+func _drop_helmet(a: int, dir: Vector2) -> void:
+	helmet_hp[a] = 0
+	var t: EnemyConfig = type_of(a)
+	if t != null:
+		armor[a] = mini(armor[a], t.armor_after_helmet)
+	if helmet_drops.size() >= MAX_EVENTS:
+		return
+	var d: Death = _event(a, dir, false)
+	helmet_drops.append(d)
 
 
 func _push_dir(a: int, source: Vector2) -> Vector2:
@@ -361,6 +393,12 @@ func _queue_hit(p: Vector2, dir: Vector2) -> void:
 func _queue_death(a: int, push: Vector2, blast: bool, burned: bool = false) -> void:
 	if deaths.size() >= MAX_EVENTS:
 		return
+	var d: Death = _event(a, push, blast)
+	d.burned = burned
+	deaths.append(d)
+
+
+func _event(a: int, push: Vector2, blast: bool) -> Death:
 	var d: Death = Death.new()
 	d.position = positions[a]
 	d.heading = heading[a]
@@ -368,12 +406,12 @@ func _queue_death(a: int, push: Vector2, blast: bool, burned: bool = false) -> v
 	d.tint = tint[a]
 	d.push = push
 	d.blast = blast
-	d.burned = burned
 	d.type = type[a]
+	d.hidden = hidden_parts(a)
 	var t: EnemyConfig = type_of(a)
 	if t != null:
 		d.scale = t.scale
-	deaths.append(d)
+	return d
 
 
 func recompute_flow(targets: Array[Vector2i]) -> void:

@@ -24,7 +24,7 @@ extends Resource
 @export var walk_stride: float = 1.3  ## m covered per walk cycle (two steps); matches the VAT walk clip
 @export var attack_anim_sec: float = 0.75
 @export var flinch_anim_sec: float = 0.33
-@export var variants: int = 2  ## looks drawn by HordeRenderer (male / female)
+@export var variants: int = 2  ## shared looks drawn by HordeRenderer (male / female), for types without models
 
 @export_group("Types (GDD §9)")
 @export var types: Array[EnemyConfig] = []  ## empty: one plain type from the numbers above
@@ -46,3 +46,26 @@ extends Resource
 @export var default_count_index: int = 2
 @export var spawn_per_second: float = 120.0
 @export var spawn_min_distance: float = 8.0  ## m from the player
+
+
+## Look indices (Horde.variant) of type `t` as (first, count). Shared looks come first, [0, variants);
+## each type with its own models adds them after, in `types` order.
+func look_range(t: int) -> Vector2i:
+	var first: int = variants
+	for i: int in types.size():
+		var n: int = types[i].models.size()
+		if i == t and n > 0:
+			return Vector2i(first, n)
+		first += n
+	return Vector2i(0, maxi(variants, 1))
+
+
+## Every look in Horde.variant order: the first `variants` of `shared`, then each type's models.
+## Idempotent, so a list it already built can be passed again (interior hordes reuse the roof's).
+func looks(shared: Array[VatModel]) -> Array[VatModel]:
+	if shared.is_empty():
+		return shared  # placeholder boxes: no VAT, every type draws the same mesh
+	var out: Array[VatModel] = shared.slice(0, variants)
+	for t: EnemyConfig in types:
+		out.append_array(t.models)
+	return out
