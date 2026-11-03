@@ -14,7 +14,7 @@ const SURFACE_MATERIAL: Material = preload("res://game/level/style15_surface.tre
 const SKELETON_PATH: String = "survivor_rig/Skeleton3D"
 const UPPER_BONES: PackedStringArray = ["torso", "head", "arm_l", "fore_l", "hand_l", "arm_r", "fore_r", "hand_r"]
 const LOWER_CLIPS: PackedStringArray = ["idle", "walk", "run", "crouch_idle", "crouch_walk", "prone_idle", "crawl",
-	"roll", "downed"]  ## states; "walk" and "crouch_walk" are WALK_SETS
+	"roll", "downed", "downed_aim"]  ## states; "walk" and "crouch_walk" are WALK_SETS
 const UPPER_CLIPS: PackedStringArray = ["aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_pistol",
 	"reload_rifle", "reload_shell"]
 ## A walking state's backward and forward clips (blend positions -1 and +1).
@@ -27,8 +27,8 @@ const BACK_FROM: float = deg_to_rad(115.0)  ## travel this far off the aim switc
 const FORWARD_FROM: float = deg_to_rad(85.0)  ## ...and back under this (no flicker in between)
 const TWIST_RATE: float = 10.0  ## 1/s the hips follow the travel
 const LOOP_CLIPS: PackedStringArray = ["idle", "walk_f", "walk_b", "run", "crouch_idle", "crouch_f", "crouch_b",
-	"prone_idle", "crawl", "downed", "aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_shell"]
-const FULL_BODY: PackedStringArray = ["roll", "prone_idle", "crawl", "downed"]  ## the arms follow the legs' clip
+	"prone_idle", "crawl", "downed", "downed_aim", "aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_shell"]
+const FULL_BODY: PackedStringArray = ["roll", "prone_idle", "crawl", "downed", "downed_aim"]  ## the arms follow the legs' clip
 ## m/s each moving clip's stride matches at 1× (kit_survivor.py); faster or slower movement scales the clip
 const CLIP_SPEED: Dictionary[StringName, float] = {&"walk": 4.5, &"run": 6.0, &"crouch_walk": 1.7, &"crawl": 0.85}
 const MOVING_SPEED: float = 0.25  ## m/s: slower than this stands still
@@ -36,7 +36,7 @@ const XFADE_SEC: float = 0.15
 const GRIP_BLEND: float = 12.0  ## 1/s: how fast the gun turns to a new clip's hold
 const TURN_RATE: float = 12.0  ## 1/s: the body turns toward a sprint or roll this fast, and back to the aim
 const IK_FADE: float = 6.0  ## 1/s: the left hand leaves / returns to the gun this fast
-const LEFT_HAND_BUSY: PackedStringArray = ["roll", "downed"]
+const LEFT_HAND_BUSY: PackedStringArray = ["roll", "downed", "downed_aim"]
 ## Where the gun points in each clip that sets its own hold, in the body's space (+Z ahead, +Y up, +X left).
 ## Other clips keep the aim hold and the gun simply follows the hand (reloads).
 const HOLD_DIR: Dictionary[StringName, Vector3] = {
@@ -44,6 +44,7 @@ const HOLD_DIR: Dictionary[StringName, Vector3] = {
 	&"carry_high": Vector3(0.0, 1.0, 0.15),  # high ready: muzzle to the sky (J 2026-11-03)
 	&"carry_port": Vector3(0.6, 0.7, 0.35),  # port arms: across the chest, muzzle over the left shoulder
 	&"prone_idle": Vector3(0.0, 0.0, 1.0),  # prone: level along the ground (crawl uses it too)
+	&"downed_aim": Vector3(0.0, 0.0, 1.0),  # down, pistol out over the feet
 }
 const PRONE_CLIPS: PackedStringArray = ["prone_idle", "crawl"]
 ## The left hand through a reload (J: make reloads read clearly): [phase, point] keys, eased between. Points are
@@ -76,6 +77,7 @@ var rolling: bool = false
 
 var gun_view: GunView
 var skeleton: Skeleton3D
+var look: int = 0  ## which of survivor.glb's outfits shows (set_look); one per fighter, so no two alike
 var lower: StringName = &""
 var upper: StringName = &""
 var hand_item: Node3D  ## the mag or shell in the left hand during a reload (null when nothing)
@@ -105,6 +107,7 @@ func _ready() -> void:
 	add_child(_model)
 	Style15Level.apply_materials(_model, SURFACE_MATERIAL)
 	skeleton = _model.get_node(SKELETON_PATH) as Skeleton3D
+	set_look(look)
 	_anims = _model.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
 	for clip: String in LOOP_CLIPS:
 		if _anims.has_animation(clip):
@@ -135,6 +138,28 @@ func _ready() -> void:
 	animate(&"idle", 1.0, &"aim_rifle", 1.0, 1.0)
 
 
+## Shows outfit `i` (survivor_<i> in the glb) and hides the others; out-of-range wraps around.
+func set_look(i: int) -> void:
+	look = i
+	if skeleton == null:
+		return
+	var bodies: Array[MeshInstance3D] = []
+	for n: Node in skeleton.get_children():
+		if n is MeshInstance3D and String(n.name).begins_with("survivor_"):
+			bodies.append(n as MeshInstance3D)
+	bodies.sort_custom(func(a: MeshInstance3D, b: MeshInstance3D) -> bool: return String(a.name) < String(b.name))
+	for k: int in bodies.size():
+		bodies[k].visible = k == posmod(i, bodies.size())
+
+
+func look_count() -> int:
+	var n: int = 0
+	for c: Node in skeleton.get_children():
+		if c is MeshInstance3D and String(c.name).begins_with("survivor_"):
+			n += 1
+	return n
+
+
 ## The gun in hand; pistols and SMGs are held like a pistol, the rest like a rifle.
 func set_gun(gun: Gun) -> void:
 	gun_view.show_gun(gun)
@@ -161,7 +186,7 @@ func drive(velocity: Vector2, facing: Vector2, gun: Gun, is_downed: bool) -> voi
 	var moving: bool = speed > MOVING_SPEED
 	var low: StringName = &"idle"
 	if is_downed:
-		low = &"downed"
+		low = &"downed_aim" if gun != null and _aim_clip(gun) == &"aim_pistol" else &"downed"
 	elif rolling:
 		low = &"roll"
 	elif stance == Stance.PRONE:

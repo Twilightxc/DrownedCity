@@ -109,11 +109,17 @@ of it taken from those milestones.
       (`SpikePlayer.footstep` / `noise`), `Horde.perceive(seen_mul)`, `Gun.stance_spread_mul`,
       `FighterHealth.dodging`. Pad: L3 sprint, B roll, D-pad down / up crouch / prone; fire mode and grenade type
       moved to D-pad left / right; pad zoom and horde ± dropped (keyboard keeps them).
-- [ ] **A4 HUD:** HP and stamina bars; a reload ring above the character's head that fills over the reload time
+- [x] **A4 HUD:** HP and stamina bars; a reload ring above the character's head that fills over the reload time
       (shotgun: one step per shell).
-- [ ] **A5 Two AI teammates:** follow the player, shoot the nearest hunting zombie in range and line of sight with
+      → `ui/fighter_hud.gd`: bars bottom left (stance on the stamina bar, it flashes below sprint_min_stamina; downed:
+      the bar counts down the time to be helped up); the ring sits 2.25 m over each fighter in `fighters` (teammates
+      join in A5), orange while clearing a jam.
+- [x] **A5 Two AI teammates:** follow the player, shoot the nearest hunting zombie in range and line of sight with
       the same `Gun` / ballistics, reload, carry their own ammo, make noise, can be downed and revived by the
       player (hold F). Orders from the Tab wheel: follow / hold here. No friendly fire for now.
+      → `Teammate` (a SpikePlayer driven by `TeammateBrain` instead of input) + `data/combat/teammate.tres`;
+      Marco (AR) and Jess (shotgun), each with a pistol; `Horde.extra_targets`: hunters chase and hit the nearest;
+      orders wheel: Follow me / Hold here / Hold fire; downed: F next to them for 2 s; `?mates=N`.
 
 ### 1.G Gate — "combat is fun"
 - **Pass (J):** after 1.5+, J plays the arena at least 3 times on the Arc in Chrome and says it's fun; ≥ 50 FPS at the

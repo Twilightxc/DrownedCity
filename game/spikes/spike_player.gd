@@ -29,6 +29,7 @@ const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 @export var controls: TwinStickConfig
 @export var gun_hold: Vector3 = Vector3(-0.12, 0.95, 0.34)  ## the right hand in the aim marker's space (+Z = aim)
 @export var movement: MovementConfig = preload("res://data/combat/movement.tres")  ## stances, sprint, roll (1.5+ A3)
+@export var body_look: int = 0  ## survivor.glb outfit: each fighter its own (J: no two alike)
 @export var survivor_body: bool = true  ## the skinned survivor (1.5+ A2) instead of the capsule; the gun in its hand
 
 var grid: NavGrid
@@ -70,6 +71,7 @@ var _throw_ring: MeshInstance3D
 var gun_view: GunView
 var body: SurvivorView  ## null with survivor_body off
 var motion: FighterMotion  ## stance, sprint, roll, stamina
+var _gun_before_down: Gun  ## the gun in hand when it went down (back in hand once revived)
 var _step_left: float = 0.0
 
 
@@ -102,12 +104,33 @@ func _arm() -> void:
 	if loadout != null:
 		worn = loadout.wearing
 	health = FighterHealth.new(fighter, worn)
+	health.state_changed.connect(_on_health_state)
+
+
+## Pistols and SMGs: what a downed fighter can still shoot one-handed.
+static func is_sidearm(g: Gun) -> bool:
+	return g != null and (g.config.weapon_class == "pistol" or g.config.weapon_class == "smg")
+
+
+## Down: the sidearm comes out (the long gun is remembered); back up: the long gun again.
+func _on_health_state(s: FighterHealth.State) -> void:
+	if s == FighterHealth.State.DOWNED:
+		_gun_before_down = gun
+		for k: int in guns.size():
+			if is_sidearm(guns[k]):
+				select_gun(k)
+				break
+	elif s == FighterHealth.State.ALIVE and _gun_before_down != null:
+		select_gun(guns.find(_gun_before_down))
+		_gun_before_down = null
 
 
 ## Takes gun `i` (0-based) in hand; a reload in progress is dropped.
 func select_gun(i: int) -> void:
 	if i < 0 or i >= guns.size() or guns[i] == gun:
 		return
+	if health != null and health.state == FighterHealth.State.DOWNED and not is_sidearm(guns[i]):
+		return  # down: one hand, the pistol only
 	gun.reload_left = 0.0
 	gun = guns[i]
 	_show_gun()
@@ -152,6 +175,7 @@ func _ready() -> void:
 		controls = TwinStickConfig.new()
 	if survivor_body:
 		body = SurvivorView.new()
+		body.look = body_look
 		_aim_marker.add_child(body)
 		gun_view = body.gun_view
 		var capsule: Node3D = get_node_or_null("Body") as Node3D
@@ -301,8 +325,7 @@ func _process(delta: float) -> void:
 	if grid == null:
 		return
 	health.step(delta)
-	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
-	motion.step(delta, Input.is_action_pressed("sprint"), input != Vector2.ZERO, Input.is_action_pressed("fire"))
+	motion.step(delta, _wants_sprint(), _move_input() != Vector2.ZERO, _wants_fire())
 	health.dodging = motion.has_iframes()
 	gun.stance_spread_mul = motion.spread_mul()
 	if body != null:
@@ -310,12 +333,22 @@ func _process(delta: float) -> void:
 		body.sprinting = motion.sprinting
 		body.rolling = motion.is_rolling()
 		body.drive(velocity, aim_dir, gun, not health.is_alive())
+	if health.state == FighterHealth.State.DOWNED:
+		# Down but fighting (J 2026-11-04): no moving or throwing, but aim and fire the pistol.
+		velocity = Vector2.ZERO
+		_throw_ring.visible = false
+		if not aim_locked:
+			_update_aim()
+		if is_sidearm(gun):
+			_update_weapon(delta)
+		_draw_aim_line()
+		return
 	if not health.is_alive():
 		velocity = Vector2.ZERO
 		auto_trigger = false
 		_throw_ring.visible = false
 		_aim_line.clear_surfaces()
-		return  # downed or dead: no moving, shooting or throwing
+		return  # dead
 	_move(delta)
 	if not aim_locked:
 		_update_aim()
@@ -325,10 +358,25 @@ func _process(delta: float) -> void:
 	_draw_aim_line()
 
 
-func _move(delta: float) -> void:
+# What the fighter wants, from the keyboard / pad here; an AI teammate overrides these (Teammate, 1.5+ A5).
+
+## Movement on the ground plane, length 0..1 (a stick's tilt).
+func _move_input() -> Vector2:
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
+	return AimMath.screen_to_world(input, camera.global_basis) if input != Vector2.ZERO else Vector2.ZERO
+
+
+func _wants_sprint() -> bool:
+	return Input.is_action_pressed("sprint")
+
+
+func _wants_fire() -> bool:
+	return Input.is_action_pressed("fire") or auto_trigger
+
+
+func _move(delta: float) -> void:
 	var speed: float = controls.move_speed * health.speed_mul() * motion.speed_mul()
-	var desired: Vector2 = AimMath.screen_to_world(input, camera.global_basis) * speed
+	var desired: Vector2 = _move_input() * speed
 	var rate: float = controls.move_accel if desired != Vector2.ZERO else controls.move_decel
 	velocity = motion.roll_velocity() if motion.is_rolling() else velocity.move_toward(desired, rate * delta)
 	if velocity == Vector2.ZERO:
@@ -390,7 +438,7 @@ func _mouse_on_plane(plane_y: float) -> Variant:
 
 
 func _update_weapon(delta: float) -> void:
-	var trigger: bool = not aim_locked and (Input.is_action_pressed("fire") or auto_trigger) and motion.can_shoot()
+	var trigger: bool = not aim_locked and _wants_fire() and motion.can_shoot()
 	if using_pad and controls.pad_auto_fire and not aim_locked and _aim_stick.length() >= controls.auto_fire_threshold:
 		trigger = true
 	for i: int in gun.step(delta, trigger, _rng):

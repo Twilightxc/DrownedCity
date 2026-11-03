@@ -8,6 +8,10 @@ extends "res://game/spikes/twin_stick_spike.gd"
 const POCKET_CROWD: int = 12  ## zombies waiting in one entrance pocket at most; more spawn later
 
 @export var arena: ArenaConfig = preload("res://data/combat/arena_roof.tres")
+## AI teammates (1.5+ A5): one per loadout, named in order, on the leader's left then right.
+@export var teammate_loadouts: Array[LoadoutConfig] = [preload("res://data/weapons/teammate_ar_loadout.tres"),
+	preload("res://data/weapons/teammate_shotgun_loadout.tres")]
+@export var teammate_names: PackedStringArray = PackedStringArray(["Marco", "Jess"])
 
 var _director: WaveDirector
 var _barricades: Barricades
@@ -48,13 +52,38 @@ func _ready() -> void:
 		_grenades.exploded.connect(func(_at: Vector3, killed: int, _cfg: ThrowableConfig) -> void:
 			_grenade_kills += killed)
 	_build_arena_ui()
+	_spawn_teammates()
+
+
+## `?mates=N` (desktop `--mates=N`) fields fewer teammates, 0 for none: compare the fight with and without them.
+func _spawn_teammates() -> void:
+	var count: int = clampi(SpikeLauncher.arg("mates", str(teammate_loadouts.size())).to_int(), 0, teammate_loadouts.size())
+	for i: int in count:
+		var m: Teammate = Teammate.new()
+		m.loadout = teammate_loadouts[i]
+		m.body_look = i + 1  # the player wears look 0
+		m.controls = _player.controls
+		m.display_name = teammate_names[i] if i < teammate_names.size() else "Teammate %d" % (i + 1)
+		var marker: Node3D = Node3D.new()
+		marker.name = "AimMarker"
+		m.add_child(marker)
+		add_child(m)
+		m.setup(_grid, _horde, _camera, GROUND_Y)
+		m.barricades = _barricades
+		var side: float = 1.0 if i % 2 == 0 else -1.0
+		m.brain.side = side
+		var spot: Vector2 = m.brain.follow_spot(_player.ground_position(), _player.aim_dir)
+		if not _grid.is_walkable_world(spot):
+			spot = _player.ground_position()
+		m.position = Vector3(spot.x, GROUND_Y, spot.y)
+		add_teammate(m)
 
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	if _barricades.revision != _bar_rev:
 		_bar_rev = _barricades.revision
-		_flow_cell = Vector2i(-1, -1)  # a barricade fell: recompute the flow field now
+		_flow_cells.clear()  # a barricade fell: recompute the flow field now
 		_flow_timer = 0.0
 	_update_barricade_meshes()
 	if _ended:
@@ -173,6 +202,9 @@ func _on_phase_changed() -> void:
 	match _director.phase:
 		WaveDirector.Phase.CALM:
 			_refill_crates()
+			for m: Teammate in _mates:
+				if m.health.is_alive():
+					m.restock()  # they top up at the crates between waves
 			_show_banner(tr("Calm · crates refilled"))
 		WaveDirector.Phase.WAVE:
 			_show_banner(tr("WAVE %d") % (_director.wave + 1))
@@ -251,8 +283,30 @@ func _end_run() -> void:
 		run["rounds_" + name] = g.shots_fired
 	lines.append(tr("Grenades: %d kills · fire and other: %d") % [_grenade_kills, maxi(kills - by_gun - _grenade_kills, 0)])
 	lines.append(tr("Hits taken %d · bites %d") % [_hits_taken, _player.health.bites])
+	var alive: int = 0
+	for m: Teammate in _mates:
+		alive += 1 if m.health.state != FighterHealth.State.DEAD else 0
+	lines.append(tr("Teammates alive: %d / %d") % [alive, _mates.size()])
+	run["teammates_alive"] = alive
 	lines.append(tr("R / X: play again"))
 	_summary.text = "\n".join(lines)
 	_summary_box.visible = true
 	RunLog.append(run)
 	print("arena run: ", JSON.stringify(run))
+
+
+## Orders wheel (1.5+ A5): Follow me, Hold here, Hold fire (toggles); the rest come with expeditions.
+func _on_order(i: int) -> void:
+	match ORDERS[i]:
+		"Follow me":
+			for m: Teammate in _mates:
+				m.brain.order = TeammateBrain.Order.FOLLOW
+		"Hold here":
+			for m: Teammate in _mates:
+				m.brain.order = TeammateBrain.Order.HOLD
+				m.brain.hold_point = m.ground_position()
+		"Hold fire":
+			var on: bool = _mates.is_empty() or not _mates[0].brain.hold_fire
+			for m: Teammate in _mates:
+				m.brain.hold_fire = on
+			_toast.text = tr("Hold fire: on") if on else tr("Hold fire: off (weapons free)")

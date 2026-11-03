@@ -24,6 +24,7 @@ var _rig: Node3D
 var _listener: AudioListener3D
 var _fire: AudioStreamPlayer3D
 var _gun_counts: Dictionary[Gun, Vector2i] = {}  ## reload_sounds, dry_fires last seen
+var _others: Array[SpikePlayer] = []  ## other fighters heard (add_fighter)
 var _groan_left: float = 1.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -57,11 +58,22 @@ func bind(bank: SfxBank, player: SpikePlayer, rig: Node3D) -> void:
 		sfx.play(&"footstep", _at(at), 1.0, -1.0, 0.0, linear_to_db(clampf(noise_m / STEP_NOISE_REF_M, 0.15, 2.0))))
 
 
-func _on_shot(g: Gun) -> void:
-	var at: Vector3 = _player.muzzle_position()
+func _on_shot(g: Gun, f: SpikePlayer = null) -> void:
+	var who: SpikePlayer = f if f != null else _player
+	var at: Vector3 = who.muzzle_position()
 	sfx.play(g.shot_sfx, at, 1.0, g.noise_m)
 	if g.config.cycle_sfx != &"":
 		sfx.play(g.config.cycle_sfx, at, 1.0, -1.0, g.config.cycle_delay_sec)
+
+
+## Another fighter (an AI teammate): its shots, reloads and steps are heard where it is.
+func add_fighter(f: SpikePlayer) -> void:
+	f.shot.connect(_on_shot.bind(f))
+	f.footstep.connect(func(at: Vector2, noise_m: float) -> void:
+		sfx.play(&"footstep", _at(at), 1.0, -1.0, 0.0, linear_to_db(clampf(noise_m / STEP_NOISE_REF_M, 0.15, 2.0)) - 4.0))
+	f.health.damaged.connect(func(_amount: int, _kind: StringName) -> void:
+		sfx.play(&"player_hit", _at(f.ground_position()), 0.9))
+	_others.append(f)
 
 
 ## Once a frame, after the horde moved. `burning` = ground fire cells (may be null).
@@ -71,7 +83,9 @@ func update(delta: float, horde: Horde, burning: GroundFire) -> void:
 	var me: Vector2 = _player.ground_position()
 	_listener.global_position = _at(me)
 	_listener.global_rotation = Vector3(0.0, _rig.global_rotation.y, 0.0)
-	_update_gun()
+	_update_gun(_player)
+	for f: SpikePlayer in _others:
+		_update_gun(f)
 	if horde != null:
 		_update_groans(delta, horde, me)
 	_update_fire(horde, burning, me)
@@ -94,10 +108,10 @@ func on_blast(at: Vector3, cfg: ThrowableConfig) -> void:
 	sfx.play(cfg.blast_sfx, at)
 
 
-func _update_gun() -> void:
-	var g: Gun = _player.gun
+func _update_gun(f: SpikePlayer) -> void:
+	var g: Gun = f.gun
 	var seen: Vector2i = _gun_counts.get(g, Vector2i(g.reload_sounds, g.dry_fires))
-	var at: Vector3 = _player.muzzle_position()
+	var at: Vector3 = f.muzzle_position()
 	if g.reload_sounds > seen.x:
 		sfx.play(g.config.reload_sfx, at)
 	if g.dry_fires > seen.y:

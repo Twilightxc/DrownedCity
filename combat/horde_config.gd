@@ -24,7 +24,7 @@ extends Resource
 @export var walk_stride: float = 1.3  ## m covered per walk cycle (two steps); matches the VAT walk clip
 @export var attack_anim_sec: float = 0.75
 @export var flinch_anim_sec: float = 0.33
-@export var variants: int = 2  ## shared looks drawn by HordeRenderer (male / female), for types without models
+@export var variants: int = 2  ## shared looks drawn by HordeRenderer (Walker: male, female, office, worker), for types without models
 
 @export_group("Types (GDD §9)")
 @export var types: Array[EnemyConfig] = []  ## empty: one plain type from the numbers above

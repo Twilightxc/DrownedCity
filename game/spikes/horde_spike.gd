@@ -41,7 +41,9 @@ var _roof_paused: bool = false  ## the roof horde waits (not simulated, not draw
 var _target_count: int = 0
 var _count_index: int = 0
 var _flow_timer: float = 0.0
-var _flow_cell: Vector2i = Vector2i(-1, -1)
+var _flow_cells: Array[Vector2i] = []  ## the flow field's goals last computed (player + teammates)
+var _mates: Array[Teammate] = []  ## AI teammates (1.5+ A5): hunted like the player, drawn, heard, hurt
+var _targeted: Array[Teammate] = []  ## the teammates in the horde's extra_targets this frame, same order
 var _spawn_budget: float = 0.0
 var _perimeter: Array[Vector2i] = []
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -72,6 +74,7 @@ var _chain: KillChain
 var _crosshair: CrosshairHud
 var _kills_seen: int = 0
 var _audio: SpikeAudio
+var _hud: FighterHud  ## HP / stamina bars, reload rings (1.5+ A4)
 var _fire_rev: int = -1
 var _water_y: float = WATER_Y
 ## `-- --auto-shoot` (web: `&autoshoot=1`): the player fires at the nearest zombie and throws a grenade every few seconds,
@@ -170,6 +173,9 @@ func _ready() -> void:
 	_feedback.time_control = _time
 	_feedback.bind(_player.health)
 	_build_feel()
+	_hud = FighterHud.new()
+	add_child(_hud)
+	_hud.bind(_player)
 	if sfx_bank != null:
 		_audio = SpikeAudio.new()
 		add_child(_audio)
@@ -211,13 +217,23 @@ func _process(delta: float) -> void:
 
 func _step_roof_horde(delta: float, target: Vector2) -> void:
 	_flow_timer -= delta
-	var cell: Vector2i = _grid.world_to_cell(target)
+	var cells: Array[Vector2i] = [_grid.world_to_cell(target)]
+	_targeted.clear()
+	var extras: PackedVector2Array = PackedVector2Array()
+	for m: Teammate in _mates:
+		if m.health.state != FighterHealth.State.DEAD:  # a downed one still draws them
+			_targeted.append(m)
+			extras.append(m.ground_position())
+			var mc: Vector2i = _grid.world_to_cell(m.ground_position())
+			if not cells.has(mc):
+				cells.append(mc)
+	_horde.extra_targets = extras
 	var fire_changed: bool = _ground_fire != null and _ground_fire.revision != _fire_rev
-	if (cell != _flow_cell or fire_changed) and _flow_timer <= 0.0:
+	if (cells != _flow_cells or fire_changed) and _flow_timer <= 0.0:
 		var t0: int = Time.get_ticks_usec()
-		_horde.recompute_flow([cell] as Array[Vector2i])
+		_horde.recompute_flow(cells)
 		_flow_ms = (Time.get_ticks_usec() - t0) / 1000.0
-		_flow_cell = cell
+		_flow_cells = cells
 		if _ground_fire != null:
 			_fire_rev = _ground_fire.revision
 		_flow_timer = horde_config.flow_recompute_sec
@@ -276,6 +292,10 @@ func _on_blast(at: Vector3, _killed: int, cfg: ThrowableConfig) -> void:
 	var d: float = Vector2(at.x, at.z).distance_to(_player.ground_position())
 	if d < cfg.blast_radius:
 		_player.health.take_blast(roundi(cfg.damage * (1.0 - d / cfg.blast_radius)), true)
+	for m: Teammate in _mates:
+		var dm: float = Vector2(at.x, at.z).distance_to(m.ground_position())
+		if dm < cfg.blast_radius:
+			m.health.take_blast(roundi(cfg.damage * (1.0 - dm / cfg.blast_radius)), true)
 	# An incendiary blast sets any gas cloud it reaches alight.
 	if cfg.fire_radius > 0.0:
 		for i: int in range(_gas.count() - 1, -1, -1):
@@ -335,6 +355,10 @@ func _hurt_player(delta: float) -> void:
 		health.take_hit(dmg, _rng)
 	_fx_horde.target_hits.clear()
 	_horde.target_hits.clear()
+	for i: int in mini(_targeted.size(), _horde.extra_hits.size()):
+		for dmg: int in _horde.extra_hits[i]:
+			_targeted[i].health.take_hit(dmg, _rng)
+		_horde.extra_hits[i].clear()
 	var p: Vector2 = _player.ground_position()
 	health.take_dot(health.config.gas_dps * _gas.strength_at(p), delta, &"gas")
 	if _ground_fire != null and _fx_horde == _horde:
@@ -480,22 +504,12 @@ func _publish_stats(delta: float) -> void:
 
 func _update_status() -> void:
 	var g: Gun = _player.gun
-	var hp_text: String = "HP %d" % _player.health.hp
-	var m: FighterMotion = _player.motion
-	hp_text += "  ·  " + tr("Stamina %d") % roundi(m.stamina)
-	if m.is_rolling():
-		hp_text += "  ·  " + tr("ROLL")
-	elif m.sprinting:
-		hp_text += "  ·  " + tr("SPRINT")
-	elif m.stance != FighterMotion.Stance.STAND:
-		hp_text += "  ·  " + tr("CROUCH" if m.stance == FighterMotion.Stance.CROUCH else "PRONE")
+	# HP, stamina, stance and the reload are on FighterHud's bars and ring (1.5+ A4); this line is the gun.
 	var mode: String = ["semi", "auto", "burst"][g.mode()]
-	var text: String = "%s   ·   %s [%s]  %d / %d  · %d" % [hp_text, tr(g.config.display_name), tr(mode), g.ammo,
-		g.mag_size, _player.pouch.count(g.config.caliber)]
+	var text: String = "%s [%s]  %d / %d  · %d" % [tr(g.config.display_name), tr(mode), g.ammo, g.mag_size,
+		_player.pouch.count(g.config.caliber)]
 	if g.jammed and not g.is_reloading():
 		text += "  · " + tr("JAMMED: reload")
-	elif g.is_reloading():
-		text += "  · " + tr("Reloading %d%%") % int(g.reload_progress() * 100.0)
 	if g.durability < g.config.jam_below:
 		text += "  · %d%%" % int(g.durability)
 	if _player.throwable != null:
@@ -579,3 +593,21 @@ func _build_ui() -> void:
 	_help_label = Label.new()
 	_help_label.add_theme_font_size_override("font_size", 12)
 	box.add_child(_help_label)
+
+
+## A teammate joins the fight: the horde hunts it too, its shots flash and are heard, the HUD rings it.
+func add_teammate(m: Teammate) -> void:
+	_mates.append(m)
+	m.leader = _player
+	m.fired.connect(_tracers.add)
+	m.shot.connect(func(g: Gun) -> void:
+		var muzzle: Vector3 = m.muzzle_position()
+		var shotgun: bool = g.config.pellets > 1
+		if feel_config.muzzle_flash:
+			_muzzle.flash(muzzle, 1.4 if shotgun else 0.8 if g.noise_m < 20.0 else 1.0, feel_config.muzzle_light_energy)
+		if feel_config.casings:
+			_casings.eject(muzzle, m.aim_dir, shotgun, m.ground_y))
+	if _audio != null:
+		_audio.add_fighter(m)
+	if _hud != null:
+		_hud.fighters.append(m)

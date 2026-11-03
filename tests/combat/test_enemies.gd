@@ -125,23 +125,40 @@ func test_deaths_carry_type_and_body_scale() -> void:
 	assert_eq(h.deaths[0].scale, BLOATER.scale)
 
 
-func test_each_special_type_spawns_with_its_own_look() -> void:
-	assert_eq(_config.look_range(0), Vector2i(0, 2), "walker: the shared male / female looks")
-	assert_eq(_config.look_range(1), Vector2i(2, 1), "runner")
-	assert_eq(_config.look_range(2), Vector2i(3, 1), "armored")
-	assert_eq(_config.look_range(3), Vector2i(4, 1), "bloater")
+func test_each_special_type_spawns_with_its_own_looks() -> void:
+	assert_eq(_config.look_range(0), Vector2i(0, 2), "walker: the shared looks")
+	assert_eq(_config.look_range(1), Vector2i(2, 2), "runner: two looks")
+	assert_eq(_config.look_range(2), Vector2i(4, 2), "armored")
+	assert_eq(_config.look_range(3), Vector2i(6, 2), "bloater")
 	var shared: Array[VatModel] = [MALE, FEMALE]
 	var looks: Array[VatModel] = _config.looks(shared)
-	assert_eq(looks, [MALE, FEMALE, RUNNER.models[0], ARMORED.models[0], BLOATER.models[0]])
+	assert_eq(looks, [MALE, FEMALE, RUNNER.models[0], RUNNER.models[1], ARMORED.models[0], ARMORED.models[1],
+		BLOATER.models[0], BLOATER.models[1]])
 	assert_eq(_config.looks(looks), looks, "idempotent: interior hordes pass the roof's list again")
-	var h: Horde = _horde(16)
+	var h: Horde = _horde(40)
 	for i: int in 8:
 		h.spawn(Vector2(5.5 + i * 2, 5.5), 0)
-	for t: int in [1, 2, 3]:
-		h.spawn(Vector2(5.5 + t * 2, 9.5), t)
+	var seen: Dictionary = {}
+	for i: int in 24:
+		h.spawn(Vector2(5.5 + (i % 12) * 2, 9.5 + (i / 12) * 2), 1 + i % 3)
+		seen[h.variant[8 + i]] = true
 	for i: int in 8:
 		assert_lt(h.variant[i], 2, "walkers stay on the shared looks")
-	assert_eq(Array(h.variant.slice(8, 11)), [2, 3, 4])
+	assert_eq(seen.size(), 6, "both looks of each special type turn up")
+
+
+func test_the_spike_horde_has_four_walker_looks() -> void:
+	var cfg: HordeConfig = load("res://data/combat/horde_spike.tres")
+	assert_eq(cfg.variants, 4)
+	var scene: PackedScene = load("res://game/spikes/style_spike.tscn")
+	var state: SceneState = scene.get_state()
+	var found: int = 0
+	for n: int in state.get_node_count():
+		if state.get_node_name(n) == "HordeRenderer":
+			for k: int in state.get_node_property_count(n):
+				if state.get_node_property_name(n, k) == "models":
+					found = (state.get_node_property_value(n, k) as Array).size()
+	assert_eq(found, 4, "male, female, office, worker")
 
 
 func test_the_helmet_drops_after_enough_damage_and_armor_falls_a_step() -> void:

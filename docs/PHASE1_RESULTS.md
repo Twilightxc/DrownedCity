@@ -3,6 +3,35 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.5+ A5 Two AI teammates — 🟡 built (2026-11-03), waiting for J's feel test (then gate 1.G)
+
+Live: `?spike=arena` (2 teammates), `?spike=arena&mates=0` (none, to compare). Orders: hold Tab.
+
+| Item | How |
+| --- | --- |
+| Who | Marco (AR + red dot, pistol) on the left, Jess (pump shotgun, pistol) on the right; own ammo, topped up at each calm |
+| Brain | `TeammateBrain` (pure): the hunting zombie nearest to itself that it can see within 0.85 × gun range (J; `protect_weight` 0); turns at 420°/s, waits 0.3 s on a new target, fires inside 5°, bursts 0.35 s / pause 0.25 s (semi guns pulse); backs off anything within 2.4 m; keeps a spot 2.2 m beside and 2 m behind the player (GridPath around props); sprints back when > 9 m off and idle; swaps to the pistol when the main gun is dry; tactical reload under 40 % when nothing is near |
+| Horde | `Horde.extra_targets`: hunters chase and hit whichever of player / teammates is nearest; the flow field has them all as goals |
+| Down | 20 s downed like the player, firing their pistol; F next to them for 2 s gets them up (green ring); walking off cancels |
+| Orders | Follow me · Hold here (where each stands) · Hold fire (toggle); the other wheel items come with expeditions |
+| HUD | a card per teammate above the player's bars: name, HP (downed: countdown), stamina; greyed when dead. Over their heads only the reload / revive ring (J: no names over heads) |
+| No friendly fire | rounds test only the horde; grenades do hurt teammates |
+| Desktop bot run, wave 3 | cleared in ~25 s with the player on auto-shoot: Marco 36 kills, Jess 6 of 65; nobody hit. Marco may be too strong: J's call (`data/combat/teammate.tres`) |
+| Down but fighting (J 2026-11-04) | downed lasts 20 s (was 10; `FighterConfig.downed_sec`); the sidearm comes out by itself and the fighter aims, fires and reloads it from the ground (`downed_aim`: propped on the left elbow, pistol over the feet, muzzle 0.78 m, so low cover blocks it); no moving, long guns or throws; back up, the long gun returns. Teammates do the same and the horde keeps going for them |
+| Looks (J 2026-11-04) | survivors: 3 outfits in one `survivor.glb` (one skeleton, one clip set): orange jacket (player), mustard work jacket + cap + beard (Marco), red hoodie + auburn ponytail (Jess); zombies: 10 looks: Walker male, female, office (shirt + tie, bald), dock worker (coveralls, beanie); a second look for each special type (hoodie Runner, riot-police Armored, darker Bloater). +5 VAT looks ≈ +0.9 MB; desktop wave 5: 51 zombies over all 10 looks, 90 draw calls, 92k primitives. Pictures: `docs/art/12_survivor_looks.png`, `docs/art/13_zombie_looks.png` |
+| Not yet | teammates don't revive the player, throw grenades, crouch or take gas / fire damage |
+
+## 1.5+ A4 HUD — 🟡 built (2026-11-03), waiting for J's look
+
+Live: `?spike=arena`. The top-left line now only shows the gun (mode, mag, rounds, jam).
+
+| Item | How |
+| --- | --- |
+| Bars | `FighterHud` (CanvasLayer 39), bottom left: HP (red) and stamina (amber, the stance written on it, flashing when there isn't enough to sprint); downed, the HP bar turns dark red and counts down `downed_sec` |
+| Reload ring | over the head (2.25 m, projected each frame), fills from the top clockwise with the reload; a pump shotgun's ring has a tick per shell it loads and fills one step per shell; orange while clearing a jam |
+| Cost | one Control redraw a frame, no nodes per fighter |
+| Not checked | readability at the Arc's resolution |
+
 ## 1.5+ A3 Stances and movement — 🟡 built (2026-11-03), waiting for J's feel test
 
 Live: `?spike=arena` (C crouch, Z prone, Shift sprint, Space roll; the HUD shows stamina and the stance). The

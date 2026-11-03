@@ -69,6 +69,12 @@ func _close_radial(pick: bool) -> void:
 	if pick and i >= 0:
 		_toast.text = "Order: %s" % ORDERS[i]
 		_toast_left = TOAST_TIME
+		_on_order(i)
+
+
+## A picked order (ORDERS index); scenes with teammates act on it (the arena, 1.5+ A5).
+func _on_order(_i: int) -> void:
+	pass
 
 
 func _help_text(pad: bool) -> String:

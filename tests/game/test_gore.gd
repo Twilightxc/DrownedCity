@@ -81,7 +81,7 @@ func test_a_dropped_helmet_flies_alone_and_stays_off_the_corpse() -> void:
 
 
 func test_baked_type_meshes_keep_the_skeleton_parts() -> void:
-	for type_name: String in ["runner", "armored", "bloater"]:
+	for type_name: String in ["runner", "armored", "bloater", "runner_b", "armored_b", "bloater_b", "office", "worker"]:
 		var model: VatModel = load("res://assets/vat/zombie_%s.tres" % type_name)
 		var clips: VatClips = model.clips
 		for clip: String in ["walk", "attack", "flinch", "death", "death_blown"]:
@@ -89,7 +89,7 @@ func test_baked_type_meshes_keep_the_skeleton_parts() -> void:
 		var parts: Dictionary[int, bool] = {}
 		for uv: Vector2 in model.extract_mesh().surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]:
 			parts[int(uv.y)] = true
-		assert_eq(parts.size(), 12 if type_name == "armored" else 11, "%s parts" % type_name)
+		assert_eq(parts.size(), 12 if type_name.begins_with("armored") else 11, "%s parts" % type_name)
 		assert_eq(model.positions.get_width(), clips.vertex_count, "%s VAT columns" % type_name)
 
 

@@ -35,6 +35,12 @@ import kit_common as K  # noqa: E402
 K.PALETTE.update({
     "surv_skin": "#e2a77c", "surv_jacket": "#c9652e", "surv_shirt": "#e6d3a8", "surv_pants": "#4f6178",
     "surv_boots": "#3d3027", "surv_hair": "#3b2a1e", "surv_pack": "#6f5b3a", "surv_strap": "#40362b",
+    # look 1: mustard work jacket, brown cargo pants, cap, beard
+    "surv1_jacket": "#c99a2e", "surv1_pants": "#6a5038", "surv1_cap": "#36464f", "surv1_skin": "#c68a62",
+    "surv1_beard": "#2e241c", "surv1_rig": "#3c3a2e",
+    # look 2: red hoodie, charcoal pants, auburn ponytail, sling bag
+    "surv2_hoodie": "#b0363d", "surv2_pants": "#3a3d44", "surv2_hair": "#8a4a26", "surv2_skin": "#efbf9a",
+    "surv2_bag": "#5b4a3a",
 })
 
 FPS = 24
@@ -74,6 +80,30 @@ for _s in "lr":
     BOXES[f"arm_{_s}"] = [((0, 0, -0.14), (0.1, 0.11, 0.3), "surv_jacket")]
     BOXES[f"fore_{_s}"] = [((0, 0, -0.1), (0.095, 0.1, 0.2), "surv_jacket"), ((0, 0, -0.23), (0.08, 0.085, 0.08), "surv_skin")]
     BOXES[f"hand_{_s}"] = [((0, -0.005, -0.045), (0.075, 0.09, 0.09), "surv_skin")]
+
+
+def boxes_for(look):
+    """A look's boxes: the same parts on the same bones, other clothes (J 2026-11-04: no two alike). All stay
+    warm so survivors read against the cool, bleached city."""
+    b = {k: list(v) for k, v in BOXES.items()}
+    if look == 1:
+        recol = {"surv_jacket": "surv1_jacket", "surv_pants": "surv1_pants", "surv_skin": "surv1_skin"}
+        b = {k: [(c, sz, recol.get(col, col)) for c, sz, col in v] for k, v in b.items()}
+        b["torso"] = [((0, 0, 0.27), (0.42, 0.25, 0.5), "surv1_jacket"), ((0, -0.128, 0.28), (0.3, 0.03, 0.22), "surv1_rig"),
+                      ((0.09, -0.142, 0.24), (0.08, 0.02, 0.08), "surv_strap"), ((-0.09, -0.142, 0.24), (0.08, 0.02, 0.08), "surv_strap")]
+        b["head"] = [((0, -0.01, 0.15), (0.22, 0.24, 0.26), "surv1_skin"), ((0, -0.02, 0.05), (0.2, 0.2, 0.1), "surv1_beard"),
+                     ((0, 0.01, 0.29), (0.25, 0.26, 0.07), "surv1_cap"), ((0, -0.15, 0.27), (0.22, 0.08, 0.025), "surv1_cap")]
+    elif look == 2:
+        recol = {"surv_jacket": "surv2_hoodie", "surv_pants": "surv2_pants", "surv_skin": "surv2_skin"}
+        b = {k: [(c, sz, recol.get(col, col)) for c, sz, col in v] for k, v in b.items()}
+        b["torso"] = [((0, 0, 0.27), (0.36, 0.23, 0.5), "surv2_hoodie"), ((0, 0.13, 0.46), (0.22, 0.06, 0.12), "surv2_hoodie"),
+                      ((0.12, 0.13, 0.14), (0.16, 0.08, 0.18), "surv2_bag"), ((0.05, -0.118, 0.3), (0.04, 0.02, 0.4), "surv_strap")]
+        b["head"] = [((0, -0.01, 0.15), (0.21, 0.23, 0.25), "surv2_skin"), ((0, 0.02, 0.28), (0.225, 0.245, 0.06), "surv2_hair"),
+                     ((0, 0.1, 0.19), (0.225, 0.06, 0.18), "surv2_hair"), ((0, 0.15, 0.1), (0.07, 0.06, 0.18), "surv2_hair")]
+    return b
+
+
+LOOKS = 3  # survivor.glb holds survivor_0 .. survivor_2, one skeleton and one set of clips for all
 
 
 def rest_positions():
@@ -265,6 +295,22 @@ def downed(u):
     return p, (0, 0, 0.22 - HIP_HEIGHT + 0.01 * math.sin(t))
 
 
+def downed_aim(u):
+    """Down but fighting (J 2026-11-04): on the back, propped up on the left elbow, the pistol held out over the
+    feet in the right hand (arm about level: the torso leans back 0.6, so the arm swings 0.97 forward)."""
+    t = u * math.tau
+    p = {"pelvis": (-1.35, 0.0, 0.05), "torso": (0.75 + 0.02 * math.sin(t), 0.0, -0.05), "head": (0.4, 0.0, 0.0)}
+    p["thigh_l"] = (-0.45, 0.0, 0.15)
+    p["shin_l"] = (0.8, 0.0, 0.0)
+    p["thigh_r"] = (-0.1, 0.0, -0.1)
+    p["shin_r"] = (0.2, 0.0, 0.0)
+    p["arm_l"] = (0.7, 0.0, -0.35)
+    p["fore_l"] = (-1.3, 0.0, 0.0)
+    p["arm_r"] = (-0.97, 0.0, 0.2)
+    p["fore_r"] = (-0.1, 0.0, 0.0)
+    return p, (0, 0, 0.26 - HIP_HEIGHT + 0.01 * math.sin(t))
+
+
 # Upper body: only UPPER bones matter (the game filters them onto the legs' clip).
 
 def _aim_pistol(p, lower=0.0):
@@ -372,7 +418,7 @@ CLIPS = {
     "idle": (idle, 48, True), "walk_f": (walk, 18, True), "walk_b": (walk_b, 18, True), "run": (run, 16, True),
     "crouch_idle": (crouch_idle, 48, True), "crouch_f": (crouch_walk, 28, True), "crouch_b": (crouch_b, 28, True),
     "prone_idle": (prone_idle, 48, True), "crawl": (crawl, 32, True), "roll": (roll, 14, False),
-    "downed": (downed, 48, True),
+    "downed": (downed, 48, True), "downed_aim": (downed_aim, 48, True),
     "aim_pistol": (aim_pistol, 48, True), "aim_rifle": (aim_rifle, 48, True),
     "carry_high": (carry_high, 16, True), "carry_port": (carry_port, 16, True),
     "reload_pistol": (reload_pistol, 29, False), "reload_rifle": (reload_rifle, 58, False),
@@ -388,9 +434,9 @@ CRAWL_SPEED = 0.85
 
 # ---- build ---------------------------------------------------------------------------------------
 
-def build_mesh(rest):
+def build_mesh(rest, look=0):
     parts = []
-    for bone, boxes in BOXES.items():
+    for bone, boxes in boxes_for(look).items():
         mb = K.MeshBuilder(aging=0.0)
         with mb.transform(tuple(rest[bone])):
             for c, s, col in boxes:
@@ -404,7 +450,7 @@ def build_mesh(rest):
     bpy.context.view_layer.objects.active = parts[0]
     bpy.ops.object.join()
     body = bpy.context.view_layer.objects.active
-    body.name = body.data.name = "survivor"
+    body.name = body.data.name = f"survivor_{look}"
     return body
 
 
@@ -462,16 +508,20 @@ if __name__ == "__main__":
     K.reset(23)
     bpy.context.scene.render.fps = FPS
     rest = rest_positions()
-    body = build_mesh(rest)
-    K.bake_vertex_ao(body, distance=0.25, samples=32)
+    bodies = []
+    for look in range(LOOKS):
+        body = build_mesh(rest, look)
+        K.bake_vertex_ao(body, distance=0.25, samples=32)
+        bodies.append(body)
     rig = build_armature(rest)
-    body.parent = rig
-    mod = body.modifiers.new("rig", "ARMATURE")
-    mod.object = rig
+    for body in bodies:
+        body.parent = rig
+        mod = body.modifiers.new("rig", "ARMATURE")
+        mod.object = rig
     bake_clips(rig)
     os.makedirs(out, exist_ok=True)
     for o in bpy.context.scene.objects:
-        o.select_set(o in (body, rig))
+        o.select_set(o in bodies or o == rig)
     bpy.context.view_layer.objects.active = rig
     path = os.path.join(out, "survivor.glb")
     bpy.ops.export_scene.gltf(
@@ -480,5 +530,5 @@ if __name__ == "__main__":
         export_animations=True, export_animation_mode="ACTIONS", export_force_sampling=True,
         export_skins=True, export_def_bones=False, export_optimize_animation_size=False,
     )
-    tris = sum(len(p.vertices) - 2 for p in body.data.polygons)
-    print(f"exported {path}  ({tris} tris, {len(CLIPS)} clips, loops: {', '.join(LOOP_CLIPS)})")
+    tris = [sum(len(p.vertices) - 2 for p in b.data.polygons) for b in bodies]
+    print(f"exported {path}  ({LOOKS} looks, {tris} tris, {len(CLIPS)} clips, loops: {', '.join(LOOP_CLIPS)})")
