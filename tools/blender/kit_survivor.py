@@ -189,20 +189,24 @@ PRONE_HIP = 0.16
 
 
 def _prone(p, t=0.0, crawl=0.0):
-    """Face down, head toward the aim, both hands forward on the gun."""
+    """Prone to shoot (J 2026-11-03): face down, propped on both elbows, chest up, the stock in the right
+    shoulder and the head behind the sights. The left hand comes from the IK."""
     p["pelvis"] = (math.pi / 2, 0.0, 0.05 * crawl * math.sin(t))
-    p["torso"] = (-0.12, 0.0, 0.08 * crawl * math.sin(t))
-    p["head"] = (-0.9, 0.0, 0.0)  # looks ahead along the ground
+    p["torso"] = (-0.32, 0.0, 0.08 * crawl * math.sin(t))  # chest raised on the elbows
+    p["head"] = (-0.75, 0.0, 0.0)  # looks ahead along the barrel
     # Legs apart (ry spreads, rz twists), knees drawn up sideways when crawling; feet turned so the toes point
     # out and the insides of the boots lie on the floor (J 2026-11-03).
     p["thigh_l"] = (0.0, -0.22 - 0.5 * crawl * max(0.0, math.sin(t)), 0.0)
     p["thigh_r"] = (0.0, 0.22 + 0.5 * crawl * max(0.0, -math.sin(t)), 0.0)
     p["shin_l"] = (0.9 * crawl * max(0.0, math.sin(t)), 0.0, 1.35)
     p["shin_r"] = (0.9 * crawl * max(0.0, -math.sin(t)), 0.0, -1.35)
-    p["arm_l"] = (-2.6 - 0.3 * crawl * math.sin(t), 0.0, -0.3)
-    p["arm_r"] = (-2.7 + 0.3 * crawl * math.sin(t), 0.0, 0.25)
-    p["fore_l"] = (-0.5, 0.0, 0.0)
-    p["fore_r"] = (-0.6, 0.0, 0.0)
+    # Upper arms down to the elbows on the floor, a little ahead of and outside the shoulders; forearms up
+    # and in, so the right hand holds the grip with the stock in the shoulder
+    # (solved by FK: elbow 7 cm off the floor just ahead of the shoulder, grip hand 0.28 m ahead of it)
+    p["arm_l"] = (-1.9 - 0.3 * crawl * math.sin(t), -0.6, 0.0)
+    p["arm_r"] = (-1.9 + 0.3 * crawl * math.sin(t), 0.6, 0.0)
+    p["fore_l"] = (-2.05, 0.0, 0.4)
+    p["fore_r"] = (-2.05, 0.0, -0.4)
 
 
 def prone_idle(u):

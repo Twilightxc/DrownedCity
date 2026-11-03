@@ -29,7 +29,9 @@ const HOLD_DIR: Dictionary[StringName, Vector3] = {
 	&"aim_pistol": Vector3(0.0, 0.0, 1.0), &"aim_rifle": Vector3(0.0, 0.0, 1.0),
 	&"carry_high": Vector3(0.0, 1.0, 0.15),  # high ready: muzzle to the sky (J 2026-11-03)
 	&"carry_port": Vector3(0.6, 0.7, 0.35),  # port arms: across the chest, muzzle over the left shoulder
+	&"prone_idle": Vector3(0.0, 0.0, 1.0),  # prone: level along the ground (crawl uses it too)
 }
+const PRONE_CLIPS: PackedStringArray = ["prone_idle", "crawl"]
 
 enum Stance { STAND, CROUCH, PRONE }
 
@@ -125,7 +127,9 @@ func animate(low: StringName, low_speed: float, up: StringName, up_speed: float,
 	if up != upper:
 		upper = up
 		_tree.set(&"parameters/upper/transition_request", String(up))
-		_grip_target = _grip[up] if _grip.has(up) else _grip[_hold]
+	# The hold follows the clip that moves the arms: the legs' clip when it is a whole-body one.
+	var arms: StringName = up if up_weight > 0.0 else &"prone_idle" if String(low) in PRONE_CLIPS else up
+	_grip_target = _grip[arms] if _grip.has(arms) else _grip[_hold]
 	_tree.set(&"parameters/lower_speed/scale", low_speed)
 	_tree.set(&"parameters/upper_speed/scale", up_speed)
 	_tree.set(&"parameters/layer/blend_amount", up_weight)

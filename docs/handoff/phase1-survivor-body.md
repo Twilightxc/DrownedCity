@@ -21,6 +21,8 @@ sprint carry: "ปืนพกหรือ smg ... ถือวิ่งแบ�
 - J: "ท่ายืนปกติ...ขาอีกข้างควรอยู่ข้างหลัง / ท่านั่งยิงเข่าอีกข้างต้องแตะพื้น / ท่านอนยิงปลายเท้าต้องชี้ออกนอกตัว" →
   idle shooting stance (right foot back), crouch_idle is a kneel, prone feet turned out (and the prone legs now
   spread with ry; rz had twisted them).
+- J: "ท่านอนจับปืนยังแปลกๆอยู่" → prone is now propped on both elbows, chest up, stock in the shoulder; the gun
+  uses a hold measured from prone_idle (`HOLD_DIR`, also for crawl) instead of the standing aim's.
 - 6 new tests, 193 total, all passing on desktop.
 
 ## Not done / next
