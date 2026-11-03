@@ -1,6 +1,6 @@
 # phase1/zombie-meshes
 
-- **PR:** not opened (pushed? yes)
+- **PR:** #37 (CI build passed on 7d3f4f3)
 - **Machine:** desktop (RTX 4080)
 - **Base:** main @ 0d5ffd6
 - **Updated:** 2026-11-03
