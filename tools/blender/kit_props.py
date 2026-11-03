@@ -6,6 +6,11 @@ Origin = centre of the footprint on the roof surface (z = 0).
 Footprints (for nav-grid obstacles): water tower 3.4 x 3.4, AC unit 1.3 x 1.0, sandbag wall 3.2 x 0.7.
 Every footprint also blocks hitscan, so each prop reaches at least the 0.9 m muzzle height.
 
+Arena props (J 2026-11-04, replacing the spike's boxes): the supply crate (0.9 x 0.6 footprint, an ammo can on
+top), barricade pieces for one 1 x 1 m cell in three damage stages (planks nailed across two posts, or an upright
+pallet; stage 0 whole, 1 battered, 2 nearly gone; the boards run along X, the game turns them), and the two
+throwables: a frag grenade and a Molotov bottle whose rag burns (emissive slot), both built at real size.
+
 Flood props (origin = water surface, not nav obstacles): two floating-debris clusters (~18 m across) with a
 sunken car, leaning street lamp, dead tree, road sign, planks, barrels and trash, so the empty streets read
 under the water.
@@ -17,6 +22,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kit_common as K  # noqa: E402
+
+K.PALETTE.update({
+    "crate_olive": "#86934f", "crate_olive_dark": "#6c7a40", "crate_stencil": "#e2d9b0", "ammo_can": "#5d6b3c",
+    "rope": "#9a8660", "plank": "#8f6a46", "plank_dark": "#6b4e34", "plank_pale": "#a98a64", "nail": "#4a4a4a",
+    "frag_body": "#4b5532", "frag_metal": "#8d9296", "glass_bottle": "#5c7148", "rag": "#d8ccb0",
+})
 
 
 def water_tower(mb):
@@ -124,11 +135,86 @@ def flood_debris_b(mb):
     flotsam(mb, 9.0, 22)
 
 
+def supply_crate(mb):
+    mb.box((0, 0, 0.24), (0.9, 0.6, 0.48), "crate_olive", seg=0.3)
+    mb.box((0, 0, 0.5), (0.94, 0.64, 0.05), "crate_olive_dark")           # lid
+    for x in (-0.3, 0.3):
+        mb.box((x, 0, 0.25), (0.06, 0.62, 0.5), "crate_olive_dark")       # battens
+    mb.box((0, -0.302, 0.25), (0.34, 0.01, 0.14), "crate_stencil")        # stencilled marking
+    mb.box((0.46, 0, 0.32), (0.03, 0.18, 0.04), "rope")                  # rope handles
+    mb.box((-0.46, 0, 0.32), (0.03, 0.18, 0.04), "rope")
+    mb.box((0.12, 0.05, 0.64), (0.3, 0.16, 0.22), "ammo_can")             # ammo can on top
+    mb.box((0.12, 0.05, 0.76), (0.16, 0.04, 0.02), "frag_metal")          # its handle
+    mb.box((-0.24, -0.08, 0.58), (0.18, 0.14, 0.1), "rag")                # a bundle of dressings
+
+
+def _planks(mb, stage):
+    """Two posts and planks nailed across (the boards run along X)."""
+    for x in (-0.42, 0.42):
+        h = 1.05 if stage < 2 else 0.7
+        mb.box((x, 0.0, h / 2), (0.09, 0.09, h), "plank_dark")
+    boards = [(0.2, 0.0), (0.42, 0.05), (0.64, -0.04), (0.86, 0.03)]
+    keep = [0, 1, 2, 3] if stage == 0 else [0, 2] if stage == 1 else [0]
+    for i in keep:
+        z, tilt = boards[i]
+        with mb.transform((0, -0.06, z), (0.0, tilt + (0.25 if stage == 1 and i == 2 else 0.0), 0.0)):
+            mb.box((0, 0, 0), (1.0, 0.04, 0.17), "plank" if i % 2 == 0 else "plank_pale")
+    if stage == 1:  # one board hangs off a single nail
+        with mb.transform((0.3, -0.07, 0.5), (0.0, 1.1, 0.0)):
+            mb.box((0, 0, 0), (0.7, 0.04, 0.16), "plank")
+    for z, _ in [boards[i] for i in keep]:
+        for x in (-0.42, 0.42):
+            mb.box((x, -0.085, z), (0.02, 0.01, 0.02), "nail")
+
+
+def _pallet(mb, stage):
+    """A pallet stood on edge with a board across it, propped by a beam."""
+    tilt = 0.0 if stage == 0 else 0.12 if stage == 1 else 0.5
+    with mb.transform((0, 0, 0.0), (tilt, 0.0, 0.0)):
+        for z in (0.06, 0.5, 0.94):
+            if stage == 2 and z > 0.9:
+                continue
+            mb.box((0, 0.0, z), (1.0, 0.12, 0.09), "plank_dark")                 # stringers
+        slats = [-0.4, -0.2, 0.0, 0.2, 0.4] if stage == 0 else [-0.4, 0.0, 0.4] if stage == 1 else [-0.2]
+        for x in slats:
+            mb.box((x, -0.07, 0.5), (0.12, 0.02, 1.0 if stage < 2 else 0.7), "plank_pale")
+    mb.box((0, 0.3, 0.3), (0.08, 0.6, 0.08), "plank")                      # the prop behind it
+
+
+def barricade_planks_0(mb): _planks(mb, 0)
+def barricade_planks_1(mb): _planks(mb, 1)
+def barricade_planks_2(mb): _planks(mb, 2)
+def barricade_pallet_0(mb): _pallet(mb, 0)
+def barricade_pallet_1(mb): _pallet(mb, 1)
+def barricade_pallet_2(mb): _pallet(mb, 2)
+
+
+def grenade_frag(mb):
+    """Real size (about 9 cm tall); the game scales throwables up to read in flight."""
+    mb.cylinder((0, 0, 0.04), 0.03, 0.07, "frag_body", segments=10, radius_top=0.026)
+    mb.cylinder((0, 0, 0.083), 0.012, 0.016, "frag_metal", segments=8)       # fuse
+    mb.box((0.018, 0, 0.065), (0.008, 0.012, 0.05), "frag_metal")           # spoon
+    mb.box((-0.016, 0, 0.088), (0.012, 0.004, 0.012), "frag_metal")         # pin ring
+
+
+def molotov(mb):
+    """A bottle with a rag stuffed in the neck; the rag's tip burns (emissive)."""
+    mb.cylinder((0, 0, 0.08), 0.035, 0.16, "glass_bottle", segments=10)
+    mb.cylinder((0, 0, 0.19), 0.014, 0.06, "glass_bottle", segments=8, radius_top=0.012)  # neck
+    mb.box((0, 0, 0.235), (0.03, 0.03, 0.04), "rag")
+    mb.box((0.004, 0, 0.265), (0.026, 0.026, 0.025), "lit", mat=1)          # burning rag
+
+
 # name, builder, AO distance, aging
 PROPS = [
     ("prop_water_tower", water_tower, 0.8, 0.5), ("prop_ac_unit", ac_unit, 0.4, 0.5),
     ("prop_sandbag_wall", sandbag_wall, 0.3, 0.3),
     ("prop_flood_debris_a", flood_debris_a, 0.6, 0.7), ("prop_flood_debris_b", flood_debris_b, 0.6, 0.7),
+    ("prop_supply_crate", supply_crate, 0.3, 0.3),
+    ("prop_barricade_planks_0", barricade_planks_0, 0.25, 0.5), ("prop_barricade_planks_1", barricade_planks_1, 0.25, 0.5),
+    ("prop_barricade_planks_2", barricade_planks_2, 0.25, 0.5), ("prop_barricade_pallet_0", barricade_pallet_0, 0.25, 0.5),
+    ("prop_barricade_pallet_1", barricade_pallet_1, 0.25, 0.5), ("prop_barricade_pallet_2", barricade_pallet_2, 0.25, 0.5),
+    ("prop_grenade_frag", grenade_frag, 0.03, 0.1), ("prop_molotov", molotov, 0.03, 0.1),
 ]
 
 

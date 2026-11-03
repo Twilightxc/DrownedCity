@@ -6,7 +6,8 @@ extends Node3D
 const RESTOCKED_TIME: float = 1.2
 
 @export var size: Vector3 = Vector3(0.9, 0.55, 0.6)
-@export var color: Color = Color(0.45, 0.5, 0.25)  # olive military crate
+@export var color: Color = Color(0.45, 0.5, 0.25)  # olive military crate (the box fallback)
+@export var model: PackedScene = preload("res://assets/models/prop_supply_crate.glb")  ## kit_props.py; null = a box
 
 var uses_left: int = -1  ## -1 = endless; the arena gives each crate its uses per calm (1.5)
 
@@ -16,16 +17,23 @@ var _restocked_left: float = 0.0
 
 func _ready() -> void:
 	add_to_group("interactable")
-	var box: BoxMesh = BoxMesh.new()
-	box.size = size
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 1.0
-	box.material = mat
-	var mi: MeshInstance3D = MeshInstance3D.new()
-	mi.mesh = box
-	mi.position.y = size.y * 0.5
-	add_child(mi)
+	var top: float = size.y
+	if model != null:
+		var crate: Node3D = model.instantiate() as Node3D
+		add_child(crate)
+		Style15Level.apply_materials(crate, Style15Level.SURFACE_MATERIAL)
+		top = 0.87  # the ammo can on its lid
+	else:
+		var box: BoxMesh = BoxMesh.new()
+		box.size = size
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.albedo_color = color
+		mat.roughness = 1.0
+		box.material = mat
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.mesh = box
+		mi.position.y = size.y * 0.5
+		add_child(mi)
 	_label = Label3D.new()
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_label.no_depth_test = true
@@ -33,7 +41,7 @@ func _ready() -> void:
 	_label.pixel_size = 0.002
 	_label.font_size = 24
 	_label.outline_size = 6
-	_label.position.y = size.y + 0.6
+	_label.position.y = top + 0.6
 	_label.visible = false
 	add_child(_label)
 

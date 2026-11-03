@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="ThrowableConfig" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://combat/throwable_config.gd" id="1_cfg"]
+[ext_resource type="PackedScene" path="res://assets/models/prop_molotov.glb" id="91_look"]
 
 [resource]
 script = ExtResource("1_cfg")
@@ -17,3 +18,4 @@ fire_cells = 6
 embers = 0
 shrapnel = false
 blast_sfx = &"blast_incendiary"
+mesh_scene = ExtResource("91_look")

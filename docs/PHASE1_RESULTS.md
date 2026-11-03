@@ -3,6 +3,19 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.5+ arena props — 🟡 built (2026-11-04), waiting for J's look
+
+J: "ทำตามที่เสนอได้เลย" (the four Blender pieces still placeholders in the arena). Live: `?spike=arena`.
+
+| Item | How |
+| --- | --- |
+| Supply crate | `prop_supply_crate` (172 tris): olive military crate, stencilled, rope handles, an ammo can and dressings on the lid |
+| Barricades | `prop_barricade_planks_0..2`, `prop_barricade_pallet_0..2` (48–168 tris): per cell, planks across posts or an upright pallet, boards turned to face the entrance pocket; above 66 % / 33 % / below of its HP the cells show stage 0 / 1 / 2 (boards come off); still one merged mesh per barricade |
+| Throwables | `prop_grenade_frag`, `prop_molotov` (88 tris each, ×1.8 in flight, tumbling); the incendiary is a Molotov with a burning rag (emissive) |
+| Carried guns | the guns not in hand show: two long guns slung crossed on the back, a sidearm in a holster on the right thigh; no shadows (+1 draw call each) |
+| Picture | `docs/art/14_arena_props.png` |
+| Not checked | the Arc (a few more draw calls: the slung guns and attachments of three fighters) |
+
 ## 1.5+ A5 Two AI teammates — 🟡 built (2026-11-03), waiting for J's feel test (then gate 1.G)
 
 Live: `?spike=arena` (2 teammates), `?spike=arena&mates=0` (none, to compare). Orders: hold Tab.
