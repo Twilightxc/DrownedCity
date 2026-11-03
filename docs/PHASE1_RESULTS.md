@@ -13,6 +13,7 @@ Live: `?spike=poses` (every clip, labelled; Q / E turn, wheel zooms) and the pla
 | Clips | hand-keyed: idle, walk, run, crouch idle / walk, prone, crawl, roll, downed; aim pistol / rifle, sprint high ready (pistol, SMG) and port arms (long guns), reload pistol / rifle / shell |
 | Layers | `SurvivorView`: AnimationTree, legs' clip × arms' clip through a Blend2 bone filter; moving clips scale to the speed (backwards when backing away); reloads stretch to the gun's reload time |
 | Gun | on `hand_r`; the hold per clip is measured from the pose, so it stays level in the aim and points up / across the chest when sprinting |
+| Left hand | J: "แขนซ้ายไม่จับปืนเลย" → `LeftHandIK` (SkeletonModifier3D, two-bone IK) puts the left palm on the gun's support point (handguard, pump, fore-end; a pistol: the right hand), within 6 cm on all four guns; fades out for reloads, roll, downed |
 | Picture | `docs/art/09_survivor_poses.png` |
 | Not checked | Arc FPS with a skinned body; stances are not on keys yet (A3) |
 

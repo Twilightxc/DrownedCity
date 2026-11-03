@@ -234,8 +234,8 @@ def downed(u):
 def _aim_pistol(p, lower=0.0):
     p["torso"] = (0.04, 0.0, 0.0)
     p["head"] = (0.0, 0.0, 0.0)
-    p["arm_r"] = (-1.45 + lower, 0.0, -0.12)
-    p["fore_r"] = (-0.05, 0.0, 0.0)
+    p["arm_r"] = (-1.4 + lower, 0.0, 0.4)  # turned in: the hands meet on the centre line
+    p["fore_r"] = (-0.2, 0.0, 0.0)
     p["hand_r"] = (0.0, 0.0, 0.0)
     p["arm_l"] = (-1.35 + lower, 0.0, 0.42)
     p["fore_l"] = (-0.25, 0.0, 0.25)
@@ -245,8 +245,8 @@ def _aim_pistol(p, lower=0.0):
 def _aim_rifle(p, lower=0.0):
     p["torso"] = (0.06, 0.0, -0.25)  # bladed: left shoulder toward the aim
     p["head"] = (0.05, 0.0, 0.2)
-    p["arm_r"] = (-0.75 + lower, 0.0, 0.35)
-    p["fore_r"] = (-0.9, 0.0, 0.0)
+    p["arm_r"] = (-0.3 + lower, 0.0, 0.45)  # elbow out and down, grip hand at the chest, stock in the shoulder
+    p["fore_r"] = (-1.6, 0.0, 0.35)
     p["hand_r"] = (0.0, 0.0, 0.0)
     p["arm_l"] = (-1.35 + lower, 0.0, 0.2)
     p["fore_l"] = (-0.2, 0.0, 0.35)
@@ -297,8 +297,8 @@ def reload_pistol(u):
     p = {}
     _aim_pistol(p)
     tilt = _keys([(0.0, 0.0), (0.15, 0.6), (0.85, 0.6), (1.0, 0.0)], u)
-    p["arm_r"] = (-1.45 + tilt, 0.0, -0.12 + 0.3 * tilt)
-    p["fore_r"] = (-0.05 - 0.6 * tilt, 0.0, 0.0)
+    p["arm_r"] = (-1.4 + tilt, 0.0, 0.4 + 0.3 * tilt)
+    p["fore_r"] = (-0.2 - 0.6 * tilt, 0.0, 0.0)
     reach = _keys([(0.0, 0.0), (0.2, 0.0), (0.4, 1.0), (0.6, 1.0), (0.8, 0.0), (1.0, 0.0)], u)
     p["arm_l"] = (_ease(-1.35, 0.25, reach), 0.0, _ease(0.42, -0.05, reach))
     p["fore_l"] = (_ease(-0.25, -0.5, reach), 0.0, _ease(0.25, 0.0, reach))
@@ -310,8 +310,8 @@ def reload_rifle(u):
     p = {}
     _aim_rifle(p)
     tilt = _keys([(0.0, 0.0), (0.1, 0.45), (0.9, 0.45), (1.0, 0.0)], u)
-    p["arm_r"] = (-0.75 + tilt, 0.0, 0.35)
-    p["fore_r"] = (-0.9 - 0.3 * tilt, 0.0, 0.0)
+    p["arm_r"] = (-0.3 + tilt, 0.0, 0.45)
+    p["fore_r"] = (-1.6 - 0.3 * tilt, 0.0, 0.35)
     p["torso"] = (0.06 + 0.15 * tilt, 0.0, -0.25)
     reach = _keys([(0.0, 0.0), (0.15, 0.0), (0.35, 1.0), (0.55, 1.0), (0.75, 0.0), (0.85, 0.0), (0.92, 0.4),
                    (1.0, 0.0)], u)

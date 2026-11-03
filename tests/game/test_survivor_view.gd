@@ -77,3 +77,36 @@ func test_the_gun_sits_in_front_of_the_chest_pointing_ahead() -> void:
 		assert_gt(t.basis.z.normalized().dot(Vector3.BACK), 0.95, "slot %d level and ahead" % slot)
 		assert_between(t.origin.y, 1.0, 1.6, "slot %d at chest height" % slot)
 		assert_gt(t.origin.z, 0.15, "slot %d in front of the body" % slot)
+
+
+func test_sprint_holds_point_the_gun_up_and_across() -> void:
+	for case: Array in [[1, &"carry_high"], [0, &"carry_port"]]:
+		var g: Gun = _gun(case[0])
+		_body.set_gun(g)
+		_body.sprinting = true
+		_body.drive(Vector2(0, -4.2), Vector2.UP, g, false)
+		await wait_physics_frames(30)
+		var t: Transform3D = _body.global_transform.affine_inverse() * _body.gun_view.global_transform
+		var want: Vector3 = SurvivorView.HOLD_DIR[case[1]].normalized()
+		assert_gt(t.basis.z.normalized().dot(want), 0.85, "%s points %s" % [case[1], want])
+	_body.sprinting = false
+
+
+func test_the_left_hand_reaches_the_support_point_and_lets_go_to_reload() -> void:
+	var sk: Skeleton3D = _body.skeleton
+	for slot: int in 4:
+		var g: Gun = _gun(slot)
+		_body.set_gun(g)
+		_body.drive(Vector2.ZERO, Vector2.UP, g, false)
+		await wait_physics_frames(40)
+		await sk.skeleton_updated  # modifier results only exist inside the skeleton's update
+		var palm: Vector3 = sk.get_bone_global_pose(sk.find_bone("hand_l")) * Vector3(0, -LeftHandIK.PALM_M, 0)
+		var support: Vector3 = sk.get_bone_global_pose(sk.find_bone("hand_r")) * _body._ik.support_in_hand
+		assert_lt(palm.distance_to(support), 0.08, "slot %d: left palm on the gun" % slot)
+	var ar: Gun = _gun(0)
+	_body.set_gun(ar)
+	ar.ammo = 0
+	ar.reload_left = ar.reload_sec
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
+	await wait_physics_frames(40)
+	assert_eq(_body._ik.influence, 0.0, "reloading: the left hand fetches the mag")

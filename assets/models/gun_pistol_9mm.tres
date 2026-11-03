@@ -7,4 +7,5 @@
 script = ExtResource("1_model")
 mesh_scene = ExtResource("2_mesh")
 muzzle = Vector3(0.0000, 0.0455, 0.2015)
+support = Vector3(0.0390, -0.0650, 0.0065)
 mounts = Dictionary[String, Vector3]({"muzzle": Vector3(0.0000, 0.0455, 0.2015), "optic": Vector3(0.0000, 0.0683, 0.0390), "under": Vector3(0.0000, -0.0078, 0.1300)})

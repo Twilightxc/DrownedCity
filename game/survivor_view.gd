@@ -21,6 +21,8 @@ const CLIP_SPEED: Dictionary[StringName, float] = {&"walk": 1.4, &"run": 4.2, &"
 const MOVING_SPEED: float = 0.25  ## m/s: slower than this stands still
 const XFADE_SEC: float = 0.15
 const GRIP_BLEND: float = 12.0  ## 1/s: how fast the gun turns to a new clip's hold
+const IK_FADE: float = 6.0  ## 1/s: the left hand leaves / returns to the gun this fast
+const LEFT_HAND_BUSY: PackedStringArray = ["reload_pistol", "reload_rifle", "reload_shell", "roll", "downed"]
 ## Where the gun points in each clip that sets its own hold, in the body's space (+Z ahead, +Y up, +X left).
 ## Other clips keep the aim hold and the gun simply follows the hand (reloads).
 const HOLD_DIR: Dictionary[StringName, Vector3] = {
@@ -47,6 +49,8 @@ var _mount: Node3D
 var _grip: Dictionary[StringName, Transform3D] = {}  ## HOLD_DIR clip → hand-to-gun transform
 var _hold: StringName = &"aim_rifle"  ## the aim clip of the gun in hand
 var _grip_target: Transform3D = Transform3D.IDENTITY
+var _ik: LeftHandIK
+var _support: Vector3 = Vector3.ZERO  ## the gun's support point in its own space; zero = no model
 
 
 func _ready() -> void:
@@ -66,6 +70,9 @@ func _ready() -> void:
 	hand.add_child(_mount)
 	gun_view = GunView.new()
 	_mount.add_child(gun_view)
+	_ik = LeftHandIK.new()
+	_ik.influence = 0.0
+	skeleton.add_child(_ik)
 	_build_tree()
 	animate(&"idle", 1.0, &"aim_rifle", 1.0, 1.0)
 
@@ -73,6 +80,7 @@ func _ready() -> void:
 ## The gun in hand; pistols and SMGs are held like a pistol, the rest like a rifle.
 func set_gun(gun: Gun) -> void:
 	gun_view.show_gun(gun)
+	_support = gun.config.model.support if gun != null and gun.config.model != null else Vector3.ZERO
 	_hold = _aim_clip(gun)
 	_grip_target = _grip[_hold]
 	_mount.transform = _grip_target
@@ -125,6 +133,9 @@ func animate(low: StringName, low_speed: float, up: StringName, up_speed: float,
 
 func _process(delta: float) -> void:
 	_mount.transform = _mount.transform.interpolate_with(_grip_target, clampf(delta * GRIP_BLEND, 0.0, 1.0))
+	_ik.support_in_hand = _mount.transform * _support if _support != Vector3.ZERO else Vector3.ZERO
+	var busy: bool = _support == Vector3.ZERO or String(upper) in LEFT_HAND_BUSY or String(lower) in LEFT_HAND_BUSY
+	_ik.influence = move_toward(_ik.influence, 0.0 if busy else 1.0, delta * IK_FADE)
 
 
 ## Plays the current upper clip from the start again (the pose gallery repeats one-shots).

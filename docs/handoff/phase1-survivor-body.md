@@ -15,7 +15,10 @@ sprint carry: "ปืนพกหรือ smg ... ถือวิ่งแบ�
   stretched to reload_sec, gun on hand_r with a hold per clip (aim level, high ready up, port arms across).
 - `SpikePlayer.survivor_body` (on): the body replaces the capsule; downed / dead plays `downed`.
 - `?spike=poses`: every clip labelled (`game/spikes/pose_spike.*`). Picture: `docs/art/09_survivor_poses.png`.
-- 4 new tests, 191 total, all passing on desktop.
+- J: "ท่าจับปืนแขนซ้ายไม่จับปืนเลย" → `game/left_hand_ik.gd` two-bone IK to `GunModel.support` (kit_guns.py
+  writes it); the rifle aim keeps the grip hand at the chest and the pistol arms meet on the centre line so the
+  left arm reaches. Off for reloads, roll, downed.
+- 6 new tests, 193 total, all passing on desktop.
 
 ## Not done / next
 - A3: keys for crouch (C), prone (Z), sprint (Shift), roll (Space) + stamina; SurvivorView already has
@@ -28,5 +31,6 @@ sprint carry: "ปืนพกหรือ smg ... ถือวิ่งแบ�
   step backwards when backing away?
 
 ## Next session must know
+- Skeleton modifier results only exist inside `Skeleton3D.skeleton_updated`; read bone poses there to check the IK.
 - Rebuild: `blender -b --factory-startup --python tools/blender/kit_survivor.py`. Clip names are listed in
   SurvivorView's constants; a new clip needs both.

@@ -98,7 +98,8 @@ of it taken from those milestones.
       style. Walking and standing keep the aim pose (no shooting while sprinting, A3).
       → `tools/blender/kit_survivor.py` (288 tris, 13 bones, 16 clips); `SurvivorView`: lower + upper layer through
       a bone filter, the gun on `hand_r` with a measured hold per clip; the player uses it; `?spike=poses` shows
-      every clip. Stance / sprint / roll flags are ready for A3.
+      every clip. Stance / sprint / roll flags are ready for A3. The left hand holds the gun by two-bone IK to
+      `GunModel.support`.
 - [ ] **A3 Stances and movement:** C crouch (toggle), Z prone (toggle), Shift sprint (hold), Space dodge roll
       (not Ctrl: Ctrl+R / Ctrl+W are browser shortcuts). Pad: L3 sprint, B roll, crouch / prone on the D-pad;
       fire mode moves off L3. Per stance in `data/combat/stances.tres`: speed, spread, footstep and shot noise,

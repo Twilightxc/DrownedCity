@@ -5,4 +5,5 @@ extends Resource
 
 @export var mesh_scene: PackedScene
 @export var muzzle: Vector3 = Vector3(0.0, 0.0, 0.6)
+@export var support: Vector3 = Vector3.ZERO  ## where the left hand holds it (handguard, pump; a pistol: the grip)
 @export var mounts: Dictionary[String, Vector3] = {}  ## attachment slot → mount point
