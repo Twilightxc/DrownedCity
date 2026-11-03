@@ -43,6 +43,16 @@ func test_calm_then_wave_then_calm_then_won() -> void:
 	assert_eq(d.phase, WaveDirector.Phase.WON)
 
 
+func test_a_start_wave_skips_the_earlier_waves_and_is_clamped() -> void:
+	var a: ArenaConfig = _arena([[[3, 0], 1.0], [[0, 2], 1.0], [[1, 1], 1.0]])
+	var d: WaveDirector = WaveDirector.new(a, 1, 1)
+	assert_eq(d.wave, 1)
+	d.step(1.1, 0)
+	assert_eq(d.remaining, PackedInt32Array([0, 2]), "wave 2's mix")
+	assert_eq(WaveDirector.new(a, 1, 9).wave, 2, "past the end: the last wave")
+	assert_eq(WaveDirector.new(a, 1, -3).wave, 0)
+
+
 func test_the_alive_cap_holds_spawns_back_and_refunds_come_back() -> void:
 	var d: WaveDirector = WaveDirector.new(_arena([[[30, 0], 0.0]]), 2)
 	d.step(0.01, 0)

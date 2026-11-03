@@ -15,10 +15,11 @@ var _budget: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
-func _init(cfg: ArenaConfig, rng_seed: int = 0) -> void:
+## `start_wave` (0-based) skips the earlier waves, for testing late waves (`?wave=N`).
+func _init(cfg: ArenaConfig, rng_seed: int = 0, start_wave: int = 0) -> void:
 	config = cfg
 	_rng.seed = rng_seed
-	_enter_calm(0)
+	_enter_calm(clampi(start_wave, 0, cfg.waves.size() - 1))
 
 
 func wave_count() -> int:

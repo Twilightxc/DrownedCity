@@ -1,5 +1,7 @@
+class_name SpikeLauncher
 extends Node
 ## Boots the requested spike (Phase 0, and the Phase 1 arena): `?spike=horde` on the web URL, or `-- --spike=horde` on desktop.
+## Spikes read their own test options the same way with `SpikeLauncher.arg()`, e.g. `?spike=arena&wave=4`.
 ## Default is the newest spike, so the live URL always shows what is under test.
 
 const SPIKES: Dictionary[String, String] = {
@@ -14,20 +16,21 @@ const DEFAULT_SPIKE: String = "arena"
 
 
 func _ready() -> void:
-	var key: String = _requested_spike()
+	var key: String = arg("spike", DEFAULT_SPIKE)
 	if not SPIKES.has(key):
 		push_warning("Unknown spike '%s', using '%s'" % [key, DEFAULT_SPIKE])
 		key = DEFAULT_SPIKE
 	get_tree().change_scene_to_file.call_deferred(SPIKES[key])
 
 
-func _requested_spike() -> String:
+## `key=value` from the web URL's query string, or `--key=value` after `--` on desktop.
+static func arg(key: String, fallback: String = "") -> String:
 	if OS.has_feature("web"):
 		var search: Variant = JavaScriptBridge.eval("window.location.search", true)
 		for pair: String in str(search).trim_prefix("?").split("&", false):
-			if pair.begins_with("spike="):
-				return pair.trim_prefix("spike=")
-	for arg: String in OS.get_cmdline_user_args():
-		if arg.begins_with("--spike="):
-			return arg.trim_prefix("--spike=")
-	return DEFAULT_SPIKE
+			if pair.begins_with(key + "="):
+				return pair.trim_prefix(key + "=")
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--%s=" % key):
+			return a.trim_prefix("--%s=" % key)
+	return fallback
