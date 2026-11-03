@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="ThrowableConfig" load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://combat/throwable_config.gd" id="1_cfg"]
+[ext_resource type="PackedScene" path="res://assets/models/prop_grenade_frag.glb" id="91_look"]
 
 [resource]
 script = ExtResource("1_cfg")
@@ -19,3 +20,4 @@ spot_burn_radius = 5.0
 embers = 12
 shrapnel = true
 blast_sfx = &"blast_frag"
+mesh_scene = ExtResource("91_look")

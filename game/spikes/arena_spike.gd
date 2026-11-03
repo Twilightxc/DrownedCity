@@ -6,6 +6,13 @@ extends "res://game/spikes/twin_stick_spike.gd"
 ## Gate 1.G: J plays it 3 times on the Arc and calls it fun (or not).
 
 const POCKET_CROWD: int = 12  ## zombies waiting in one entrance pocket at most; more spawn later
+## Barricade pieces (kit_props.py), [kind][stage]: nailed planks or an upright pallet, whole / battered / nearly gone.
+const BARRICADE_PIECES: Array = [
+	[preload("res://assets/models/prop_barricade_planks_0.glb"), preload("res://assets/models/prop_barricade_planks_1.glb"),
+		preload("res://assets/models/prop_barricade_planks_2.glb")],
+	[preload("res://assets/models/prop_barricade_pallet_0.glb"), preload("res://assets/models/prop_barricade_pallet_1.glb"),
+		preload("res://assets/models/prop_barricade_pallet_2.glb")],
+]
 
 @export var arena: ArenaConfig = preload("res://data/combat/arena_roof.tres")
 ## AI teammates (1.5+ A5): one per loadout, named in order, on the leader's left then right.
@@ -16,6 +23,9 @@ const POCKET_CROWD: int = 12  ## zombies waiting in one entrance pocket at most;
 var _director: WaveDirector
 var _barricades: Barricades
 var _bar_meshes: Array[MeshInstance3D] = []  ## per barricade id
+var _bar_stage: PackedInt32Array = PackedInt32Array()  ## per barricade id: the damage stage its mesh shows
+var _bar_cells: Array[Array] = []  ## per barricade id: its cells and the direction each faces (to the pocket)
+var _piece_meshes: Dictionary[Vector2i, Mesh] = {}  ## (kind, stage) → the piece's mesh, read once
 var _bar_rev: int = -1
 var _pockets: Array[PackedVector2Array] = []  ## per entrance: spawn points (cell centres) at the roof edge
 var _entrance_centres: PackedVector2Array = PackedVector2Array()
@@ -158,28 +168,43 @@ func _build_entrances() -> void:
 					if _grid.is_walkable(n) and not pocket.has(n) and not ring.has(n):
 						ring.append(n)
 		_barricades.add(ring, hp)  # ids count up from 0, like _bar_meshes
-		_bar_meshes.append(_make_barricade_mesh(ring))
+		var faced: Array = []
+		for c: Vector2i in ring:
+			faced.append([c, (_entrance_centres[_entrance_centres.size() - 1] - _grid.cell_center(c)).normalized()])
+		_bar_cells.append(faced)
+		_bar_stage.append(0)
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		add_child(mi)
+		_bar_meshes.append(mi)
+		_build_barricade_mesh(_bar_meshes.size() - 1, 0)
 
 
-## Planks over the barricade cells: one mesh per barricade; it sinks as it takes damage and is gone at 0.
-func _make_barricade_mesh(cells: Array[Vector2i]) -> MeshInstance3D:
+## A barricade's look at damage `stage` (0 whole .. 2 nearly gone): one kit piece per cell, planks or a pallet by
+## cell, boards turned to face the pocket, merged into one mesh so a barricade stays one draw call.
+func _build_barricade_mesh(id: int, stage: int) -> void:
 	var st: SurfaceTool = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var box: BoxMesh = BoxMesh.new()
-	for c: Vector2i in cells:
+	for item: Array in _bar_cells[id]:
+		var c: Vector2i = item[0]
+		var face: Vector2 = item[1]
+		var kind: int = posmod(c.x * 7 + c.y * 13, BARRICADE_PIECES.size())
+		var yaw: float = atan2(face.x, face.y) + 0.12 * sin(c.x * 3.1 + c.y * 1.7)
 		var p: Vector2 = _grid.cell_center(c)
-		for k: int in 3:  # three planks stacked, a little crooked
-			box.size = Vector3(0.95, 0.22, 0.95)
-			var xf: Transform3D = Transform3D(Basis(Vector3.UP, 0.15 * sin(c.x * 3.1 + c.y * 1.7 + k)), Vector3(p.x, 0.15 + k * 0.32, p.y))
-			st.append_from(box, 0, xf)
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.42, 0.3, 0.2)
-	mat.roughness = 1.0
-	st.set_material(mat)
-	var mi: MeshInstance3D = MeshInstance3D.new()
+		st.append_from(_piece(kind, stage), 0, Transform3D(Basis(Vector3.UP, yaw), Vector3(p.x, GROUND_Y, p.y)))
+	var mi: MeshInstance3D = _bar_meshes[id]
 	mi.mesh = st.commit()
-	add_child(mi)
-	return mi
+	mi.material_override = Style15Level.SURFACE_MATERIAL
+	_bar_stage[id] = stage
+
+
+func _piece(kind: int, stage: int) -> Mesh:
+	var key: Vector2i = Vector2i(kind, stage)
+	if not _piece_meshes.has(key):
+		var root: Node = (BARRICADE_PIECES[kind][stage] as PackedScene).instantiate()
+		var found: Array[Node] = root.find_children("*", "MeshInstance3D", true, false)
+		_piece_meshes[key] = (found[0] as MeshInstance3D).mesh
+		root.free()
+	return _piece_meshes[key]
 
 
 func _update_barricade_meshes() -> void:
@@ -190,7 +215,10 @@ func _update_barricade_meshes() -> void:
 			var c: Vector2 = _grid.cell_center(_grid.cell_of_index(_barricades.cells[id][0]))
 			_explosions.blast(Vector3(c.x, GROUND_Y, c.y), 1.5, false, 0, false, false)  # splinters
 		mi.visible = standing
-		mi.scale.y = lerpf(0.35, 1.0, float(_barricades.hp[id]) / float(maxi(_barricades.max_hp[id], 1)))
+		var left: float = float(_barricades.hp[id]) / float(maxi(_barricades.max_hp[id], 1))
+		var stage: int = 0 if left > 0.66 else 1 if left > 0.33 else 2
+		if standing and stage != _bar_stage[id]:
+			_build_barricade_mesh(id, stage)  # boards come off as it is hit
 
 
 func _refill_crates() -> void:
