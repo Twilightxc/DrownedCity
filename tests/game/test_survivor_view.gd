@@ -176,3 +176,18 @@ func test_the_hip_twist_keeps_the_torso_and_gun_aimed() -> void:
 	var pelvis: Basis = sk.get_bone_global_pose(sk.find_bone("pelvis")).basis
 	assert_gt(twisted.z.dot(straight.z), 0.99, "the torso still faces the aim")
 	assert_lt(pelvis.z.dot(straight.z), 0.5, "the hips turned away")
+
+
+func test_a_long_gun_is_shouldered_at_shoulder_height() -> void:
+	var sk: Skeleton3D = _body.skeleton
+	for slot: int in [0, 2, 3]:
+		var g: Gun = _gun(slot)
+		_body.set_gun(g)
+		_body.drive(Vector2.ZERO, Vector2.UP, g, false)
+		await wait_physics_frames(40)
+		await sk.skeleton_updated
+		var gun_t: Transform3D = sk.global_transform.affine_inverse() * _body.gun_view.global_transform
+		var stock: Vector3 = gun_t * g.config.model.hand_points["stock"]
+		var pocket: Vector3 = sk.get_bone_global_pose(sk.find_bone("torso")) * RightArmAim.POCKET
+		assert_lt(stock.distance_to(pocket), 0.03, "slot %d: butt plate in the shoulder" % slot)
+		assert_between(stock.y, 1.3, 1.5, "slot %d: at shoulder height" % slot)

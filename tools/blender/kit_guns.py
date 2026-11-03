@@ -8,7 +8,10 @@ against a warm survivor.
 
 Coordinates (Blender, before export): the barrel points along -Y (Godot +Z, the aim direction of the
 player's AimMarker), up is +Z, the origin is where the right hand holds the grip. Everything is built at
-real size and scaled by SCALE so the guns read from the isometric camera.
+real size and scaled per gun (GUN_SCALE) so it reads from the isometric camera: the pistol is enlarged most,
+long guns only a little, so a rifle's stock sits in the shoulder with the left hand on the handguard (J
+2026-11-03). Attachments are built at real size; the game scales them to the gun they sit on
+(GunModel.part_scale).
 
 Each gun also gets a GunModel .tres: its muzzle, where the left hand holds it (support), and one mount point per
 attachment slot (muzzle = the muzzle, optic, under, mag) in Godot space. An attachment's origin is its mount point: the silencer starts at the muzzle
@@ -27,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kit_common as K  # noqa: E402
 from mathutils import Matrix  # noqa: E402
 
-SCALE = 1.3  # readable from the iso camera; the character is 1.6 m
+GUN_SCALE = {"gun_pistol_9mm": 1.3, "gun_ar_556": 1.05, "gun_shotgun_12g": 1.05, "gun_dmr_308": 1.0}
 
 K.PALETTE.update({
     "gun_black": "#6a7075", "gun_dark": "#868d92", "polymer": "#5f6468", "steel": "#b6bec2",
@@ -35,7 +38,7 @@ K.PALETTE.update({
     "brass": "#c9a14a",
 })
 
-SILENCER_LENGTH = 0.17  # m before SCALE: the muzzle flash moves this far forward
+SILENCER_LENGTH = 0.17  # m at real size (data: silencer.tres muzzle_extend_m), scaled with the gun
 
 
 def barrel(mb, y0, y1, z, radius, col, segments=8):
@@ -88,7 +91,8 @@ def ar(mb):
         mb.box((0, 0, -0.04), (0.03, 0.035, 0.08), "polymer")            # pistol grip
     return {"muzzle": (0, -0.615, 0.026), "optic": (0, -0.1, 0.069), "under": (0, -0.34, -0.002),
             "mag": (0, -0.1, -0.015), "support": (0, -0.28, -0.005),  # under the handguard
-            "handle": (0.0, 0.07, 0.062)}  # charging handle, back of the receiver
+            "handle": (0.0, 0.07, 0.062),  # charging handle, back of the receiver
+            "stock": (0.0, 0.29, 0.03)}    # butt plate: in the shoulder when aiming
 
 
 def mag_ar(mb):
@@ -109,7 +113,8 @@ def shotgun(mb):
         mb.box((0, 0.2, -0.03), (0.04, 0.26, 0.075), "gun_wood")         # stock
     return {"muzzle": (0, -0.72, 0.04), "optic": (0, -0.05, 0.0525), "under": (0, -0.64, 0.016),
             "support": (0, -0.27, -0.01),  # on the back of the pump
-            "port": (0, -0.1, -0.016)}     # loading port under the receiver
+            "port": (0, -0.1, -0.016),     # loading port under the receiver
+            "stock": (0, 0.39, 0.02)}      # butt plate
 
 
 def shell_12g(mb):
@@ -131,7 +136,8 @@ def dmr(mb):
     mb.box((0, 0.04, -0.03), (0.012, 0.045, 0.012), "gun_black")         # trigger guard
     return {"muzzle": (0, -0.75, 0.036), "optic": (0, -0.05, 0.055), "under": (0, -0.4, -0.028),
             "mag": (0, -0.08, -0.028), "support": (0, -0.25, -0.03),  # under the fore-end
-            "handle": (-0.026, -0.12, 0.04)}  # operating handle on the right side
+            "handle": (-0.026, -0.12, 0.04),  # operating handle on the right side
+            "stock": (0, 0.4, -0.015)}         # butt plate
 
 
 def mag_dmr(mb):
@@ -173,20 +179,23 @@ MAGS = [("mag_pistol_9mm", mag_pistol), ("mag_pistol_9mm_hand", mag_pistol_hand)
         ("mag_dmr_308", mag_dmr), ("shell_12g", shell_12g)]
 MAG_OF = {"gun_pistol_9mm": ("mag_pistol_9mm", "mag_pistol_9mm_hand"), "gun_ar_556": ("mag_ar_556", "mag_ar_556"),
           "gun_dmr_308": ("mag_dmr_308", "mag_dmr_308"), "gun_shotgun_12g": ("", "shell_12g")}
-HAND_POINTS = ("support", "handle", "port")  # where the left hand goes; not attachment mounts
+HAND_POINTS = ("support", "handle", "port", "stock")  # where the hands / shoulder go; not attachment mounts
+SCALE_OF = {**GUN_SCALE, **{m: GUN_SCALE[g] for g, (m, h) in MAG_OF.items() if m},
+            **{h: GUN_SCALE[g] for g, (m, h) in MAG_OF.items()}}  # a gun's mags take its scale; attachments: 1
 ATTACHMENTS = [("att_silencer", silencer), ("att_red_dot", red_dot), ("att_extended_mag", extended_mag),
                ("att_flashlight", flashlight)]
 
 
-def godot_vec(p):
-    """Blender Z-up point (before SCALE) -> Godot Y-up after the glTF export."""
-    x, y, z = (c * SCALE for c in p)
+def godot_vec(p, scale):
+    """Blender Z-up point (real size) -> Godot Y-up after the glTF export, at `scale`."""
+    x, y, z = (c * scale for c in p)
     return f"Vector3({x:.4f}, {z:.4f}, {-y:.4f})"
 
 
 def write_gun_model(out_dir, name, points):
-    mounts = ", ".join(f'"{k}": {godot_vec(v)}' for k, v in points.items() if k not in HAND_POINTS)
-    hand = ", ".join(f'"{k}": {godot_vec(v)}' for k, v in points.items() if k in HAND_POINTS and k != "support")
+    k_scale = GUN_SCALE[name]
+    mounts = ", ".join(f'"{k}": {godot_vec(v, k_scale)}' for k, v in points.items() if k not in HAND_POINTS)
+    hand = ", ".join(f'"{k}": {godot_vec(v, k_scale)}' for k, v in points.items() if k in HAND_POINTS and k != "support")
     mag, mag_hand = MAG_OF[name]
     res = [("2_mesh", name)] + ([("3_mag", mag)] if mag else []) + [("4_hand", mag_hand)]
     lines = [f'[gd_resource type="Resource" script_class="GunModel" load_steps={len(res) + 2} format=3]', "",
@@ -196,10 +205,11 @@ def write_gun_model(out_dir, name, points):
     if mag:
         lines.append('mag_scene = ExtResource("3_mag")')
     lines += ['mag_hand_scene = ExtResource("4_hand")',
-              f'muzzle = {godot_vec(points["muzzle"])}',
-              f'support = {godot_vec(points["support"])}',
+              f'muzzle = {godot_vec(points["muzzle"], k_scale)}',
+              f'support = {godot_vec(points["support"], k_scale)}',
               f'hand_points = Dictionary[String, Vector3]({{{hand}}})',
-              f'mounts = Dictionary[String, Vector3]({{{mounts}}})', ""]
+              f'mounts = Dictionary[String, Vector3]({{{mounts}}})',
+              f'part_scale = {k_scale}', ""]
     with open(os.path.join(out_dir, name + ".tres"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))
 
@@ -215,9 +225,9 @@ if __name__ == "__main__":
         mb = K.MeshBuilder(aging=0.15)
         points = fn(mb)
         obj = mb.to_object(name)
-        obj.data.transform(Matrix.Scale(SCALE, 4))
+        obj.data.transform(Matrix.Scale(SCALE_OF.get(name, 1.0), 4))
         K.bake_vertex_ao(obj, distance=0.06, samples=32)
         K.export_glb(obj, out, name)
         if points:
             write_gun_model(out, name, points)
-    print(f"silencer extends the muzzle by {SILENCER_LENGTH * SCALE:.4f} m")
+    print(f"silencer extends the muzzle by {SILENCER_LENGTH:.3f} m at real size")

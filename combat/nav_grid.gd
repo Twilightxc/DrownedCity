@@ -8,6 +8,9 @@ var height: int
 var cell_size: float
 var origin: Vector2  # world position of cell (0, 0)'s minimum corner
 var blocked: PackedByteArray
+## Per blocked cell: the height of low cover (an AC unit, sandbags), 0 = a wall to the sky. Shots fired and sight
+## lines held above it pass over (J 2026-11-03: shoot over the boxes from behind them).
+var low_cover: PackedFloat32Array
 
 
 func _init(w: int, h: int, size: float = 1.0, world_origin: Vector2 = Vector2.ZERO) -> void:
@@ -17,6 +20,7 @@ func _init(w: int, h: int, size: float = 1.0, world_origin: Vector2 = Vector2.ZE
 	cell_size = size
 	origin = world_origin
 	blocked.resize(w * h)
+	low_cover.resize(w * h)
 
 
 func cell_count() -> int:
@@ -47,19 +51,25 @@ func is_walkable(cell: Vector2i) -> bool:
 	return in_bounds(cell) and blocked[index_of(cell)] == 0
 
 
-## Blocks rays. Unlike `not is_walkable`, cells outside the grid don't block.
-func blocks_ray(cell: Vector2i) -> bool:
-	return in_bounds(cell) and blocked[index_of(cell)] != 0
+## Blocks rays held `over` m above the ground (0 = at the floor). Low cover lower than that lets them pass.
+## Unlike `not is_walkable`, cells outside the grid don't block.
+func blocks_ray(cell: Vector2i, over: float = 0.0) -> bool:
+	if not in_bounds(cell):
+		return false
+	var i: int = index_of(cell)
+	return blocked[i] != 0 and (low_cover[i] <= 0.0 or low_cover[i] >= over)
 
 
 func is_walkable_world(p: Vector2) -> bool:
 	return is_walkable(world_to_cell(p))
 
 
-func set_blocked_rect(rect: Rect2i, value: bool = true) -> void:
+## `cover_m` > 0 makes the cells low cover of that height; 0 = walls.
+func set_blocked_rect(rect: Rect2i, value: bool = true, cover_m: float = 0.0) -> void:
 	for y: int in range(maxi(rect.position.y, 0), mini(rect.end.y, height)):
 		for x: int in range(maxi(rect.position.x, 0), mini(rect.end.x, width)):
 			blocked[y * width + x] = 1 if value else 0
+			low_cover[y * width + x] = cover_m if value else 0.0
 
 
 func world_size() -> Vector2:
@@ -70,7 +80,8 @@ func world_size() -> Vector2:
 ## Cells outside the grid don't block (bullets fly off the roof).
 ## A ray through a cell corner exactly is blocked if either side cell is (no squeezing between
 ## diagonal walls); the result is the same for mirrored shots.
-func ray_distance(from: Vector2, dir: Vector2, max_range: float) -> float:
+## `over`: the ray's height above the floor (low cover under it doesn't stop it).
+func ray_distance(from: Vector2, dir: Vector2, max_range: float, over: float = 0.0) -> float:
 	dir = dir.normalized()
 	var c: Vector2i = world_to_cell(from)
 	var step_x: int = 1 if dir.x > 0.0 else -1
@@ -83,7 +94,7 @@ func ray_distance(from: Vector2, dir: Vector2, max_range: float) -> float:
 	var t_max_y: float = (next_y - from.y) / dir.y if dir.y != 0.0 else INF
 	var t: float = 0.0
 	while t <= max_range:
-		if blocks_ray(c):
+		if blocks_ray(c, over):
 			return t
 		if t_max_x < t_max_y:
 			t = t_max_x
@@ -95,7 +106,8 @@ func ray_distance(from: Vector2, dir: Vector2, max_range: float) -> float:
 			c.y += step_y
 		else:  # exact corner: step diagonally, blocked by either side cell
 			t = t_max_x
-			if t <= max_range and (blocks_ray(Vector2i(c.x + step_x, c.y)) or blocks_ray(Vector2i(c.x, c.y + step_y))):
+			if t <= max_range and (blocks_ray(Vector2i(c.x + step_x, c.y), over) \
+					or blocks_ray(Vector2i(c.x, c.y + step_y), over)):
 				return t
 			t_max_x += t_delta_x
 			t_max_y += t_delta_y
@@ -103,6 +115,7 @@ func ray_distance(from: Vector2, dir: Vector2, max_range: float) -> float:
 	return max_range
 
 
-func line_of_sight(a: Vector2, b: Vector2) -> bool:
+## `over`: how high the line runs; a target standing taller than low cover is seen over it.
+func line_of_sight(a: Vector2, b: Vector2, over: float = 0.0) -> bool:
 	var d: float = a.distance_to(b)
-	return d < 0.0001 or ray_distance(a, b - a, d) >= d
+	return d < 0.0001 or ray_distance(a, b - a, d, over) >= d

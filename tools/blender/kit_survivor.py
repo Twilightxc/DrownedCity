@@ -279,8 +279,8 @@ def _aim_pistol(p, lower=0.0):
 
 
 def _aim_rifle(p, lower=0.0):
-    p["torso"] = (0.06, 0.0, -0.25)  # bladed: left shoulder toward the aim
-    p["head"] = (0.05, 0.0, 0.2)
+    p["torso"] = (0.06, 0.0, -0.6)  # bladed: left shoulder well toward the aim, so the left hand reaches the handguard
+    p["head"] = (0.1, 0.0, 0.55)    # turned back to look along the barrel
     p["arm_r"] = (-0.3 + lower, 0.0, 0.45)  # elbow out and down, grip hand at the chest, stock in the shoulder
     p["fore_r"] = (-1.6, 0.0, 0.35)
     p["hand_r"] = (0.0, 0.0, 0.0)
@@ -350,7 +350,7 @@ def reload_rifle(u):
     p["arm_r"] = (-0.3 + 0.35 * tilt, 0.0, 0.45)
     p["fore_r"] = (-1.6 - 0.45 * tilt, 0.0, 0.35)
     p["hand_r"] = (0.0, 0.0, 0.6 * tilt)
-    p["torso"] = (0.06 + 0.2 * tilt, 0.0, -0.25 + 0.15 * tilt)
+    p["torso"] = (0.06 + 0.2 * tilt, 0.0, -0.6 + 0.45 * tilt)  # squares up to the gun while reloading
     p["head"] = (0.05 + 0.35 * tilt, 0.0, 0.2)
     return p, (0, 0, 0)
 

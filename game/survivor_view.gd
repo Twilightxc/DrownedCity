@@ -89,6 +89,7 @@ var _hold: StringName = &"aim_rifle"  ## the aim clip of the gun in hand
 var _grip_target: Transform3D = Transform3D.IDENTITY
 var _ik: LeftHandIK
 var _hip: HipTwist
+var _shoulder: RightArmAim
 var _twist_target: float = 0.0
 var _backwards: bool = false
 var _walk_dir: float = 1.0  ## smoothed blend position of the walk sets: +1 forward, -1 backward
@@ -122,8 +123,11 @@ func _ready() -> void:
 	_hand_l_mount = Node3D.new()
 	_hand_l_mount.transform = Transform3D(Basis(Vector3.RIGHT, PI), Vector3(0.0, -0.06, 0.0))  # mag top to the fingers
 	hand_l.add_child(_hand_l_mount)
-	_hip = HipTwist.new()  # before the IK: modifiers run in child order
+	_hip = HipTwist.new()  # modifiers run in child order: hips, then the right arm, then the left hand
 	skeleton.add_child(_hip)
+	_shoulder = RightArmAim.new()
+	_shoulder.influence = 0.0
+	skeleton.add_child(_shoulder)
 	_ik = LeftHandIK.new()
 	_ik.influence = 0.0
 	skeleton.add_child(_ik)
@@ -214,6 +218,10 @@ func _process(delta: float) -> void:
 	for walk_state: String in WALK_SETS:
 		_tree.set("parameters/lower_%s/blend_position" % walk_state, _walk_dir)
 	_ik.gun_in_hand = _mount.transform
+	_shoulder.gun_in_hand = _mount.transform
+	_shoulder.stock = _model_gun.hand_points.get("stock", Vector3.ZERO) if _model_gun != null else Vector3.ZERO
+	var shouldered: bool = upper == &"aim_rifle" and not String(lower) in FULL_BODY
+	_shoulder.influence = move_toward(_shoulder.influence, 1.0 if shouldered else 0.0, delta * IK_FADE * 1.5)
 	_ik.enabled = _model_gun != null
 	var busy: bool = String(lower) in LEFT_HAND_BUSY
 	_ik.influence = move_toward(_ik.influence, 0.0 if busy else 1.0, delta * IK_FADE)

@@ -87,8 +87,8 @@ func noise(at: Vector2, storey: int, radius: float) -> void:
 
 ## One step. `player_storey` = -1 while the player is outside: awake zombies then gather at the landing
 ## under the roof hatch.
-## `seen_mul`: how visible the player is (stance, 1.5+ A3).
-func step(delta: float, player_storey: int, player_pos: Vector2, seen_mul: float = 1.0) -> void:
+## `seen_mul`, `target_h`: how visible and how tall the player is (stance, 1.5+ A3).
+func step(delta: float, player_storey: int, player_pos: Vector2, seen_mul: float = 1.0, target_h: float = 1.5) -> void:
 	var chase: int = player_storey if player_storey >= 0 else layout.storeys - 1
 	var goal: Vector2 = player_pos if player_storey >= 0 else top_landing()
 	_check_left -= delta
@@ -101,7 +101,7 @@ func step(delta: float, player_storey: int, player_pos: Vector2, seen_mul: float
 			continue
 		if s == player_storey:
 			h.sight_mul = config.sight / horde_config.sight_m  # dark interiors: shorter sight
-			h.perceive(player_pos, delta, seen_mul)
+			h.perceive(player_pos, delta, seen_mul, target_h)
 		if check:
 			_chain_checks(s)
 		if h.count == 0 or h.awake_count() == 0:

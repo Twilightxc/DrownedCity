@@ -59,6 +59,15 @@ func _publish_footprints() -> void:
 
 
 ## Nav obstacles under this level as NavGrid cell rects.
+## Each nav obstacle's cells and how high it shoots over: metadata/cover_height (m, low cover), 0 = a full wall.
+func nav_obstacle_covers(grid: NavGrid) -> PackedFloat32Array:
+	var out: PackedFloat32Array = PackedFloat32Array()
+	for node: Node in get_tree().get_nodes_in_group("nav_obstacle"):
+		if is_ancestor_of(node):
+			out.append(float(node.get_meta("cover_height", 0.0)))
+	return out
+
+
 func nav_obstacle_rects(grid: NavGrid) -> Array[Rect2i]:
 	var rects: Array[Rect2i] = []
 	for node: Node in get_tree().get_nodes_in_group("nav_obstacle"):

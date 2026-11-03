@@ -40,7 +40,8 @@ func test_a_silencer_moves_the_muzzle_forward() -> void:
 	var silencer: AttachmentConfig = load("res://data/weapons/attachments/silencer.tres")
 	assert_eq(pistol.part_count(), 2)
 	var bare: Vector3 = pistol.shown.config.model.muzzle
-	assert_almost_eq(pistol.muzzle_position().z, bare.z + silencer.muzzle_extend_m, 0.001)
+	var scale: float = pistol.shown.config.model.part_scale
+	assert_almost_eq(pistol.muzzle_position().z, bare.z + silencer.muzzle_extend_m * scale, 0.001, "scaled with the gun")
 
 
 func test_switching_guns_swaps_the_model() -> void:

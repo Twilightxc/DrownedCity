@@ -20,7 +20,9 @@ func _init(nav: NavGrid) -> void:
 
 ## Fills `out_hits` with up to `max_hits` agent indices, nearest first.
 ## Returns the distance the bullet travelled (to a wall or max_range).
-func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits: int, out_hits: PackedInt32Array) -> float:
+## `over`: the muzzle's height above the floor; low cover under it doesn't stop the round.
+func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits: int, out_hits: PackedInt32Array,
+		over: float = 0.0) -> float:
 	out_hits.clear()
 	hit_t.clear()
 	_cand_agent.clear()
@@ -52,7 +54,7 @@ func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits:
 	var end_t: float = max_range
 	var t: float = 0.0  # distance at which the ray entered cell c
 	while t <= end_t:
-		if grid.blocks_ray(c):
+		if grid.blocks_ray(c, over):
 			end_t = t
 			break
 		for cy: int in range(maxi(c.y - 1, 0), mini(c.y + 2, h)):
@@ -79,7 +81,8 @@ func cast(horde: Horde, from: Vector2, dir: Vector2, max_range: float, max_hits:
 			c.y += step_y
 		else:  # exact corner: the side cells are inside the 3x3 block already searched
 			t = t_max_x
-			if t <= end_t and (grid.blocks_ray(Vector2i(c.x + step_x, c.y)) or grid.blocks_ray(Vector2i(c.x, c.y + step_y))):
+			if t <= end_t and (grid.blocks_ray(Vector2i(c.x + step_x, c.y), over) \
+					or grid.blocks_ray(Vector2i(c.x, c.y + step_y), over)):
 				end_t = t
 				break
 			t_max_x += t_delta_x

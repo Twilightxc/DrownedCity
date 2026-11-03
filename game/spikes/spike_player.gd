@@ -126,6 +126,12 @@ func _show_gun() -> void:
 		barrel.visible = gun.config.model == null
 
 
+## The muzzle's height above the floor: rounds fly over low cover lower than this (shooting over an AC unit
+## standing, not from behind it kneeling or prone).
+func _muzzle_over() -> float:
+	return _muzzle_y() - ground_y
+
+
 ## Height of tracers and the aim line: the gun's muzzle (low when crouched or prone), else MUZZLE_HEIGHT.
 ## Hits are worked out on the ground plane, so this is only what you see.
 func _muzzle_y() -> float:
@@ -365,7 +371,7 @@ func _update_aim() -> void:
 			aim_dir = raw
 			if controls.aim_assist and horde != null:
 				var cone: float = deg_to_rad(controls.aim_assist_cone_deg)
-				assist_target = _assist.pick(horde, ground_position(), raw, controls.aim_assist_range, cone)
+				assist_target = _assist.pick(horde, ground_position(), raw, controls.aim_assist_range, cone, _muzzle_over())
 				if assist_target >= 0:
 					assist_point = horde.positions[assist_target]
 					aim_dir = AimAssist.bend(raw, ground_position(), assist_point, controls.aim_assist_strength)
@@ -402,7 +408,7 @@ func _fire() -> void:
 	_shot_knock.clear()
 	for dir: Vector2 in gun.pellet_dirs(aim_dir, _rng):
 		var from: Vector2 = ground_position() + dir * radius
-		var travelled: float = _hitscan.cast(horde, from, dir, cfg.range_m, cfg.body_pen, _hits)
+		var travelled: float = _hitscan.cast(horde, from, dir, cfg.range_m, cfg.body_pen, _hits, _muzzle_over())
 		for i: int in _hits.size():
 			var a: int = _hits[i]
 			var armor: int = horde.armor[a]
@@ -481,7 +487,7 @@ func _draw_aim_line() -> void:
 	if not controls.aim_line or aim_locked:
 		return
 	var from: Vector2 = ground_position() + aim_dir * radius
-	var length: float = grid.ray_distance(from, aim_dir, gun.config.range_m)
+	var length: float = grid.ray_distance(from, aim_dir, gun.config.range_m, _muzzle_over())
 	if length <= 0.0:
 		return
 	var to: Vector2 = from + aim_dir * length

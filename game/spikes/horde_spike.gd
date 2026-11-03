@@ -90,14 +90,16 @@ func _ready() -> void:
 	_rng.randomize()
 	_grid = NavGrid.new(roof_size.x, roof_size.y, 1.0, -Vector2(roof_size) * 0.5)
 	var rects: Array[Rect2i] = obstacles
+	var covers: PackedFloat32Array = PackedFloat32Array()
 	if level_scene != null:
 		var level: Node = level_scene.instantiate()
 		add_child(level)
 		if level is Style15Level:
 			_water_y = (level as Style15Level).water_level
 		rects = (level as Style15Level).nav_obstacle_rects(_grid) if level is Style15Level else []
-	for rect: Rect2i in rects:
-		_grid.set_blocked_rect(rect)
+		covers = (level as Style15Level).nav_obstacle_covers(_grid) if level is Style15Level else PackedFloat32Array()
+	for i: int in rects.size():
+		_grid.set_blocked_rect(rects[i], true, covers[i] if i < covers.size() else 0.0)
 	_collect_perimeter()
 	assert(not _perimeter.is_empty(), "no walkable roof edge to spawn from")
 

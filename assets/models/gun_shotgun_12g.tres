@@ -8,7 +8,8 @@
 script = ExtResource("1_model")
 mesh_scene = ExtResource("2_mesh")
 mag_hand_scene = ExtResource("4_hand")
-muzzle = Vector3(0.0000, 0.0520, 0.9360)
-support = Vector3(0.0000, -0.0130, 0.3510)
-hand_points = Dictionary[String, Vector3]({"port": Vector3(0.0000, -0.0208, 0.1300)})
-mounts = Dictionary[String, Vector3]({"muzzle": Vector3(0.0000, 0.0520, 0.9360), "optic": Vector3(0.0000, 0.0683, 0.0650), "under": Vector3(0.0000, 0.0208, 0.8320)})
+muzzle = Vector3(0.0000, 0.0420, 0.7560)
+support = Vector3(0.0000, -0.0105, 0.2835)
+hand_points = Dictionary[String, Vector3]({"port": Vector3(0.0000, -0.0168, 0.1050), "stock": Vector3(0.0000, 0.0210, -0.4095)})
+mounts = Dictionary[String, Vector3]({"muzzle": Vector3(0.0000, 0.0420, 0.7560), "optic": Vector3(0.0000, 0.0551, 0.0525), "under": Vector3(0.0000, 0.0168, 0.6720)})
+part_scale = 1.05

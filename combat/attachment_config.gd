@@ -13,6 +13,6 @@ extends Resource
 @export var wear_mul: float = 1.0
 @export var weight_kg: float = 0.0
 @export var mesh_scene: PackedScene  ## from tools/blender/kit_guns.py; origin = the gun's mount point for `slot`
-@export var muzzle_extend_m: float = 0.0  ## the silencer moves the muzzle (and its flash) this far forward
+@export var muzzle_extend_m: float = 0.0  ## the silencer moves the muzzle (and its flash) this far forward (real size)
 @export var flashlight: bool = false  ## lights the way inside buildings (GDD: draws zombies at night, later)
 @export var shot_sfx: StringName = &""  ## replaces the gun's shot (silencer); empty = the gun's own
