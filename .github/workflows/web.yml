@@ -77,6 +77,9 @@ jobs:
           test -f build/web/index.wasm
           du -sh build/web
 
+      - name: Cache-bust engine files
+        run: bash tools/web_cache_bust.sh build/web "${GITHUB_SHA::7}-${{ github.run_number }}"
+
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
