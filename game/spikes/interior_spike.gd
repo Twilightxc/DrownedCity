@@ -64,7 +64,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	var dt: float = minf(delta, 1.0 / 20.0)
 	var t0: int = Time.get_ticks_usec()
-	_inside.step(dt, _interior.storey, _player.ground_position(), _player.motion.seen_mul())
+	_inside.step(dt, _interior.storey, _player.ground_position(), _player.motion.seen_mul(),
+		_player.motion.body_height_m())
 	_inside.sync(_interior.storey)
 	_lighting.step(dt, _interior.storey, _player.position, _player.aim_dir, _player.gun.flashlight)
 	_inside_ms = lerpf(_inside_ms, (Time.get_ticks_usec() - t0) / 1000.0, 0.1)

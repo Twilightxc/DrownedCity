@@ -14,3 +14,4 @@ muzzle = Vector3(0.0000, 0.0455, 0.2015)
 support = Vector3(0.0390, -0.0650, 0.0065)
 hand_points = Dictionary[String, Vector3]({"handle": Vector3(0.0000, 0.0715, -0.0260)})
 mounts = Dictionary[String, Vector3]({"muzzle": Vector3(0.0000, 0.0455, 0.2015), "optic": Vector3(0.0000, 0.0683, 0.0390), "under": Vector3(0.0000, -0.0078, 0.1300), "mag": Vector3(0.0000, -0.1307, -0.0540)})
+part_scale = 1.3

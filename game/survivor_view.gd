@@ -3,8 +3,9 @@ extends Node3D
 ## A survivor's body on screen (PHASE1 1.5+ A2): the skinned model from tools/blender/kit_survivor.py, two clip
 ## layers and the gun in the right hand. The lower layer (legs, or the whole body for roll / prone / downed)
 ## and the upper layer (spine, head and arms: aim, reload, sprint carry) blend through a bone filter, so the
-## legs walk while the arms keep aiming. Walking and crouch-walking blend four clips by the direction of travel
-## against the aim; a sprint or a roll turns the body to where it goes. The left hand is IK: on the gun, or
+## legs walk while the arms keep aiming. Walking sideways turns the hips to the travel and twists the torso back
+## to the aim (HipTwist); walking away from the aim plays the backward walk; a sprint or a roll turns the whole
+## body to where it goes. The left hand is IK: on the gun, or
 ## walked through a reload (REACH) while the mag leaves the gun, drops and a new one comes in. Faces +Z: put it
 ## under the fighter's aim marker.
 
@@ -16,17 +17,20 @@ const LOWER_CLIPS: PackedStringArray = ["idle", "walk", "run", "crouch_idle", "c
 	"roll", "downed"]  ## states; "walk" and "crouch_walk" are WALK_SETS
 const UPPER_CLIPS: PackedStringArray = ["aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_pistol",
 	"reload_rifle", "reload_shell"]
-## A walking state's four clips: ahead, back, left, right of the aim (blend positions (0, 1), (0, -1), (-1, 0), (1, 0)).
+## A walking state's backward and forward clips (blend positions -1 and +1).
 const WALK_SETS: Dictionary[String, Array] = {  # Array, not PackedStringArray: a typed const dict of those reads back empty strings in 4.7
-	"walk": ["walk_f", "walk_b", "walk_l", "walk_r"],
-	"crouch_walk": ["crouch_f", "crouch_b", "crouch_l", "crouch_r"],
+	"walk": ["walk_b", "walk_f"],
+	"crouch_walk": ["crouch_b", "crouch_f"],
 }
-const LOOP_CLIPS: PackedStringArray = ["idle", "walk_f", "walk_b", "walk_l", "walk_r", "run", "crouch_idle", "crouch_f",
-	"crouch_b", "crouch_l", "crouch_r", "prone_idle", "crawl", "downed", "aim_pistol", "aim_rifle", "carry_high",
-	"carry_port", "reload_shell"]
+const MAX_TWIST: float = 1.75  ## rad the hips turn from the aim at most (≈ 100°)
+const BACK_FROM: float = deg_to_rad(115.0)  ## travel this far off the aim switches to the backward walk...
+const FORWARD_FROM: float = deg_to_rad(85.0)  ## ...and back under this (no flicker in between)
+const TWIST_RATE: float = 10.0  ## 1/s the hips follow the travel
+const LOOP_CLIPS: PackedStringArray = ["idle", "walk_f", "walk_b", "run", "crouch_idle", "crouch_f", "crouch_b",
+	"prone_idle", "crawl", "downed", "aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_shell"]
 const FULL_BODY: PackedStringArray = ["roll", "prone_idle", "crawl", "downed"]  ## the arms follow the legs' clip
 ## m/s each moving clip's stride matches at 1× (kit_survivor.py); faster or slower movement scales the clip
-const CLIP_SPEED: Dictionary[StringName, float] = {&"walk": 1.4, &"run": 4.2, &"crouch_walk": 0.9, &"crawl": 0.6}
+const CLIP_SPEED: Dictionary[StringName, float] = {&"walk": 4.5, &"run": 6.0, &"crouch_walk": 1.7, &"crawl": 0.85}
 const MOVING_SPEED: float = 0.25  ## m/s: slower than this stands still
 const XFADE_SEC: float = 0.15
 const GRIP_BLEND: float = 12.0  ## 1/s: how fast the gun turns to a new clip's hold
@@ -84,6 +88,11 @@ var _grip: Dictionary[StringName, Transform3D] = {}  ## HOLD_DIR clip → hand-t
 var _hold: StringName = &"aim_rifle"  ## the aim clip of the gun in hand
 var _grip_target: Transform3D = Transform3D.IDENTITY
 var _ik: LeftHandIK
+var _hip: HipTwist
+var _shoulder: RightArmAim
+var _twist_target: float = 0.0
+var _backwards: bool = false
+var _walk_dir: float = 1.0  ## smoothed blend position of the walk sets: +1 forward, -1 backward
 var _gun: Gun
 var _model_gun: GunModel
 var _target_yaw: float = 0.0
@@ -114,6 +123,11 @@ func _ready() -> void:
 	_hand_l_mount = Node3D.new()
 	_hand_l_mount.transform = Transform3D(Basis(Vector3.RIGHT, PI), Vector3(0.0, -0.06, 0.0))  # mag top to the fingers
 	hand_l.add_child(_hand_l_mount)
+	_hip = HipTwist.new()  # modifiers run in child order: hips, then the right arm, then the left hand
+	skeleton.add_child(_hip)
+	_shoulder = RightArmAim.new()
+	_shoulder.influence = 0.0
+	skeleton.add_child(_shoulder)
 	_ik = LeftHandIK.new()
 	_ik.influence = 0.0
 	skeleton.add_child(_ik)
@@ -159,9 +173,12 @@ func drive(velocity: Vector2, facing: Vector2, gun: Gun, is_downed: bool) -> voi
 	var low_speed: float = 1.0
 	if CLIP_SPEED.has(low):
 		low_speed = speed / CLIP_SPEED[low]
+	_twist_target = 0.0
 	if WALK_SETS.has(String(low)) and facing != Vector2.ZERO:
-		var right: Vector2 = Vector2(-facing.y, facing.x)  # the body's right on the ground plane
-		_tree.set("parameters/lower_%s/blend_position" % low, Vector2(velocity.dot(right), velocity.dot(facing)) / speed)
+		var off: float = wrapf(atan2(velocity.x, velocity.y) - atan2(facing.x, facing.y), -PI, PI)  # travel vs aim
+		_backwards = absf(off) > (FORWARD_FROM if _backwards else BACK_FROM)
+		var legs: float = wrapf(off - PI, -PI, PI) if _backwards else off  # the hips face the travel, or away
+		_twist_target = clampf(legs, -MAX_TWIST, MAX_TWIST)
 	# A sprint or a roll faces where it goes; everything else faces the aim.
 	_target_yaw = 0.0
 	if (rolling or (sprinting and low == &"run")) and moving and facing != Vector2.ZERO:
@@ -196,7 +213,15 @@ func animate(low: StringName, low_speed: float, up: StringName, up_speed: float,
 func _process(delta: float) -> void:
 	_mount.transform = _mount.transform.interpolate_with(_grip_target, clampf(delta * GRIP_BLEND, 0.0, 1.0))
 	rotation.y = lerp_angle(rotation.y, _target_yaw, clampf(delta * TURN_RATE, 0.0, 1.0))
+	_hip.twist = lerp_angle(_hip.twist, _twist_target, clampf(delta * TWIST_RATE, 0.0, 1.0))
+	_walk_dir = move_toward(_walk_dir, -1.0 if _backwards else 1.0, delta * 6.0)
+	for walk_state: String in WALK_SETS:
+		_tree.set("parameters/lower_%s/blend_position" % walk_state, _walk_dir)
 	_ik.gun_in_hand = _mount.transform
+	_shoulder.gun_in_hand = _mount.transform
+	_shoulder.stock = _model_gun.hand_points.get("stock", Vector3.ZERO) if _model_gun != null else Vector3.ZERO
+	var shouldered: bool = upper == &"aim_rifle" and not String(lower) in FULL_BODY
+	_shoulder.influence = move_toward(_shoulder.influence, 1.0 if shouldered else 0.0, delta * IK_FADE * 1.5)
 	_ik.enabled = _model_gun != null
 	var busy: bool = String(lower) in LEFT_HAND_BUSY
 	_ik.influence = move_toward(_ik.influence, 0.0 if busy else 1.0, delta * IK_FADE)
@@ -326,16 +351,13 @@ func _build_tree() -> void:
 			pick.set_input_name(i, clips[i])
 			var node: AnimationRootNode
 			if WALK_SETS.has(clips[i]):
-				var space: AnimationNodeBlendSpace2D = AnimationNodeBlendSpace2D.new()
-				space.auto_triangles = false
+				var space: AnimationNodeBlendSpace1D = AnimationNodeBlendSpace1D.new()
+				space.sync = true  # backward and forward stay in step while they cross-fade
 				var names: Array = WALK_SETS[clips[i]]
-				var at: Array[Vector2] = [Vector2(0, 1), Vector2(0, -1), Vector2(-1, 0), Vector2(1, 0)]
 				for k: int in names.size():
 					var clip: AnimationNodeAnimation = AnimationNodeAnimation.new()
 					clip.animation = names[k]
-					space.add_blend_point(clip, at[k], -1, StringName(names[k]))
-				space.add_triangle(0, 3, 1)  # ahead, right, back
-				space.add_triangle(0, 1, 2)  # ahead, back, left
+					space.add_blend_point(clip, -1.0 if k == 0 else 1.0, -1, StringName(names[k]))
 				node = space
 			else:
 				var a: AnimationNodeAnimation = AnimationNodeAnimation.new()

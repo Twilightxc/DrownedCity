@@ -156,27 +156,34 @@ metadata/footprint = Vector2(3.4, 3.4)
 [node name="AC1" parent="Props" groups=["nav_obstacle"] instance=ExtResource("6_ac")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -8)
 metadata/footprint = Vector2(1.3, 1)
+metadata/cover_height = 0.95
 
 [node name="AC2" parent="Props" groups=["nav_obstacle"] instance=ExtResource("6_ac")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -8)
 metadata/footprint = Vector2(1.3, 1)
+metadata/cover_height = 0.95
 
 [node name="AC3" parent="Props" groups=["nav_obstacle"] instance=ExtResource("6_ac")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 2)
 metadata/footprint = Vector2(1.3, 1)
+metadata/cover_height = 0.95
 
 [node name="Sandbags1" parent="Props" groups=["nav_obstacle"] instance=ExtResource("7_sandbag")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 9.5)
 metadata/footprint = Vector2(3.2, 0.7)
+metadata/cover_height = 1.0
 
 [node name="Sandbags2" parent="Props" groups=["nav_obstacle"] instance=ExtResource("7_sandbag")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 9.5)
 metadata/footprint = Vector2(3.2, 0.7)
+metadata/cover_height = 1.0
 
 [node name="Sandbags3" parent="Props" groups=["nav_obstacle"] instance=ExtResource("7_sandbag")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 11.5, 0, -2)
 metadata/footprint = Vector2(3.2, 0.7)
+metadata/cover_height = 1.0
 
 [node name="Sandbags4" parent="Props" groups=["nav_obstacle"] instance=ExtResource("7_sandbag")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 11.5, 0, 5)
 metadata/footprint = Vector2(3.2, 0.7)
+metadata/cover_height = 1.0

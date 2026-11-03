@@ -65,25 +65,4 @@ func _process_modification() -> void:
 		return
 	var goal: Vector3 = target(sk)
 	var shoulder: Vector3 = sk.get_bone_global_pose(_arm).origin
-	goal -= (goal - shoulder).normalized() * PALM_M
-	var to_goal: Vector3 = goal - shoulder
-	var reach: float = clampf(to_goal.length(), 0.01, _upper_len + _fore_len - 0.001)
-	var dir: Vector3 = to_goal.normalized()
-	var bend: Vector3 = (POLE - dir * POLE.dot(dir)).normalized()
-	var cos_a: float = clampf((_upper_len * _upper_len + reach * reach - _fore_len * _fore_len) / (2.0 * _upper_len * reach),
-		-1.0, 1.0)
-	var elbow: Vector3 = shoulder + dir * cos_a * _upper_len + bend * sqrt(1.0 - cos_a * cos_a) * _upper_len
-	_point_bone(sk, _arm, elbow)
-	_point_bone(sk, _fore, shoulder + dir * reach)
-
-
-## Turns bone `b` (its limb hangs along -Y) the shortest way so it points at `to`.
-func _point_bone(sk: Skeleton3D, b: int, to: Vector3) -> void:
-	var g: Transform3D = sk.get_bone_global_pose(b)
-	var now: Vector3 = (g.basis * Vector3.DOWN).normalized()
-	var want: Vector3 = (to - g.origin).normalized()
-	if now.dot(want) > 0.99999:
-		return
-	var turned: Basis = Basis(Quaternion(now, want)) * g.basis.orthonormalized()
-	var parent: Basis = sk.get_bone_global_pose(sk.get_bone_parent(b)).basis.orthonormalized()
-	sk.set_bone_pose_rotation(b, (parent.inverse() * turned).get_rotation_quaternion())
+	ArmIK.solve(sk, _arm, _fore, _upper_len, _fore_len, goal - (goal - shoulder).normalized() * PALM_M, POLE)

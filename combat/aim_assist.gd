@@ -13,7 +13,8 @@ func _init(nav: NavGrid) -> void:
 ## Index of the agent to assist toward, or -1.
 ## Line of sight is tested only for a candidate that beats the best visible one so far, so a crowd
 ## behind a wall never hides a visible zombie further down the ranking.
-func pick(horde: Horde, from: Vector2, dir: Vector2, max_range: float, cone_rad: float) -> int:
+## `over`: the muzzle's height above the floor (targets behind low cover under it can be picked).
+func pick(horde: Horde, from: Vector2, dir: Vector2, max_range: float, cone_rad: float, over: float = 0.0) -> int:
 	dir = dir.normalized()
 	var range2: float = max_range * max_range
 	var cos_cone: float = cos(cone_rad)
@@ -32,7 +33,7 @@ func pick(horde: Horde, from: Vector2, dir: Vector2, max_range: float, cone_rad:
 		var angle: float = acos(minf(c, 1.0))
 		if angle > best_angle or (angle == best_angle and d2 >= best_d2):
 			continue
-		if grid.line_of_sight(from, pos[a]):
+		if grid.line_of_sight(from, pos[a], over):
 			best = a
 			best_angle = angle
 			best_d2 = d2

@@ -36,9 +36,10 @@ func show_gun(gun: Gun) -> void:
 			continue
 		var part: Node3D = a.mesh_scene.instantiate() as Node3D
 		part.position = model.mounts[a.slot]
+		part.scale = Vector3.ONE * model.part_scale
 		add_child(part)
 		_parts += 1
-		_muzzle.z += a.muzzle_extend_m
+		_muzzle.z += a.muzzle_extend_m * model.part_scale
 		if a.slot == "mag":
 			mag_node = part
 			_hand_scene = a.mesh_scene

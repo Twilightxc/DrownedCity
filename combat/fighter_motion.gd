@@ -106,5 +106,9 @@ func seen_mul() -> float:
 	return config.seen_mul[stance]
 
 
+func body_height_m() -> float:
+	return config.body_height_m[stance]
+
+
 func stamina_fraction() -> float:
 	return stamina / config.stamina_max if config.stamina_max > 0.0 else 0.0

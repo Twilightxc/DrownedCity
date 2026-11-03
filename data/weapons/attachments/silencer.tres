@@ -12,5 +12,5 @@ noise_mul = 0.4
 wear_mul = 1.5
 weight_kg = 0.3
 mesh_scene = ExtResource("90_model")
-muzzle_extend_m = 0.221
+muzzle_extend_m = 0.17
 shot_sfx = &"shot_pistol_silenced"
