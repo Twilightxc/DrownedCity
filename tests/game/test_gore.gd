@@ -70,6 +70,7 @@ func test_dismember_hides_a_group_and_throws_the_limb() -> void:
 
 
 func test_a_dropped_helmet_flies_alone_and_stays_off_the_corpse() -> void:
+	_config.dismember_chance = 0.0
 	var d: Horde.Death = _death()
 	_corpses.add_helmet(d)
 	assert_eq(_corpses._hide[0], CorpseLayer.ALL_PARTS & ~CorpseLayer.HELMET, "only the helmet shows")
