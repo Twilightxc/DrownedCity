@@ -36,13 +36,16 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
 ### 1.2 Enemy types and perception (GDD §9)
 - [x] Demo zombies (GDD §17 "4 types", J 2026-10-29): Walker (≥ 4 sub-variants), Runner, Armored
       (armor M, helmet can drop), Bloater (gas on death). Per-type data: HP, speed, armor, hit slow, stagger.
-      → `data/enemies/`; the helmet drop waits for the Armored mesh; the gas cloud's damage to the player is 1.3.
-- [ ] One MultiMesh per type mesh; type silhouette stays readable at a glance (pillar 5).
-      → until the desktop meshes: body scale + tint per type on the shared male/female VAT models.
+      → `data/enemies/`; the gas cloud's damage to the player is 1.3. Helmet drop (desktop, 2026-11-03): after
+      `helmet_hp` damage or any blast the helmet flies off and the Armored's armor falls M → L.
+- [x] One MultiMesh per type mesh; type silhouette stays readable at a glance (pillar 5).
+      → `EnemyConfig.models`; `HordeConfig.looks()`: 2 shared Walker looks + 1 per special type = 5 MultiMeshes.
 - [x] Perception: dormant → suspicious (walks to the last noise) → hunting; sound first, sight second (fog and
       night shorten sight). Replaces the interior spike's simple wake rules. → `Horde.hear` / `perceive`,
       `sight_mul` for fog and night (1.11); the roof horde of the spikes always hunts (a night attack).
-- [ ] Assets (desktop): Runner / Armored / Bloater meshes + VAT clips (hand-keyed or Mixamo when needed).
+- [x] Assets (desktop): Runner / Armored / Bloater meshes + VAT clips (hand-keyed or Mixamo when needed).
+      → `tools/blender/kit_zombie.py` MODELS: Runner sprints bent over, Armored stomps (vest, helmet part 11),
+      Bloater waddles (swollen belly); hand-keyed, the other clips are shared.
 
 ### 1.3 Player in danger
 - [x] Player HP, hits from zombies (the horde already counts them), downed state, revive or restart.

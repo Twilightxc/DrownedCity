@@ -14,8 +14,8 @@ uniform float roughness : hint_range(0.0, 1.0) = 0.95;
 uniform vec3 burn_color : source_color = vec3(1.0, 0.42, 0.08);
 uniform float burn_energy = 2.2;
 
-// INSTANCE_CUSTOM.w bit 11 (above the 11 part bits) = burning: emissive flicker, darker albedo.
-// Bits 12..15 = a spot fire's part index + 1: only that part flickers (frag blasts).
+// INSTANCE_CUSTOM.w bits 0..11 = hidden parts (part 11: the Armored helmet). Bit 12 = burning: emissive
+// flicker, darker albedo. Bits 13..16 = a spot fire's part index + 1: only that part flickers (frag blasts).
 varying float v_burn;
 varying vec3 v_world;
 // Dark rooms inside buildings (0.8 part 2), same texture as interior_cutaway; fire still glows in the dark.
@@ -27,9 +27,9 @@ varying float v_seed;
 
 void vertex() {
 	int flags = int(INSTANCE_CUSTOM.w);
-	int spot = (flags >> 12) & 15;
+	int spot = (flags >> 13) & 15;
 	// Every vertex of a part shares its UV.y, so the varying is constant across the part.
-	v_burn = max(float((flags >> 11) & 1), (spot != 0 && spot - 1 == int(UV.y)) ? 1.0 : 0.0);
+	v_burn = max(float((flags >> 12) & 1), (spot != 0 && spot - 1 == int(UV.y)) ? 1.0 : 0.0);
 	v_seed = MODEL_MATRIX[3].x * 1.7 + MODEL_MATRIX[3].z * 2.3;
 	int column = int(UV.x);
 	ivec2 a = ivec2(column, int(INSTANCE_CUSTOM.x));

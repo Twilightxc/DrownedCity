@@ -9,9 +9,11 @@ extends Node3D
 
 const FLOATS_PER_INSTANCE: int = 20
 const VAT_SHADER: Shader = preload("res://game/shaders/horde_vat.gdshader")
-const ALL_PARTS: int = (1 << 11) - 1  # kit_zombie SKELETON order
-## Severable groups as part bitmasks: head, left arm, right forearm, left shin, right leg.
-const LIMB_GROUPS: PackedInt32Array = [1 << 2, (1 << 3) | (1 << 4), 1 << 6, 1 << 8, (1 << 9) | (1 << 10)]
+const ALL_PARTS: int = (1 << 12) - 1  # kit_zombie SKELETON order + the Armored helmet (part 11)
+const HELMET: int = 1 << Horde.HELMET_PART
+## Severable groups as part bitmasks: head (with a helmet still on it), left arm, right forearm, left shin,
+## right leg.
+const LIMB_GROUPS: PackedInt32Array = [(1 << 2) | HELMET, (1 << 3) | (1 << 4), 1 << 6, 1 << 8, (1 << 9) | (1 << 10)]
 const LIMB_REST_T: float = 99.0  ## VAT time of a laid-down limb: the death clip's last (lying) frame
 const WALL_GAP: float = 0.35  ## m a sliding corpse stops short of a blocked cell
 const OBSTACLE_HEIGHT: float = 1.6  ## m, collision boxes over blocked cells for flying limbs
@@ -145,7 +147,7 @@ func add_death(d: Horde.Death) -> int:
 		tint = Color(tint.r * config.charred_tint, tint.g * config.charred_tint, tint.b * config.charred_tint)
 	# Blasts throw the body backwards, away from the centre: face the blast, play death_blown, slide.
 	var facing: Vector2 = -d.push if d.blast else d.heading
-	var i: int = _add(d.position, facing, d.variant, tint, 1 if d.blast else 0, hide, 0.0)
+	var i: int = _add(d.position, facing, d.variant, tint, 1 if d.blast else 0, hide | d.hidden, 0.0)
 	_scale[i] = d.scale
 	if d.blast:
 		_start_slide(i, d.push)
@@ -154,6 +156,12 @@ func add_death(d: Horde.Death) -> int:
 		var dir: Vector2 = d.push.rotated(_rng.randf_range(-config.limb_spread, config.limb_spread)) if d.blast else d.push
 		_add_limb(d, tint, g, dir)
 	return hide
+
+
+## A helmet knocked off a living zombie (Horde.helmet_drops): thrown like a limb, then it lies there.
+func add_helmet(d: Horde.Death) -> void:
+	if config.enabled:
+		_add_limb(d, d.tint, HELMET, d.push)
 
 
 func _start_slide(i: int, push: Vector2) -> void:
@@ -171,7 +179,7 @@ func _start_slide(i: int, push: Vector2) -> void:
 
 ## `dir` (unit) is where the limb flies: the push, turned a little for blasts.
 func _add_limb(d: Horde.Death, tint: Color, hide: int, dir: Vector2) -> void:
-	var shown: int = ALL_PARTS & ~hide
+	var shown: int = (ALL_PARTS & ~hide) | d.hidden
 	if not is_inside_tree() or config.limb_body_cap <= 0:
 		# No physics here: lay the limb down a little way along the push.
 		var perp: Vector2 = Vector2(-dir.y, dir.x)

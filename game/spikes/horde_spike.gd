@@ -104,7 +104,7 @@ func _ready() -> void:
 		capacity = maxi(capacity, n)
 	_horde = Horde.new(horde_config, _grid, capacity, _rng.randi())
 	_fx_horde = _horde
-	_renderer.setup(capacity)
+	_renderer.setup(capacity, horde_config)
 	if gore_config != null and not _renderer.models.is_empty():
 		_corpses = CorpseLayer.new()
 		_corpses.grid = _grid
@@ -384,6 +384,8 @@ func _drain_horde_events() -> void:
 				var size: float = randf_range(gore_config.death_pool_size.x, gore_config.death_pool_size.y)
 				# Under the body: it falls forward, or backwards away from a blast.
 				_blood.pool(d.position + (d.push if d.blast else d.heading) * 0.5, size)
+		for d: Horde.Death in h.helmet_drops:
+			_corpses.add_helmet(d)
 	h.clear_events()
 
 

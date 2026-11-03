@@ -8,10 +8,10 @@ extends Node3D
 
 const FLOATS_PER_INSTANCE: int = 20  # 12 transform (3x4, row-major) + 4 colour + 4 custom
 const VAT_SHADER: Shader = preload("res://game/shaders/horde_vat.gdshader")
-## INSTANCE_CUSTOM.w bit 11 (above the 11 part bits): the shader's burning flicker.
-const BURNING_BIT: float = float(1 << 11)
-## Bits 12..15: a spot fire's part index + 1 (Horde.burn_spot); the shader lights only that part.
-const SPOT_SHIFT: int = 12
+## INSTANCE_CUSTOM.w bits 0..11: hidden parts (the Armored helmet is part 11). Bit 12: burning flicker.
+const BURNING_BIT: int = 1 << 12
+## Bits 13..16: a spot fire's part index + 1 (Horde.burn_spot); the shader lights only that part.
+const SPOT_SHIFT: int = 13
 
 @export var models: Array[VatModel] = []
 ## Placeholder colours. Cool grey clothes, pale green skin (Style 1.5). sRGB.
@@ -23,7 +23,10 @@ var _buffers: Array[PackedFloat32Array] = []
 var _clip_index: Array[PackedInt32Array] = []  # per look: Horde.Anim -> VatClips row
 
 
-func setup(capacity: int) -> void:
+## With `config`, `models` grows from the shared looks to every look its types add (HordeConfig.looks).
+func setup(capacity: int, config: HordeConfig = null) -> void:
+	if config != null:
+		models = config.looks(models)
 	var looks: int = maxi(models.size(), 1)
 	for v: int in looks:
 		var mm: MultiMesh = MultiMesh.new()
@@ -82,6 +85,9 @@ func _sync_look(horde: Horde, v: int, ground_y: float) -> void:
 	if scales.is_empty():
 		scales.append(Vector3.ONE)
 	var spot: PackedByteArray = horde.burn_spot
+	var helmets: bool = false  # any type that can lose a helmet: only then pay for hidden_parts()
+	for t: EnemyConfig in horde.config.types:
+		helmets = helmets or t.helmet_hp > 0
 	var clips: VatClips = models[v].clips if not models.is_empty() else null
 	var rows_of: PackedInt32Array = _clip_index[v] if clips != null else PackedInt32Array()
 	var n: int = 0
@@ -117,12 +123,10 @@ func _sync_look(horde: Horde, v: int, ground_y: float) -> void:
 			buf[o + 16] = rows.x
 			buf[o + 17] = rows.y
 			buf[o + 18] = rows.z
-			if burn[a] <= 0.0:
-				buf[o + 19] = 0.0
-			elif spot[a] == 0:
-				buf[o + 19] = BURNING_BIT
-			else:
-				buf[o + 19] = float(spot[a] << SPOT_SHIFT)
+			var flags: int = horde.hidden_parts(a) if helmets else 0
+			if burn[a] > 0.0:
+				flags |= BURNING_BIT if spot[a] == 0 else spot[a] << SPOT_SHIFT
+			buf[o + 19] = float(flags)
 	_buffers[v] = buf
 	var mm: MultiMesh = _layers[v].multimesh
 	mm.buffer = buf
