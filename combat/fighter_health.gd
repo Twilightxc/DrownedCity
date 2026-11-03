@@ -16,6 +16,7 @@ var state: State = State.ALIVE
 var downed_left: float = 0.0
 var bites: int = 0  ## hits that broke the skin; SimCore turns them into infection (1.6)
 var invulnerable: bool = false  ## measurements and autoshoot
+var dodging: bool = false  ## a dodge roll's i-frames (1.5+ A3): zombie hits and blasts miss
 
 var _partial: float = 0.0  ## damage-over-time below 1 HP carried to the next frame
 
@@ -59,7 +60,7 @@ func weight_kg() -> float:
 
 ## One zombie hit; may be a bite (chance × the armor's bite_mul).
 func take_hit(damage: int, rng: RandomNumberGenerator) -> void:
-	if not is_alive() or invulnerable:
+	if not is_alive() or invulnerable or dodging:
 		return
 	if rng.randf() < config.bite_chance * mul(&"bite_mul"):
 		bites += 1
@@ -67,7 +68,7 @@ func take_hit(damage: int, rng: RandomNumberGenerator) -> void:
 
 
 func take_blast(damage: int, own: bool) -> void:
-	if is_alive():
+	if is_alive() and not dodging:
 		_lose(roundi(damage * mul(&"blast_mul") * (config.self_blast_mul if own else 1.0)), &"blast")
 
 

@@ -6,7 +6,7 @@ extends Node3D
 
 const GROAN_RANGE_M: float = 20.0
 const GROAN_SEC: Vector2 = Vector2(1.6, 0.3)  ## pause between groans: one zombie near → a crowd of 40
-const STEP_M: float = 0.75  ## a footstep every this much walking
+const STEP_NOISE_REF_M: float = 6.0  ## a standing step's noise plays the footstep at its own volume
 const DEATHS_PER_FRAME: int = 3
 
 var volume_db: float = -6.0:
@@ -24,8 +24,6 @@ var _rig: Node3D
 var _listener: AudioListener3D
 var _fire: AudioStreamPlayer3D
 var _gun_counts: Dictionary[Gun, Vector2i] = {}  ## reload_sounds, dry_fires last seen
-var _step_from: Vector2 = Vector2.ZERO
-var _step_left: float = STEP_M
 var _groan_left: float = 1.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -54,7 +52,9 @@ func bind(bank: SfxBank, player: SpikePlayer, rig: Node3D) -> void:
 	player.shot.connect(_on_shot)
 	player.health.damaged.connect(func(_amount: int, _kind: StringName) -> void:
 		sfx.play(&"player_hit", _at(player.ground_position())))
-	_step_from = player.ground_position()
+	# Steps come from the player (1.5+ A3): crouched and prone ones are quieter, sprinting ones louder.
+	player.footstep.connect(func(at: Vector2, noise_m: float) -> void:
+		sfx.play(&"footstep", _at(at), 1.0, -1.0, 0.0, linear_to_db(clampf(noise_m / STEP_NOISE_REF_M, 0.15, 2.0))))
 
 
 func _on_shot(g: Gun) -> void:
@@ -72,7 +72,6 @@ func update(delta: float, horde: Horde, burning: GroundFire) -> void:
 	_listener.global_position = _at(me)
 	_listener.global_rotation = Vector3(0.0, _rig.global_rotation.y, 0.0)
 	_update_gun()
-	_update_steps(me)
 	if horde != null:
 		_update_groans(delta, horde, me)
 	_update_fire(horde, burning, me)
@@ -104,14 +103,6 @@ func _update_gun() -> void:
 	if g.dry_fires > seen.y:
 		sfx.play(&"dry_click", at)
 	_gun_counts[g] = Vector2i(g.reload_sounds, g.dry_fires)
-
-
-func _update_steps(me: Vector2) -> void:
-	_step_left -= me.distance_to(_step_from)
-	_step_from = me
-	if _step_left <= 0.0:
-		_step_left = STEP_M
-		sfx.play(&"footstep", _at(me))
 
 
 ## A groan from a random hunting zombie nearby, more often the bigger the crowd around you.

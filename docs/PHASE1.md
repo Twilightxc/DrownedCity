@@ -100,11 +100,15 @@ of it taken from those milestones.
       a bone filter, the gun on `hand_r` with a measured hold per clip; the player uses it; `?spike=poses` shows
       every clip. Stance / sprint / roll flags are ready for A3. The left hand holds the gun by two-bone IK to
       `GunModel.support`.
-- [ ] **A3 Stances and movement:** C crouch (toggle), Z prone (toggle), Shift sprint (hold), Space dodge roll
+- [x] **A3 Stances and movement:** C crouch (toggle), Z prone (toggle), Shift sprint (hold), Space dodge roll
       (not Ctrl: Ctrl+R / Ctrl+W are browser shortcuts). Pad: L3 sprint, B roll, crouch / prone on the D-pad;
       fire mode moves off L3. Per stance in `data/combat/stances.tres`: speed, spread, footstep and shot noise,
       how far zombies see you (`Horde.perceive`). Stamina: sprint and roll drain it, regen after a pause; no
       shooting while sprinting or rolling; the roll has short i-frames and a cooldown.
+      → `FighterMotion` (combat/, also for the A5 teammates) + `data/combat/movement.tres`; steps emit noise
+      (`SpikePlayer.footstep` / `noise`), `Horde.perceive(seen_mul)`, `Gun.stance_spread_mul`,
+      `FighterHealth.dodging`. Pad: L3 sprint, B roll, D-pad down / up crouch / prone; fire mode and grenade type
+      moved to D-pad left / right; pad zoom and horde ± dropped (keyboard keeps them).
 - [ ] **A4 HUD:** HP and stamina bars; a reload ring above the character's head that fills over the reload time
       (shotgun: one step per shell).
 - [ ] **A5 Two AI teammates:** follow the player, shoot the nearest hunting zombie in range and line of sight with

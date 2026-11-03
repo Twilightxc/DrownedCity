@@ -275,7 +275,8 @@ func _point_noise_flow(at: Vector2) -> void:
 ## Sight and the state timers (GDD §9), once per frame before update(): a calm agent that sees `target`
 ## (line of sight within sight_m × type × sight_mul) starts hunting; a hunter that hasn't seen it for
 ## lose_sec turns suspicious at the last place it saw it; a suspicious agent calms down after suspicious_sec.
-func perceive(target: Vector2, delta: float) -> void:
+## `seen_mul` scales how far they see the target (a crouching or prone fighter, 1.5+ A3).
+func perceive(target: Vector2, delta: float, seen_mul: float = 1.0) -> void:
 	_perceive_left -= delta
 	var look: bool = _perceive_left <= 0.0
 	if look:
@@ -294,7 +295,7 @@ func perceive(target: Vector2, delta: float) -> void:
 		if not look:
 			continue
 		var t: EnemyConfig = type_of(a)
-		var sight: float = config.sight_m * sight_mul * (t.sight_mul if t != null else 1.0)
+		var sight: float = config.sight_m * sight_mul * seen_mul * (t.sight_mul if t != null else 1.0)
 		if positions[a].distance_squared_to(target) <= sight * sight and grid.line_of_sight(positions[a], target):
 			state[a] = State.HUNTING
 			goal[a] = target

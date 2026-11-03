@@ -479,6 +479,14 @@ func _publish_stats(delta: float) -> void:
 func _update_status() -> void:
 	var g: Gun = _player.gun
 	var hp_text: String = "HP %d" % _player.health.hp
+	var m: FighterMotion = _player.motion
+	hp_text += "  ·  " + tr("Stamina %d") % roundi(m.stamina)
+	if m.is_rolling():
+		hp_text += "  ·  " + tr("ROLL")
+	elif m.sprinting:
+		hp_text += "  ·  " + tr("SPRINT")
+	elif m.stance != FighterMotion.Stance.STAND:
+		hp_text += "  ·  " + tr("CROUCH" if m.stance == FighterMotion.Stance.CROUCH else "PRONE")
 	var mode: String = ["semi", "auto", "burst"][g.mode()]
 	var text: String = "%s   ·   %s [%s]  %d / %d  · %d" % [hp_text, tr(g.config.display_name), tr(mode), g.ammo,
 		g.mag_size, _player.pouch.count(g.config.caliber)]
@@ -501,8 +509,8 @@ func _update_help() -> void:
 ## Controls cheat sheet for the device in use; subclasses append their extras.
 func _help_text(pad: bool) -> String:
 	if pad:
-		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT · Grenade type B\nNext gun R3 · Fire mode L3 · Camera LB/RB, D-pad up/down · Back: debug overlay"
-	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB · Grenade type G\nGuns 1–4 · Fire mode V · Camera Q/E, wheel · F3: debug overlay"
+		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT · Grenade type D-pad right\nSprint L3 · Roll B · Crouch D-pad down · Prone D-pad up · Next gun R3 · Fire mode D-pad left · Camera LB/RB · Back: debug overlay"
+	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB · Grenade type G\nSprint Shift · Roll Space · Crouch C · Prone Z · Guns 1–4 · Fire mode V · Camera Q/E, wheel · F3: debug overlay"
 
 
 func _build_level_meshes() -> void:
