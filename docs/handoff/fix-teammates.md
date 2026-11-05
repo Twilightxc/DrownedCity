@@ -32,7 +32,7 @@ J's bug list after gate 1.G (2026-11-05), "Teammate bugs first":
   for 2400 frames: no errors.
 
 ## Not done / next
-- The PHASE1 bug table is in PR #52 (not merged when this branch started): mark items 1, 2, 5, 7 there after both merge.
+- PHASE1 bug table: items 1, 2, 5, 7 marked fixed (after merging main with PR #52).
 - Later code bugs: HUD (3, 9, 16), 8, 13, 18. Items 10 and 17 need a design talk with J. Animation bugs are desktop.
 
 ## J must test

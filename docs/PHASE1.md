@@ -141,7 +141,7 @@ Order follows the loop. Hours from GDD §17 (J's time).
 
 | # | Milestone | Main content | h |
 | --- | --- | --- | --- |
-| 1.6 | SimCore day | survivors (named, skills, traits), needs, resources, the day tick, save v2 | 55 |
+| 1.6 | SimCore day | survivors (named, skills, traits), needs, resources, the day tick, save v2; influence + status ladder (citizen system, below) | 55 |
 | 1.7 | Base | rooms ×6 tier 1–2, production, utility AI daily life, Observer mode | 70 |
 | 1.8 | Survivors on screen | male/female bodies, build, height, skin, hair; locomotion 8-way (Mixamo); outfits ×5 + colour/pattern | 95 |
 | 1.9 | Expedition | boat, district map with 4–6 buildings, interiors (from 0.8), looting, team orders, occupants, airdrops | 140 |
@@ -152,6 +152,44 @@ Order follows the loop. Hours from GDD §17 (J's time).
 | 1.14 | Release | telemetry with opt-in consent (PDPA), feedback form, itch.io page "free during development" | 12 |
 
 Part A (combat, 1.1–1.5) ≈ 80 h, so the total is ≈ 750 h.
+
+### 1.6 citizen system (J, 2026-11-05; GDD §3, §11, §12)
+- [ ] Influence earned per survivor for every action (days in the base, missions done, morale, zombie kills; rates
+      in `data/`). It goes to one base pool (trading with other communities) **and** to the survivor's personal
+      rank points; spending from the pool never lowers anyone's rank.
+- [ ] Status ladder stranger → member → outstanding citizen by rank-point thresholds (data). No cap: anyone can be
+      an outstanding citizen, and every outstanding citizen's buff applies at once, leader or not.
+- [ ] Leader: picked from outstanding citizens; becoming leader opens a quest line to a tier-4 special room and
+      special items made in tier-4 buildings. Leader personality from the survivor's special skill, or added by
+      reading a book.
+- Open (J to send): the buffs; leader system detail; core skills; background special skills (add-on special);
+      more traits; community skills; reading books. Also undecided: can status be lost (morale, misconduct)?
+- SimCore rule: all of this is pure data + rules in `sim/`, unit-tested, saved in the survivor state (save v2).
+
+## J's bug list after 1.G (2026-11-05)
+
+J: "รายงานข้อผิดพลาด", 18 items. Grouped by what they need; **code** = either machine, **desktop** = Blender / clips.
+
+| # | Item | Group | Where |
+| --- | --- | --- | --- |
+| 1, 7 | ~~Teammates don't revive the downed player~~ fixed (PR #53) | Teammate AI | code |
+| 1 | ~~Teammates don't throw grenades, crouch or go prone~~ fixed (PR #53; stance is their own call by cover) | Teammate AI | code |
+| 2 | ~~Teammates take no damage from Bloater gas~~ fixed (PR #53, ground fire too) | Teammate AI | code |
+| 5 | ~~Teammates look lost when the player is downed~~ fixed (PR #53) | Teammate AI | code |
+| 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code (design with J) |
+| 3 | No crosshair for the pistol while downed | HUD | code |
+| 16 | A downed icon over the player and teammates | HUD | code |
+| 17 | A weapon UI | HUD | code (design with J) |
+| 9 | The reload ring stays on dead teammates / the player | HUD bug | code |
+| 8 | Zombies keep attacking the dead player's body | Horde bug | code |
+| 18 | Barricades should show damage by level (3 stages exist; make them clearer or add more) | Arena | code + desktop pieces |
+| 13 | The water next to buildings looks odd (foam ring / shore) | Water shader | code |
+| 4 | Weapon switch animation | Animation | desktop |
+| 6 | No death animation; the downed pose freezes | Animation | desktop |
+| 11 | Standing → prone looks like just falling over | Animation | desktop |
+| 12 | Crouch → prone transition | Animation | desktop |
+| 14 | Side roll while prone | Animation | desktop |
+| 15 | Prone crawl: rifle across the elbows, crawl on knees and elbows | Animation | desktop |
 
 ## Settled with J
 - 2026-11-03: 1.5+ before the gate; CC0 sound packs; roll on Space; 2 AI teammates in the arena. Sprint carry:
