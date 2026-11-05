@@ -125,6 +125,8 @@ of it taken from those milestones.
 - **Pass (J):** after 1.5+, J plays the arena at least 3 times on the Arc in Chrome and says it's fun; ≥ 50 FPS at the
   largest wave. **Fallback:** tune with the F4 panel and data for one more round; if still not fun, stop and
   rethink the combat design before Part B (GDD §16 risk "combat isn't fun").
+  → **✅ Pass 2026-11-05** (J, 3 nights on the Arc in Chrome, build `e96d7dd · #144`): fun; teammates make it easier
+  but you still die. Wave 6: 60 FPS, 150 draws, 137k. Bugs from J to follow.
 
 ## Part B — The rest of the loop (outline; detailed after 1.G)
 

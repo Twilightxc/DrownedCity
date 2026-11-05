@@ -3,6 +3,23 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## 1.G Gate "combat is fun" — ✅ pass (J, 2026-11-05)
+
+J played the arena night 3 times on the Arc laptop in Chrome (live build `e96d7dd · #144`):
+"เล่นครบ 3 คืนแล้วสนุก" — fun. Teammates: "มีเพื่อนแล้วง่ายขึ้นแต่ก็ยังตาย ไม่ง่ายขนาดนั้น" — easier with Marco
+and Jess, but you still die; not too easy, so they stay on by default. J has a list of bugs and will send it later.
+
+| Device | Browser | Scene | FPS | Draw calls | Primitives | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Laptop Intel Arc 140V | Chrome, maximised window, live build `e96d7dd · #144` (J) | arena wave 6 / 6, 27–32 zombies on the roof (87 to come), teammates, corpses 136, blood 160 / 160, a gas cloud | 60 (17.0 ms) | 150 | 137k | horde update 0.13 ms, render sync 0.24 ms, flow field 0.20 ms; VRAM 104.6 MB |
+
+- **Budget:** 150 of 250 draw calls, 137k of 300k primitives, at the vsync cap. The screenshot was not at the
+  wave's peak crowd (~30 on the roof); with ~100 draw calls of headroom it should hold there too. Draw calls are
+  up from the desktop's 90 at wave 5: teammates, casings, gas, and full corpse / blood caps.
+- **Part B can start** (`docs/PHASE1.md`), with 1.6 SimCore day first. Open before or alongside it: J's bug list,
+  and the small items from the desktop note (teammates can't revive the player, don't throw grenades or crouch,
+  don't take gas / fire damage; pad bindings untested on a pad).
+
 ## 1.5+ arena props — 🟡 built (2026-11-04), waiting for J's look
 
 J: "ทำตามที่เสนอได้เลย" (the four Blender pieces still placeholders in the arena). Live: `?spike=arena`.
