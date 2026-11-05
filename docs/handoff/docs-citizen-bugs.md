@@ -1,6 +1,6 @@
 # docs/citizen-bugs
 
-- **PR:** not opened yet (GitHub was unreachable from the laptop when this was written; push + PR when it's back)
+- **PR:** #52 (pushed: yes); J merges
 - **Machine:** laptop (ASUS, Intel Arc 140V)
 - **Base:** main @ `810e7f8` (gate 1.G merged as PR #51)
 - **Updated:** 2026-11-05
