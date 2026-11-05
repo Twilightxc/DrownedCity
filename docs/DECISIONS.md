@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-05 | Citizen system: influence from every action goes to the base pool and to the doer's rank points; anyone can be an outstanding citizen and all their buffs apply; the leader unlocks tier-4 quests; leader personality from the special skill or a book | J's answers to the open questions (GDD §3, §11, §12); the buffs and skills come later |
 | 2026-11-05 | Gate 1.G passed: combat is fun (J, 3 arena nights on the Arc); Part B starts with 1.6 SimCore; teammates stay on by default | J's verdict; with teammates it is easier but still deadly |
 | 2026-11-04 | Facades: bays 3.4–4.2 m per building, a window type per column (single, tall, double, small, blank), stacked balconies with doors on some columns; no lit windows on any building | J: windows were too many and too regular, and the light leaking out unwanted; supersedes "lit windows only where survivors live" (CLAUDE.md art direction) |
 | 2026-11-04 | Barricades show damage by swapping kit pieces per stage (3 stages, merged per barricade); carried guns are drawn slung / holstered without shadows | Readable damage without per-plank physics; carried guns read at a glance and cost one unshadowed draw call each |
