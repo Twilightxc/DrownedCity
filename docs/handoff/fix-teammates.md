@@ -1,6 +1,6 @@
 # fix/teammates
 
-- **PR:** not opened yet (pushed? no)
+- **PR:** opening (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ 810e7f8
 - **Updated:** 2026-11-05
