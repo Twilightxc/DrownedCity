@@ -120,6 +120,13 @@ of it taken from those milestones.
       → `Teammate` (a SpikePlayer driven by `TeammateBrain` instead of input) + `data/combat/teammate.tres`;
       Marco (AR) and Jess (shotgun), each with a pistol; `Horde.extra_targets`: hunters chase and hit the nearest;
       orders wheel: Follow me / Hold here / Hold fire; downed: F next to them for 2 s; `?mates=N`.
+      → Bug list 2026-11-05 (items 1, 2, 5, 7): gas and burning ground hurt teammates; revive lives in SpikePlayer
+      (`start_revive`, `FighterConfig.revive_sec / revive_radius_m`), so a teammate walks to a downed squad member
+      (the player first), kneels 2 s without firing and gets it up ("Marco is coming" on the downed line); frags
+      (2 each, `TeammateConfig.grenades`) into ≥ 5 hunters with no friend near the blast, 6 s apart; stance is its
+      own call (J): standing still, the lowest stance whose muzzle (`MovementConfig.muzzle_height_m`: 1.38 / 1.0 /
+      0.38 m) clears the low cover toward its target, prone only with no hunter within 10 m, crouch within 5 m;
+      crouched while sneaking past sleepers; kneels to revive; stands to move or look.
 
 ### 1.G Gate — "combat is fun"
 - **Pass (J):** after 1.5+, J plays the arena at least 3 times on the Arc in Chrome and says it's fun; ≥ 50 FPS at the
@@ -165,10 +172,10 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 
 | # | Item | Group | Where |
 | --- | --- | --- | --- |
-| 1, 7 | Teammates don't revive the downed player | Teammate AI | code |
-| 1 | Teammates don't throw grenades, crouch or go prone | Teammate AI | code (stances exist) |
-| 2 | Teammates take no damage from Bloater gas | Teammate AI | code |
-| 5 | Teammates look lost when the player is downed | Teammate AI | code (with 1, 7) |
+| 1, 7 | ~~Teammates don't revive the downed player~~ fixed (PR #53) | Teammate AI | code |
+| 1 | ~~Teammates don't throw grenades, crouch or go prone~~ fixed (PR #53; stance is their own call by cover) | Teammate AI | code |
+| 2 | ~~Teammates take no damage from Bloater gas~~ fixed (PR #53, ground fire too) | Teammate AI | code |
+| 5 | ~~Teammates look lost when the player is downed~~ fixed (PR #53) | Teammate AI | code |
 | 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code (design with J) |
 | 3 | No crosshair for the pistol while downed | HUD | code |
 | 16 | A downed icon over the player and teammates | HUD | code |

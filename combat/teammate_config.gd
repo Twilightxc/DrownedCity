@@ -20,6 +20,20 @@ extends Resource
 @export var burst_pause_sec: float = 0.25  ## ...with this pause so the bloom settles
 @export var tactical_reload_frac: float = 0.4  ## reloads when nothing is near and the mag is below this
 
+@export_group("Stance")
+@export var stance_check_sec: float = 0.5  ## how often it rethinks its stance while standing still
+@export var crouch_safe_m: float = 5.0  ## crouches only with no hunting zombie closer than this
+@export var prone_safe_m: float = 10.0  ## goes prone only with no hunting zombie closer than this
+@export var sneak_radius_m: float = 15.0  ## no hunters but a sleeping / suspicious zombie this close: moves crouched
+
+@export_group("Grenades")
+@export var throwable: ThrowableConfig = preload("res://data/weapons/frag_grenade.tres")  ## null: never throws
+@export var grenades: int = 2  ## how many each teammate carries into the fight
+@export var throw_min_cluster: int = 5  ## hunting zombies inside one blast before it throws
+@export var throw_check_sec: float = 0.5
+@export var throw_cooldown_sec: float = 6.0
+@export var throw_safety_m: float = 1.0  ## no friend (itself included) within blast radius + this of the point
+
 @export_group("Down")
-@export var revive_sec: float = 2.0  ## the player stays next to a downed teammate this long (F) to get it up
-@export var revive_radius_m: float = 1.6
+## (How long and how close a revive takes is the downed fighter's FighterConfig.revive_sec / revive_radius_m.)
+@export var revive_kite_m: float = 1.2  ## going to help someone up: only backs off a zombie this close

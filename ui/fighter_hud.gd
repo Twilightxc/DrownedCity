@@ -157,9 +157,9 @@ func _mini_bar(at: Vector2, width: float, fill: float, col: Color) -> void:
 ## A downed teammate being helped up gets a green ring for the revive instead.
 func _ring(f: SpikePlayer) -> void:
 	var fill: float = reload_fill(f)
-	var reviving: bool = f is Teammate and (f as Teammate).revive_fill() >= 0.0
+	var reviving: bool = f.revive_fill() >= 0.0
 	if reviving:
-		fill = (f as Teammate).revive_fill()
+		fill = f.revive_fill()
 	if fill < 0.0 or f.camera == null:
 		return
 	var head: Vector3 = Vector3(f.position.x, f.ground_y + RING_HEIGHT, f.position.z)

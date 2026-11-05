@@ -28,14 +28,14 @@ func test_revive_needs_the_player_to_stay_close_for_revive_sec() -> void:
 	mate._update_revive(0.0)
 	assert_true(mate.is_in_group("interactable"), "the player can interact with it now")
 	mate.interact(player)
-	mate._update_revive(mate.teammate_config.revive_sec * 0.5)
+	mate._update_revive(mate.health.config.revive_sec * 0.5)
 	assert_almost_eq(mate.revive_fill(), 0.5, 0.01, "the HUD ring")
 	player.position.x = 15.0  # walked away
 	mate._update_revive(0.1)
 	assert_lt(mate.revive_fill(), 0.0, "revive cancelled")
 	player.position.x = 10.0
 	mate.interact(player)
-	mate._update_revive(mate.teammate_config.revive_sec + 0.1)
+	mate._update_revive(mate.health.config.revive_sec + 0.1)
 	assert_eq(mate.health.state, FighterHealth.State.ALIVE, "back up")
 	mate._update_revive(0.0)
 	assert_false(mate.is_in_group("interactable"))
@@ -66,3 +66,25 @@ func test_a_downed_fighter_fights_on_with_the_pistol_and_gets_its_long_gun_back(
 	p.auto_trigger = false
 	p.health.revive()
 	assert_eq(p.gun, long_gun, "back on its feet: the long gun again")
+
+
+func test_a_teammate_walks_to_the_downed_player_and_gets_it_up() -> void:
+	var cam: Camera3D = Camera3D.new()
+	add_child_autofree(cam)
+	var grid: NavGrid = NavGrid.new(20, 20)
+	var player: SpikePlayer = _fighter(SpikePlayer.new(), grid, cam, Vector2(10, 10))
+	var mate_node: Teammate = Teammate.new()
+	mate_node.loadout = MATE_LOADOUT
+	var mate: Teammate = _fighter(mate_node, grid, cam, Vector2(15, 10)) as Teammate
+	mate.leader = player
+	var squad: Array[SpikePlayer] = [player, mate]
+	mate.squad = squad
+	player.health.take_hit(999, RandomNumberGenerator.new())
+	assert_eq(player.health.state, FighterHealth.State.DOWNED)
+	for i: int in 120:  # 6 s
+		player._process(0.05)
+		mate._process(0.05)
+		if player.health.is_alive():
+			break
+	assert_eq(player.health.state, FighterHealth.State.ALIVE, "helped up")
+	assert_lt(mate.ground_position().distance_to(player.ground_position()), player.health.config.revive_radius_m)
