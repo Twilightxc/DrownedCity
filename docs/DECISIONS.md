@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-05 | Gate 1.G passed: combat is fun (J, 3 arena nights on the Arc); Part B starts with 1.6 SimCore; teammates stay on by default | J's verdict; with teammates it is easier but still deadly |
 | 2026-11-04 | Facades: bays 3.4–4.2 m per building, a window type per column (single, tall, double, small, blank), stacked balconies with doors on some columns; no lit windows on any building | J: windows were too many and too regular, and the light leaking out unwanted; supersedes "lit windows only where survivors live" (CLAUDE.md art direction) |
 | 2026-11-04 | Barricades show damage by swapping kit pieces per stage (3 stages, merged per barricade); carried guns are drawn slung / holstered without shadows | Readable damage without per-plank physics; carried guns read at a glance and cost one unshadowed draw call each |
 | 2026-11-04 | Downed fighters keep fighting with the sidearm (pistol / SMG) for 20 s; long guns, moving and throws are locked until revived | J: down longer and able to shoot the pistol; gives the downed time something to do and a reason to reach a teammate |
