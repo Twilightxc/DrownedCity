@@ -10,6 +10,7 @@ extends Resource
 @export var step_m: PackedFloat32Array = PackedFloat32Array([0.75, 0.55, 0.45])  ## a step (and its noise) every this far
 @export var seen_mul: PackedFloat32Array = PackedFloat32Array([1.0, 0.65, 0.35])  ## × how far zombies see you
 @export var body_height_m: PackedFloat32Array = PackedFloat32Array([1.5, 0.95, 0.35])  ## low cover under this doesn't hide you
+@export var muzzle_height_m: PackedFloat32Array = PackedFloat32Array([1.38, 1.0, 0.38])  ## a held gun's muzzle (measured on the survivor, 2026-11-05): shots pass low cover under this
 
 @export_group("Sprint")
 @export var sprint_speed_mul: float = 1.6

@@ -21,7 +21,10 @@ extends Resource
 @export var tactical_reload_frac: float = 0.4  ## reloads when nothing is near and the mag is below this
 
 @export_group("Stance")
-@export var crouch_beyond_m: float = 7.0  ## holding a spot: crouches while its target is further than this
+@export var stance_check_sec: float = 0.5  ## how often it rethinks its stance while standing still
+@export var crouch_safe_m: float = 5.0  ## crouches only with no hunting zombie closer than this
+@export var prone_safe_m: float = 10.0  ## goes prone only with no hunting zombie closer than this
+@export var sneak_radius_m: float = 15.0  ## no hunters but a sleeping / suspicious zombie this close: moves crouched
 
 @export_group("Grenades")
 @export var throwable: ThrowableConfig = preload("res://data/weapons/frag_grenade.tres")  ## null: never throws

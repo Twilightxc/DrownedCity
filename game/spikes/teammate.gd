@@ -4,7 +4,7 @@ extends SpikePlayer
 ## health, noise) comes from SpikePlayer; only the wishes come from a TeammateBrain instead of the keyboard.
 ## Downed, anyone in the squad can get it up (SpikePlayer.start_revive): the player stands next to it and
 ## presses F; another teammate comes on its own. It goes to help a downed squad member too (the leader first),
-## throws frags into packed crowds, and crouches or goes prone with the leader. No friendly fire: rounds only
+## throws frags into packed crowds, and crouches or goes prone on its own when the cover and the crowd allow. No friendly fire: rounds only
 ## test the horde.
 
 const PROMPT_HEIGHT: float = 1.4
@@ -24,6 +24,7 @@ func _ready() -> void:
 	set_process_input(false)
 	set_process_unhandled_input(false)
 	brain = TeammateBrain.new(teammate_config)
+	brain.muzzle_heights = movement.muzzle_height_m
 	_prompt = Label3D.new()
 	_prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_prompt.font_size = 36
@@ -44,7 +45,6 @@ func _process(delta: float) -> void:
 		return
 	if health.state != FighterHealth.State.DEAD and leader != null and horde != null:  # down: still shoots
 		_pick_patient()
-		brain.leader_stance = leader.motion.stance
 		brain.has_patient = patient != null
 		if patient != null:
 			brain.patient_pos = patient.ground_position()

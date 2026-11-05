@@ -123,9 +123,10 @@ of it taken from those milestones.
       → Bug list 2026-11-05 (items 1, 2, 5, 7): gas and burning ground hurt teammates; revive lives in SpikePlayer
       (`start_revive`, `FighterConfig.revive_sec / revive_radius_m`), so a teammate walks to a downed squad member
       (the player first), kneels 2 s without firing and gets it up ("Marco is coming" on the downed line); frags
-      (2 each, `TeammateConfig.grenades`) into ≥ 5 hunters with no friend near the blast, 6 s apart; stance:
-      matches the leader when still beside it, crouches while moving with a low leader, kneels to revive,
-      crouches on a hold while its target is > 7 m off.
+      (2 each, `TeammateConfig.grenades`) into ≥ 5 hunters with no friend near the blast, 6 s apart; stance is its
+      own call (J): standing still, the lowest stance whose muzzle (`MovementConfig.muzzle_height_m`: 1.38 / 1.0 /
+      0.38 m) clears the low cover toward its target, prone only with no hunter within 10 m, crouch within 5 m;
+      crouched while sneaking past sleepers; kneels to revive; stands to move or look.
 
 ### 1.G Gate — "combat is fun"
 - **Pass (J):** after 1.5+, J plays the arena at least 3 times on the Arc in Chrome and says it's fun; ≥ 50 FPS at the

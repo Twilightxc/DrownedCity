@@ -21,9 +21,14 @@ J's bug list after gate 1.G (2026-11-05), "Teammate bugs first":
   (1.2 m), kneels without firing until it is up. The downed line says "Marco is coming".
 - Grenades: `TeammateConfig.throwable` (frag) × `grenades` (2). The brain checks every 0.5 s for ≥ 5 hunters in
   one blast within throw range and line of sight, with every friend outside blast + 1 m; 6 s cooldown.
-- Stance: matches the leader when still beside it; crouches when moving with a crouched or prone leader; kneels
-  to revive; on a hold, crouches while its target is > 7 m off; stands otherwise.
-- 5 new tests, 223 total, all passing (Godot 4.7.2 headless, laptop). Arena wave 6 with `--auto-shoot` in GL
+- Stance (J, 2026-11-05: "เพื่อนหมอบหรือนอนราบ ไม่ใช่ทำตามผู้เล่นเสมอไป แต่ตัดสินใจได้เอง ตามความเหมาะสมของสถานการณ์
+  เพราะจะมีเรื่องระบบที่กำบังเข้ามาอีก นั่งยองยิงผ่านได้ ยืนยิงผ่านได้"): standing still, every 0.5 s it takes the lowest
+  stance whose muzzle clears the low cover toward its target (`MovementConfig.muzzle_height_m` 1.38 / 1.0 / 0.38 m,
+  measured on the survivor in GL); prone only with no hunter within 10 m, crouch within 5 m. Crouched (and no
+  sprint) while sneaking past sleepers with nobody hunting; kneels to revive; stands to move or look.
+- Note for the cover system: the crouched muzzle is 1.0 m and the arena's AC units are 0.95–1.0 m, so crouched
+  shooting over them is a coin toss. Cover meant for crouched fire should be ≤ 0.85 m.
+- 6 new tests, 224 total, all passing (Godot 4.7.2 headless, laptop). Arena wave 6 with `--auto-shoot` in GL
   for 2400 frames: no errors.
 
 ## Not done / next
@@ -35,5 +40,6 @@ J's bug list after gate 1.G (2026-11-05), "Teammate bugs first":
   name them? With both teammates up, does only one come while the other keeps fighting?
 - Let a teammate go down: does the other one help it up?
 - Frags: do they throw into packed crowds only, never near you? Is 2 per teammate right?
-- Crouch (C) / prone (Z) beside them while still: do they follow? Hold here + distant targets: do they crouch?
+- Stance: Hold them behind an AC unit or the parapet with zombies far off: do they crouch or go prone where it
+  makes sense, and get up when the crowd closes in? Near sleepers with nobody hunting: do they move crouched?
 - Bloater gas on a teammate: does its HP drop?

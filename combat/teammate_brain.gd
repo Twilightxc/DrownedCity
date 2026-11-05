@@ -8,8 +8,9 @@ extends RefCounted
 ## close, and otherwise keeps its spot beside the leader or where it was told to hold.
 ## A downed squad member comes first (has_patient): it walks there, pushing past all but the closest zombies,
 ## and kneels beside it without firing until it is up. It lobs a frag into a packed crowd when no friend is
-## near the blast, and matches the leader's crouch or prone when it stands still beside it (bug list
-## 2026-11-05, items 1, 5, 7).
+## near the blast, and picks its own stance: the lowest one (steadier, harder to see) whose muzzle still clears
+## the cover between it and its target, as long as no hunter is close; crouched while sneaking past sleepers
+## (bug list 2026-11-05, items 1, 5, 7; J: its own call, not a copy of the player).
 
 enum Order { FOLLOW, HOLD }
 
@@ -36,7 +37,7 @@ var want_throw: bool = false
 var throw_at: Vector2 = Vector2.ZERO
 
 # Inputs set by the Teammate before think()
-var leader_stance: int = FighterMotion.Stance.STAND
+var muzzle_heights: PackedFloat32Array = PackedFloat32Array([1.38, 1.0, 0.38])  ## per stance (MovementConfig)
 var has_patient: bool = false  ## a downed squad member to help up
 var patient_pos: Vector2 = Vector2.ZERO
 var patient_radius: float = 1.6  ## that fighter's FighterConfig.revive_radius_m
@@ -54,6 +55,8 @@ var _path_left: float = 0.0
 var _path_point: Vector2 = Vector2.ZERO
 var _throw_left: float = 0.0
 var _check_left: float = 0.0
+var _stance_left: float = 0.0
+var _sneaking: bool = false
 
 
 func _init(cfg: TeammateConfig, own_side: float = 1.0) -> void:
@@ -76,7 +79,7 @@ func think(delta: float, me: Vector2, gun: Gun, muzzle_over: float, leader: Vect
 	_turn(delta, me)
 	_shoot(delta, me, gun)
 	_walk(delta, me, leader, leader_aim, horde, grid)
-	_pick_stance(me)
+	_pick_stance(delta, me, horde, grid)
 	want_reload = target < 0 and not gun.is_reloading() and gun.ammo < gun.mag_size * config.tactical_reload_frac
 
 
@@ -178,24 +181,45 @@ func _walk(delta: float, me: Vector2, leader: Vector2, leader_aim: Vector2, hord
 		_path_point = GridPath.next_point(grid, me, spot)
 	var to: Vector2 = _path_point - me
 	move = to.normalized() * clampf(dist / 1.5, 0.3, 1.0) if to.length_squared() > 0.0001 else Vector2.ZERO
-	sprint = target < 0 and dist > (3.0 if has_patient else config.sprint_beyond_m)
+	sprint = target < 0 and dist > (3.0 if has_patient else config.sprint_beyond_m) and (has_patient or not _sneaking)
 
 
-## Kneels to help someone up; stands to move (crouches along with a crouching leader); otherwise matches the
-## leader when following, and crouches on a hold while its target is far off.
-func _pick_stance(me: Vector2) -> void:
-	var follow_low: bool = order == Order.FOLLOW and not has_patient
+## Kneels to help someone up; moves standing (crouched while sneaking). Standing still it rethinks every
+## stance_check_sec: with a target, the lowest stance whose muzzle clears the cover toward it (prone only with
+## no hunter within prone_safe_m, crouch within crouch_safe_m); without one it stands to look over, or crouches
+## while sneaking (sleeping or suspicious zombies near, nobody hunting).
+func _pick_stance(delta: float, me: Vector2, horde: Horde, grid: NavGrid) -> void:
+	_stance_left -= delta
 	if reviving:
 		stance = FighterMotion.Stance.CROUCH
-	elif move.length_squared() > 0.01:
-		var crouch: bool = follow_low and leader_stance != FighterMotion.Stance.STAND and not sprint
-		stance = FighterMotion.Stance.CROUCH if crouch else FighterMotion.Stance.STAND
-	elif follow_low:
-		stance = leader_stance
-	elif order == Order.HOLD and target >= 0 and me.distance_to(target_pos) > config.crouch_beyond_m:
-		stance = FighterMotion.Stance.CROUCH
-	else:
-		stance = FighterMotion.Stance.STAND
+		return
+	var moving: bool = move.length_squared() > 0.01
+	if not moving and _stance_left > 0.0:
+		return
+	_stance_left = config.stance_check_sec
+	var hunter_d2: float = INF
+	var calm_near: bool = false
+	var sneak2: float = config.sneak_radius_m * config.sneak_radius_m
+	for a: int in horde.count:
+		var d2: float = me.distance_squared_to(horde.positions[a])
+		if horde.state[a] == Horde.State.HUNTING:
+			hunter_d2 = minf(hunter_d2, d2)
+		elif d2 <= sneak2:
+			calm_near = true
+	_sneaking = hunter_d2 == INF and calm_near
+	if moving:
+		stance = FighterMotion.Stance.CROUCH if _sneaking and not sprint else FighterMotion.Stance.STAND
+		return
+	if target < 0:
+		stance = FighterMotion.Stance.CROUCH if _sneaking else FighterMotion.Stance.STAND
+		return
+	var hunter_d: float = sqrt(hunter_d2)
+	for s: int in [FighterMotion.Stance.PRONE, FighterMotion.Stance.CROUCH]:
+		var safe: float = config.prone_safe_m if s == FighterMotion.Stance.PRONE else config.crouch_safe_m
+		if hunter_d >= safe and grid.line_of_sight(me, target_pos, muzzle_heights[s]):
+			stance = s
+			return
+	stance = FighterMotion.Stance.STAND
 
 
 ## Every throw_check_sec: the packed spot in throw range with the most hunters inside a blast; a frag goes there

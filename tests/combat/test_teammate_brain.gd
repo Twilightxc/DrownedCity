@@ -137,17 +137,30 @@ func test_it_throws_into_a_packed_crowd_but_never_near_a_friend() -> void:
 	assert_false(_brain.want_throw, "then waits out the cooldown")
 
 
-func test_it_matches_the_leaders_stance_and_crouches_on_a_hold() -> void:
+func test_it_picks_the_lowest_stance_that_still_shoots_over_the_cover() -> void:
 	var gun: Gun = Gun.new(AR)
-	var leader: Vector2 = Vector2(20, 20)
-	var spot: Vector2 = _brain.follow_spot(leader, Vector2(0, -1))
-	_brain.leader_stance = FighterMotion.Stance.PRONE
-	_think(0.1, spot, gun, leader)
-	assert_eq(_brain.stance, FighterMotion.Stance.PRONE, "down with the leader")
-	_think(0.1, spot + Vector2(6, 0), gun, leader)
-	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH, "moves low with a low leader, never crawls")
+	var me: Vector2 = Vector2(20, 5)
 	_brain.order = TeammateBrain.Order.HOLD
-	_brain.hold_point = Vector2(20, 10)
-	_horde.spawn(Vector2(20.5, 19.5), 0)
-	_think(0.5, Vector2(20, 10), gun, leader)
-	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH, "holding, far target: crouches")
+	_brain.hold_point = me
+	_horde.spawn(Vector2(20.5, 20.5), 0)  # 15 m off, open ground
+	_think(1.0, me, gun)
+	assert_eq(_brain.stance, FighterMotion.Stance.PRONE, "open ground, nothing close: prone, steadiest")
+	_grid.set_blocked_rect(Rect2i(15, 8, 10, 1), true, 0.7)  # a low wall: crouched shoots over, prone can't
+	_think(1.0, me, gun)
+	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH, "crouches behind cover it can shoot over")
+	_grid.set_blocked_rect(Rect2i(15, 8, 10, 1), true, 1.2)  # only standing clears it
+	_think(1.0, me, gun)
+	assert_eq(_brain.stance, FighterMotion.Stance.STAND, "stands to shoot over a higher wall")
+	_grid.set_blocked_rect(Rect2i(15, 8, 10, 1), false)
+	_horde.spawn(Vector2(20.5, 8.5), 0)  # one 3.5 m off
+	_think(1.0, me, gun)
+	assert_eq(_brain.stance, FighterMotion.Stance.STAND, "one close: on its feet, ready to back off")
+
+
+func test_it_crouches_to_sneak_past_sleepers() -> void:
+	var gun: Gun = Gun.new(AR)
+	_think(0.6, Vector2(20, 20), gun, Vector2(20, 30))
+	assert_eq(_brain.stance, FighterMotion.Stance.STAND, "nothing around")
+	_horde.spawn(Vector2(28.5, 20.5), 0, Horde.State.DORMANT)
+	_think(0.6, Vector2(20, 20), gun, Vector2(20, 30))
+	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH, "sleepers near, nobody hunting: low and quiet")
