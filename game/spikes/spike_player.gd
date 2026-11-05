@@ -54,6 +54,9 @@ var auto_trigger: bool = false  ## scripted fire (autoshoot captures); OR-ed wit
 var health: FighterHealth  ## HP, worn pieces, downed (Phase 1 step 1.3)
 var barricades: Barricades  ## optional: standing barricades block the player too (1.5)
 var kills_by_gun: Dictionary[String, int] = {}  ## for the arena's run summary and telemetry
+var display_name: String = "You"
+var reviver: SpikePlayer  ## downed: who is helping it up, null when nobody is
+var revive_left: float = 0.0
 
 var _hitscan: Hitscan
 var _assist: AimAssist
@@ -326,6 +329,7 @@ func _process(delta: float) -> void:
 	if grid == null:
 		return
 	health.step(delta)
+	_update_revive(delta)
 	motion.step(delta, _wants_sprint(), _move_input() != Vector2.ZERO, _wants_fire())
 	health.dodging = motion.has_iframes()
 	gun.stance_spread_mul = motion.spread_mul()
@@ -357,6 +361,40 @@ func _process(delta: float) -> void:
 	_update_throw()
 	_update_interact()
 	_draw_aim_line()
+
+
+# Downed: anyone in the squad who stays next to it for revive_sec gets it up (the player with F on a teammate,
+# teammates on their own, 1.5+ A5).
+
+## `by` starts helping this fighter up. False when it isn't down or someone else already is.
+func start_revive(by: SpikePlayer) -> bool:
+	if health.state != FighterHealth.State.DOWNED or by == self or (reviver != null and reviver != by):
+		return false
+	if reviver == null:
+		reviver = by
+		revive_left = health.config.revive_sec
+	return true
+
+
+func _update_revive(delta: float) -> void:
+	if health.state != FighterHealth.State.DOWNED:
+		reviver = null
+		return
+	if reviver == null:
+		return
+	var near: bool = reviver.ground_position().distance_to(ground_position()) <= health.config.revive_radius_m
+	if not reviver.health.is_alive() or not near:
+		reviver = null  # walked off or went down: start again next time
+		return
+	revive_left -= delta
+	if revive_left <= 0.0:
+		reviver = null
+		health.revive()
+
+
+## How far the revive is, 0..1, or -1 when nobody is helping (the HUD's ring).
+func revive_fill() -> float:
+	return 1.0 - revive_left / maxf(health.config.revive_sec, 0.01) if reviver != null else -1.0
 
 
 # What the fighter wants, from the keyboard / pad here; an AI teammate overrides these (Teammate, 1.5+ A5).

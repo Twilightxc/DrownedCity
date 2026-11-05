@@ -8,6 +8,8 @@ extends Resource
 @export var gas_dps: float = 12.0  ## at a fresh cloud's centre (GasField.strength_at = 1)
 @export var fire_dps: float = 15.0  ## standing in a burning cell
 @export var self_blast_mul: float = 0.5  ## your own grenade's damage to you (0 = off)
+@export var revive_sec: float = 2.0  ## someone stays next to this fighter, downed, this long to get it up (player: F; teammates on their own)
+@export var revive_radius_m: float = 1.6
 
 @export_group("Feedback")
 @export var low_hp_frac: float = 0.25  ## the edge glows and slow-mo kicks in below this

@@ -120,6 +120,12 @@ of it taken from those milestones.
       → `Teammate` (a SpikePlayer driven by `TeammateBrain` instead of input) + `data/combat/teammate.tres`;
       Marco (AR) and Jess (shotgun), each with a pistol; `Horde.extra_targets`: hunters chase and hit the nearest;
       orders wheel: Follow me / Hold here / Hold fire; downed: F next to them for 2 s; `?mates=N`.
+      → Bug list 2026-11-05 (items 1, 2, 5, 7): gas and burning ground hurt teammates; revive lives in SpikePlayer
+      (`start_revive`, `FighterConfig.revive_sec / revive_radius_m`), so a teammate walks to a downed squad member
+      (the player first), kneels 2 s without firing and gets it up ("Marco is coming" on the downed line); frags
+      (2 each, `TeammateConfig.grenades`) into ≥ 5 hunters with no friend near the blast, 6 s apart; stance:
+      matches the leader when still beside it, crouches while moving with a low leader, kneels to revive,
+      crouches on a hold while its target is > 7 m off.
 
 ### 1.G Gate — "combat is fun"
 - **Pass (J):** after 1.5+, J plays the arena at least 3 times on the Arc in Chrome and says it's fun; ≥ 50 FPS at the

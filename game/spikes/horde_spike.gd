@@ -43,6 +43,7 @@ var _count_index: int = 0
 var _flow_timer: float = 0.0
 var _flow_cells: Array[Vector2i] = []  ## the flow field's goals last computed (player + teammates)
 var _mates: Array[Teammate] = []  ## AI teammates (1.5+ A5): hunted like the player, drawn, heard, hurt
+var _squad: Array[SpikePlayer] = []  ## the player and the teammates: who helps whom up (shared with each Teammate)
 var _targeted: Array[Teammate] = []  ## the teammates in the horde's extra_targets this frame, same order
 var _spawn_budget: float = 0.0
 var _perimeter: Array[Vector2i] = []
@@ -207,6 +208,7 @@ func _process(delta: float) -> void:
 	if _audio != null:
 		_audio.update(delta, _fx_horde, _ground_fire if _fx_horde == _horde else null)
 	_hurt_player(delta)
+	_feedback.helper = _helper_name()
 	_update_feel(delta)
 	_burn_gas()
 
@@ -359,12 +361,36 @@ func _hurt_player(delta: float) -> void:
 		for dmg: int in _horde.extra_hits[i]:
 			_targeted[i].health.take_hit(dmg, _rng)
 		_horde.extra_hits[i].clear()
-	var p: Vector2 = _player.ground_position()
-	health.take_dot(health.config.gas_dps * _gas.strength_at(p), delta, &"gas")
+	_hurt_by_ground(_player, delta)
+	for m: Teammate in _mates:
+		_hurt_by_ground(m, delta)
+
+
+## Who is coming to help the downed player ("" = nobody): the one helping now, else the nearest teammate up.
+func _helper_name() -> String:
+	if _player.health.state != FighterHealth.State.DOWNED:
+		return ""
+	if _player.reviver != null:
+		return _player.reviver.display_name
+	var best: String = ""
+	var best_d: float = INF
+	for m: Teammate in _mates:
+		if m.patient == _player and m.ground_position().distance_to(_player.ground_position()) < best_d:
+			best_d = m.ground_position().distance_to(_player.ground_position())
+			best = m.display_name
+	return best
+
+
+## Bloater gas and burning ground under a fighter (the player or a teammate).
+func _hurt_by_ground(f: SpikePlayer, delta: float) -> void:
+	if f.health.state == FighterHealth.State.DEAD:
+		return
+	var p: Vector2 = f.ground_position()
+	f.health.take_dot(f.health.config.gas_dps * _gas.strength_at(p), delta, &"gas")
 	if _ground_fire != null and _fx_horde == _horde:
 		var cell: Vector2i = _grid.world_to_cell(p)
 		if _grid.in_bounds(cell) and _ground_fire.is_burning(_grid.index_of(cell)):
-			health.take_dot(health.config.fire_dps, delta, &"fire")
+			f.health.take_dot(f.health.config.fire_dps, delta, &"fire")
 
 
 ## Fire burns gas away (GDD §9): a burning cell or a zombie burning all over inside a cloud sets it alight.
@@ -599,6 +625,11 @@ func _build_ui() -> void:
 func add_teammate(m: Teammate) -> void:
 	_mates.append(m)
 	m.leader = _player
+	if _squad.is_empty():
+		_squad.append(_player)
+	_squad.append(m)
+	m.squad = _squad
+	m.grenades = _grenades
 	m.fired.connect(_tracers.add)
 	m.shot.connect(func(g: Gun) -> void:
 		var muzzle: Vector3 = m.muzzle_position()

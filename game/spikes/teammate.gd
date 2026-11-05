@@ -2,23 +2,25 @@ class_name Teammate
 extends SpikePlayer
 ## An AI survivor fighting beside the player (PHASE1 1.5+ A5). Everything a fighter is (guns, stances, body,
 ## health, noise) comes from SpikePlayer; only the wishes come from a TeammateBrain instead of the keyboard.
-## Downed, it waits for the player: stand next to it and press F (interact) to get it up in revive_sec.
-## No friendly fire: rounds only test the horde.
+## Downed, anyone in the squad can get it up (SpikePlayer.start_revive): the player stands next to it and
+## presses F; another teammate comes on its own. It goes to help a downed squad member too (the leader first),
+## throws frags into packed crowds, and crouches or goes prone with the leader. No friendly fire: rounds only
+## test the horde.
 
 const PROMPT_HEIGHT: float = 1.4
 
 @export var teammate_config: TeammateConfig = preload("res://data/combat/teammate.tres")
-@export var display_name: String = "Teammate"
 
 var brain: TeammateBrain
 var leader: SpikePlayer
-var reviver: SpikePlayer  ## the player helping it up, null when nobody is
-var revive_left: float = 0.0
+var squad: Array[SpikePlayer] = []  ## everyone on this side, the leader and itself included (shared array)
+var patient: SpikePlayer  ## the downed squad member it is going to help up, null when none
 var _prompt: Label3D
 
 
 func _ready() -> void:
 	super._ready()
+	display_name = "Teammate" if display_name == "You" else display_name
 	set_process_input(false)
 	set_process_unhandled_input(false)
 	brain = TeammateBrain.new(teammate_config)
@@ -31,17 +33,67 @@ func _ready() -> void:
 	add_child(_prompt)
 
 
+func setup(nav: NavGrid, crowd: Horde, cam: Camera3D, y: float) -> void:
+	super.setup(nav, crowd, cam, y)
+	throwable = teammate_config.throwable
+	grenade_count = teammate_config.grenades
+
+
 func _process(delta: float) -> void:
 	if grid == null:
 		return
 	if health.state != FighterHealth.State.DEAD and leader != null and horde != null:  # down: still shoots
+		_pick_patient()
+		brain.leader_stance = leader.motion.stance
+		brain.has_patient = patient != null
+		if patient != null:
+			brain.patient_pos = patient.ground_position()
+			brain.patient_radius = patient.health.config.revive_radius_m
+		brain.can_throw = health.is_alive() and grenades != null and throwable != null and grenade_count > 0
+		brain.throw_blast_m = throwable.blast_radius if throwable != null else 0.0
+		brain.throw_range = Vector2(throwable.min_range, throwable.max_range) if throwable != null else Vector2.ZERO
+		brain.allies = _ally_positions()
 		brain.think(delta, ground_position(), gun, _muzzle_over(), leader.ground_position(), leader.aim_dir, horde, grid)
 		if brain.want_reload:
 			start_reload()
 		if health.is_alive():
 			_swap_if_dry()
-	_update_revive(delta)
+			_apply_stance()
+			if brain.reviving and patient != null:
+				patient.start_revive(self)
 	super._process(delta)
+	_update_prompt()
+
+
+## The downed squad member to help: the leader first, then the nearest; never one someone else is helping.
+func _pick_patient() -> void:
+	patient = null
+	if not health.is_alive():
+		return
+	var best_d: float = INF
+	for f: SpikePlayer in squad:
+		if f == self or f.health.state != FighterHealth.State.DOWNED or (f.reviver != null and f.reviver != self):
+			continue
+		var d: float = f.ground_position().distance_to(ground_position()) - (1000.0 if f == leader else 0.0)
+		if d < best_d:
+			best_d = d
+			patient = f
+
+
+func _ally_positions() -> PackedVector2Array:
+	var out: PackedVector2Array = PackedVector2Array([ground_position()])
+	for f: SpikePlayer in squad:
+		if f != self and f.health.state != FighterHealth.State.DEAD:
+			out.append(f.ground_position())
+	if leader != null and not squad.has(leader):
+		out.append(leader.ground_position())
+	return out
+
+
+func _apply_stance() -> void:
+	if motion.stance != brain.stance and not motion.is_rolling():
+		motion.stance = brain.stance as FighterMotion.Stance
+		motion.sprinting = false
 
 
 ## Out of rounds for the gun in hand (none in the mag, none left to load): the next gun that has some.
@@ -72,7 +124,12 @@ func _update_aim() -> void:
 
 
 func _update_throw() -> void:
-	pass  # teammates don't throw grenades (yet)
+	if not brain.want_throw or grenades == null or throwable == null or grenade_count <= 0:
+		return
+	grenades.throw(throwable, Vector3(position.x, ground_y + THROW_HEIGHT, position.z),
+			Vector3(brain.throw_at.x, ground_y, brain.throw_at.y))
+	grenade_count -= 1
+	brain.threw()
 
 
 func _update_interact() -> void:
@@ -86,30 +143,18 @@ func _draw_aim_line() -> void:
 # Downed: an interactable the player can help up.
 
 func _update_revive(delta: float) -> void:
+	super._update_revive(delta)
 	var downed: bool = health.state == FighterHealth.State.DOWNED
 	if downed and not is_in_group("interactable"):
 		add_to_group("interactable")
 	elif not downed and is_in_group("interactable"):
 		remove_from_group("interactable")
 		_prompt.visible = false
-	if not downed:
-		reviver = null
-		return
-	if reviver != null:
-		if not reviver.health.is_alive() or reviver.ground_position().distance_to(ground_position()) > teammate_config.revive_radius_m:
-			reviver = null  # walked off or went down: start again next time
-		else:
-			revive_left -= delta
-			if revive_left <= 0.0:
-				health.revive()
-				reviver = null
+
+
+func _update_prompt() -> void:
 	if _prompt.visible:
 		_prompt.text = tr("Helping %s up…") % display_name if reviver != null else tr("[F] Help %s up") % display_name
-
-
-## How far the revive is, 0..1, or -1 when nobody is helping (the HUD's ring).
-func revive_fill() -> float:
-	return 1.0 - revive_left / teammate_config.revive_sec if reviver != null else -1.0
 
 
 func show_prompt(on: bool, _pad: bool) -> void:
@@ -117,6 +162,4 @@ func show_prompt(on: bool, _pad: bool) -> void:
 
 
 func interact(player: SpikePlayer) -> void:
-	if health.state == FighterHealth.State.DOWNED and reviver == null:
-		reviver = player
-		revive_left = teammate_config.revive_sec
+	start_revive(player)

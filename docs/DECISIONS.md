@@ -2,6 +2,7 @@
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-11-05 | Revive belongs to every fighter (`SpikePlayer.start_revive`, time and reach in `FighterConfig`); teammates help the downed leader first, then the nearest downed mate nobody else is helping, push past all but the closest zombie (1.2 m) and don't fire while kneeling. They throw frags only into ≥ 5 hunters with every friend outside blast + 1 m | J's bug list (items 1, 2, 5, 7): the teammates looked lost while the player was down; one rule for the player and teammates; never a teammate's grenade on a friend |
 | 2026-11-05 | Gate 1.G passed: combat is fun (J, 3 arena nights on the Arc); Part B starts with 1.6 SimCore; teammates stay on by default | J's verdict; with teammates it is easier but still deadly |
 | 2026-11-04 | Facades: bays 3.4–4.2 m per building, a window type per column (single, tall, double, small, blank), stacked balconies with doors on some columns; no lit windows on any building | J: windows were too many and too regular, and the light leaking out unwanted; supersedes "lit windows only where survivors live" (CLAUDE.md art direction) |
 | 2026-11-04 | Barricades show damage by swapping kit pieces per stage (3 stages, merged per barricade); carried guns are drawn slung / holstered without shadows | Readable damage without per-plank physics; carried guns read at a glance and cost one unshadowed draw call each |

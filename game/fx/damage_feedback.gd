@@ -17,6 +17,7 @@ void fragment() {
 
 var health: FighterHealth
 var time_control: TimeControl  ## optional: shares Engine.time_scale with hit-stop (1.4)
+var helper: String = ""  ## downed: the teammate coming to help, "" = nobody (set by the scene each frame)
 
 var _edge: ColorRect
 var _mat: ShaderMaterial
@@ -83,7 +84,8 @@ func _process(delta: float) -> void:
 	match health.state:
 		FighterHealth.State.DOWNED:
 			_label.visible = true
-			_label.text = tr("DOWNED · %d s · nobody to help") % ceili(health.downed_left)
+			var help: String = tr("nobody to help") if helper.is_empty() else tr("%s is coming") % helper
+			_label.text = tr("DOWNED · %d s · %s") % [ceili(health.downed_left), help]
 		FighterHealth.State.DEAD:
 			_label.visible = true
 			_label.text = tr("YOU DIED · press R / X to restart")

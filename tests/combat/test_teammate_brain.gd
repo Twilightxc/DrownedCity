@@ -87,3 +87,67 @@ func test_the_horde_hunts_and_hits_the_nearest_target() -> void:
 		_horde.update(0.05, Vector2(10.5, 20.5))
 	assert_eq(_horde.target_hits.size(), 0, "the far player isn't hit")
 	assert_gt(_horde.extra_hits[0].size(), 0, "the teammate next to it is")
+
+
+func test_it_goes_to_a_downed_squad_member_and_kneels_without_firing() -> void:
+	var gun: Gun = Gun.new(AR)
+	_brain.has_patient = true
+	_brain.patient_pos = Vector2(10, 20)
+	_think(0.3, Vector2(20, 20), gun)
+	assert_gt(_brain.move.dot(Vector2(-1, 0)), 0.9, "heads for the downed one")
+	assert_true(_brain.sprint, "runs there when nothing is shooting at it")
+	assert_false(_brain.reviving)
+	_horde.spawn(Vector2(10.5, 25.5), 0)  # in view of the patient
+	_think(1.0, Vector2(10.5, 20), gun)
+	assert_true(_brain.reviving, "close enough to help up")
+	assert_eq(_brain.move, Vector2.ZERO, "stays put")
+	assert_false(_brain.fire, "hands busy")
+	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH, "kneels")
+
+
+func test_it_pushes_past_zombies_that_would_make_it_back_off_when_someone_is_down() -> void:
+	var gun: Gun = Gun.new(AR)
+	_horde.spawn(Vector2(18.2, 20.0), 0)  # 1.8 m to its left: inside kite_m, outside revive_kite_m
+	_brain.has_patient = true
+	_brain.patient_pos = Vector2(10, 20)
+	_think(0.1, Vector2(20, 20), gun)
+	assert_lt(_brain.move.x, 0.0, "keeps going toward the patient")
+
+
+func test_it_throws_into_a_packed_crowd_but_never_near_a_friend() -> void:
+	var gun: Gun = Gun.new(AR)
+	for i: int in 6:
+		_horde.spawn(Vector2(20.5 + 0.3 * i, 28.5), 0)
+	_brain.can_throw = true
+	_brain.throw_blast_m = 3.0
+	_brain.throw_range = Vector2(2.0, 12.0)
+	_brain.allies = PackedVector2Array([Vector2(20, 20), Vector2(21, 27)])  # a friend right by them
+	_think(1.0, Vector2(20, 20), gun)
+	assert_false(_brain.want_throw, "a friend is inside the blast")
+	_brain.allies = PackedVector2Array([Vector2(20, 20)])
+	var thrown: bool = false
+	for i: int in 20:
+		_brain.think(0.05, Vector2(20, 20), gun, 1.4, Vector2(20, 18), Vector2(0, -1), _horde, _grid)
+		if _brain.want_throw:
+			thrown = true
+			assert_almost_eq(_brain.throw_at.y, 28.5, 0.5, "at the crowd")
+			_brain.threw()
+	assert_true(thrown, "throws")
+	_think(1.0, Vector2(20, 20), gun, Vector2(20, 18))
+	assert_false(_brain.want_throw, "then waits out the cooldown")
+
+
+func test_it_matches_the_leaders_stance_and_crouches_on_a_hold() -> void:
+	var gun: Gun = Gun.new(AR)
+	var leader: Vector2 = Vector2(20, 20)
+	var spot: Vector2 = _brain.follow_spot(leader, Vector2(0, -1))
+	_brain.leader_stance = FighterMotion.Stance.PRONE
+	_think(0.1, spot, gun, leader)
+	assert_eq(_brain.stance, FighterMotion.Stance.PRONE, "down with the leader")
+	_think(0.1, spot + Vector2(6, 0), gun, leader)
+	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH, "moves low with a low leader, never crawls")
+	_brain.order = TeammateBrain.Order.HOLD
+	_brain.hold_point = Vector2(20, 10)
+	_horde.spawn(Vector2(20.5, 19.5), 0)
+	_think(0.5, Vector2(20, 10), gun, leader)
+	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH, "holding, far target: crouches")
