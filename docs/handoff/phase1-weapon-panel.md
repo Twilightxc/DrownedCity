@@ -1,6 +1,6 @@
 # phase1/weapon-panel
 
-- **PR:** opening (pushed? yes)
+- **PR:** #58 (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ 8511bc1
 - **Updated:** 2026-11-06
