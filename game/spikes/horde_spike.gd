@@ -58,6 +58,7 @@ var _stats_timer: float = 0.0
 var _count_slider: HSlider
 var _count_label: Label
 var _help_label: Label
+var _pause: PauseMenu  ## Esc / pad Start (J 2026-11-06)
 var _grenades: Grenades
 var _corpses: CorpseLayer
 var _blood: BloodFx
@@ -190,9 +191,13 @@ func _ready() -> void:
 		_audio = SpikeAudio.new()
 		add_child(_audio)
 		_audio.bind(sfx_bank, _player, _rig)
-	_player.restart_requested.connect(func() -> void:
-		Engine.time_scale = 1.0
-		get_tree().reload_current_scene())
+	_player.restart_requested.connect(restart)
+	_pause = PauseMenu.new()
+	add_child(_pause)
+	_pause.can_open = _can_pause
+	_pause.help_text = _help_text
+	_pause.using_pad = func() -> bool: return _player.using_pad
+	_pause.restart_pressed.connect(restart)
 	_set_count_index(horde_config.default_count_index)
 	_player.device_changed.connect(func(_pad: bool) -> void: _update_help())
 	_update_help()
@@ -549,6 +554,18 @@ func _publish_stats(delta: float) -> void:
 	DebugOverlay.set_stat("assist_target", str(_player.assist_target))
 
 
+## Plays the scene again from the start (restart from the pause menu, the summary, or R / X when dead).
+func restart() -> void:
+	get_tree().paused = false
+	Engine.time_scale = 1.0
+	get_tree().reload_current_scene()
+
+
+## Whether Esc / Start may pause now; scenes say no while a wheel or a run summary is up.
+func _can_pause() -> bool:
+	return true
+
+
 func _update_help() -> void:
 	_help_label.text = _help_text(_player.using_pad)
 
@@ -601,7 +618,7 @@ func _build_ui() -> void:
 	add_child(layer)
 	var panel: PanelContainer = PanelContainer.new()
 	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	panel.offset_left = -470.0
+	panel.offset_left = -8.0  # grows left to fit what it shows
 	panel.offset_top = 8.0
 	panel.offset_right = -8.0
 	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN

@@ -41,6 +41,7 @@ var _crates: Array[SupplyCrate] = []
 var _banner: Label
 var _summary: Label
 var _summary_box: PanelContainer
+var _again: Button  ## "Play again" under the summary: R / pad X, Enter / pad A, or a click
 var _was_phase: int = -1
 var _elapsed: float = 0.0
 var _hits_taken: int = 0
@@ -53,6 +54,7 @@ func _ready() -> void:
 	super._ready()
 	_target_count = 0
 	_count_slider.visible = false
+	_help_label.visible = false  # J 2026-11-06: only the wave line up there; the controls are in the pause menu
 	_start_wave = clampi(SpikeLauncher.arg("wave", "1").to_int(), 1, arena.waves.size())  # 1-based like the HUD
 	_director = WaveDirector.new(arena, _rng.randi(), _start_wave - 1)
 	_barricades = Barricades.new(_grid, arena.barricade_cost)
@@ -116,11 +118,8 @@ func _process(delta: float) -> void:
 		_end_run()
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	super._unhandled_input(event)
-	if _ended and _director.phase == WaveDirector.Phase.WON and event.is_action_pressed("reload"):
-		Engine.time_scale = 1.0
-		get_tree().reload_current_scene()
+func _can_pause() -> bool:
+	return super._can_pause() and not _ended
 
 
 ## Spawns come from the wave director instead of the spike's horde-size slider.
@@ -323,10 +322,26 @@ func _build_arena_ui() -> void:
 	_summary_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_summary_box.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_summary_box.visible = false
+	_summary_box.add_theme_stylebox_override("panel", PauseMenu.card_style())
 	layer.add_child(_summary_box)
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS  # the summary works while the ended night is paused
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	_summary_box.add_child(box)
 	_summary = Label.new()
 	_summary.add_theme_font_size_override("font_size", 20)
-	_summary_box.add_child(_summary)
+	box.add_child(_summary)
+	_again = Button.new()
+	_again.custom_minimum_size = Vector2(260.0, 44.0)
+	_again.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var shortcut: Shortcut = Shortcut.new()
+	var reload: InputEventAction = InputEventAction.new()
+	reload.action = &"reload"
+	shortcut.events = [reload]
+	_again.shortcut = shortcut
+	_again.shortcut_in_tooltip = false
+	_again.pressed.connect(restart)
+	box.add_child(_again)
 
 
 func _update_arena_ui() -> void:
@@ -374,9 +389,13 @@ func _end_run() -> void:
 		alive += 1 if m.health.state != FighterHealth.State.DEAD else 0
 	lines.append(tr("Teammates alive: %d / %d") % [alive, _mates.size()])
 	run["teammates_alive"] = alive
-	lines.append(tr("R / X: play again"))
 	_summary.text = "\n".join(lines)
+	_again.text = tr("Play again  (X)") if _player.using_pad else tr("Play again  (R)")
 	_summary_box.visible = true
+	# J 2026-11-06: the summary alone on screen (no "YOU DIED" line over it), the night paused, the button ready.
+	_feedback.hide_messages()
+	get_tree().paused = true
+	_again.grab_focus()
 	RunLog.append(run)
 	print("arena run: ", JSON.stringify(run))
 

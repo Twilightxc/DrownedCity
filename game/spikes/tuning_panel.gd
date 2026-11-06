@@ -1,8 +1,8 @@
 class_name TuningPanel
 extends CanvasLayer
-## F4 / Start: live feel tuning for J's playtests. Pauses the game while open; sliders edit the
+## F4: live feel tuning for J's playtests. Pauses the game while open; sliders edit the
 ## loaded resources in memory only (a reload restores data/). Gamepad: D-pad/left stick moves
-## and adjusts, A toggles, B or Start closes. The summary line is meant for a screenshot.
+## and adjusts, A toggles, B closes. The summary line is meant for a screenshot.
 
 class Entry:
 	var target: Object
@@ -28,7 +28,7 @@ func _ready() -> void:
 	var box: VBoxContainer = VBoxContainer.new()
 	panel.add_child(box)
 	var title: Label = Label.new()
-	title.text = "Feel tuning (paused) · F4 / Start / B: close · not saved"
+	title.text = "Feel tuning (paused) · F4 / B: close · not saved"
 	box.add_child(title)
 	# Scrolls once the rows outgrow the screen (gun rows, 1.1); follows gamepad focus.
 	var scroll: ScrollContainer = ScrollContainer.new()
