@@ -1,7 +1,7 @@
 # Citizens: the survivor build and the leaders (Phase 1.6)
 
 Source: J's spec "1.6รายละเอียดระบบพลเมืองดีเด่น" (2026-11-06), translated. Parts J asked Claude to design are marked
-**[Claude proposal]**; J confirms or changes them. Earlier rules (influence, the status ladder, no cap on outstanding
+**[Claude design]**. J approved all of them the same day, and J's answers to the open questions are in §9. Earlier rules (influence, the status ladder, no cap on outstanding
 citizens) are in GDD §3 and `docs/PHASE1.md` 1.6.
 
 ## 1. One survivor is made of
@@ -24,22 +24,20 @@ A leader is picked from the outstanding citizens. Each leader type has:
 | Sheriff (ผู้พิทักษ์) | signal tower, on a roof slot: weather warnings days ahead, horde warnings ahead, buffs base fire support | dragon's breath shells · white-phosphorus mortar shells | a random gun every day · influence bonus for helping survivors | build a radio room for a survivor community, and answer a community's radio call for help (under attack) |
 | Builder (นักสร้าง) | large boatyard: big special boats (more crew, more gun mounts, more cargo) | rapid-fire crossbow · mounted harpoon gun | sturdier structures · materials and repair parts every day · storage room upgrade | build a boat for a survivor community |
 | Trader (พ่อค้า) | floating market: a large raft-house community on the water | a backpack with many slots | water and food every day, and more output · influence: sell higher, buy lower · more resources farmed from control points · stronger, longer food buffs | make every enclave in the city an ally (trade, exchange, help) |
-| Researcher (นักวิจัย) | oil refinery | special buff items · poison-gas mortar shells | fuel, chemicals and medicine every day, and more output | **[Claude proposal]** bring a live infection sample from the flooded hospital lab and research it at the base (an infirmary + lab chain) |
-| Programmer (โปรแกรมเมอร์) | weapons lab (weapon upgrades) | flashbang mortar shells · electric mortar shells · drone support | more power, less power use · every turret becomes automatic · auto-production added to rooms · more yield | **[Claude proposal]** restore the city's power control centre (a control point) and link its grid to the base and one enclave |
+| Researcher (นักวิจัย) | oil refinery | special buff items · poison-gas mortar shells | fuel, chemicals and medicine every day, and more output | **[Claude design]** bring a live infection sample from the flooded hospital lab and research it at the base (an infirmary + lab chain) |
+| Programmer (โปรแกรมเมอร์) | weapons lab (weapon upgrades) | flashbang mortar shells · electric mortar shells · drone support | more power, less power use · every turret becomes automatic · auto-production added to rooms · more yield | **[Claude design]** restore the city's power control centre (a control point) and link its grid to the base and one enclave |
 
-Open for J:
-- GDD §12 also gives each leader a game-ending goal (for example the Warlord destroys every nest). Do those stay, as
-  the step after the unlock goal?
-- Can a community have more than one leader over a run (a new leader after one dies)?
+- **No game-ending goals** (J). The game goes on for as long as the player likes; the unlock goals above are
+  milestones, not endings.
+- **One leader at a time.** A leader can step down, and stepping down only returns them to outstanding citizen,
+  with that buff (J). Another outstanding citizen can then lead.
 
 ## 3. Core skills
 
 - Each core skill has levels 0–7, raised by doing (and by base routines).
 - At 7, the survivor picks one of four specializations.
 - Then the skill climbs 0–7 a second time.
-- **[Claude proposal]** In the second climb, the specialization's numbers grow in steps and are full at 7. Until a
-  survivor reaches 7 there, they get about half.
-- J to confirm.
+- In the second climb, the specialization's numbers grow step by step with each level and are full at 7 (J).
 
 ### Fitness (ฟิตเนส)
 Raises HP, stamina, running, swimming, rowing and carrying. Grows from running, rowing, and the fitness corner.
@@ -84,8 +82,7 @@ Raises accuracy, recoil control and reload speed. Grows from shooting, and from 
 ### Wits (ไหวพริบ)
 Raises search speed, quiet movement and spotting traps. Grows from searching and reading.
 
-Per level, search speed: —, +5 %, +10 %, +15 %, +20 %, +25 %, +30 %, +35 %. J's sheet says +50 % at level 1, which
-looks like a typo for +5 %; J to confirm.
+Per level, search speed: —, +5 %, +10 %, +15 %, +20 %, +25 %, +30 %, +35 % (level 1 is +5 %, J).
 
 | Specialization | Effects |
 | --- | --- |
@@ -102,7 +99,7 @@ Raises time underwater, underwater speed, and sight in murky water. Grows from d
 | Breath (s) | +3 | +6 | +9 | +12 | +15 | +18 | +21 |
 | Underwater stamina use | −3 % | −6 % | −9 % | −12 % | −15 % | −18 % | −25 % |
 
-**[Claude proposal]** The four specializations, written to match the others:
+**[Claude design]** The four specializations, written to match the others:
 
 | Specialization | Effects |
 | --- | --- |
@@ -131,7 +128,7 @@ This replaces the "Background" row in the GDD §3 trait table (Ex-Soldier, Fishe
 
 ## 5. More traits
 
-These are added to the GDD §3 trait table. The names are **[Claude proposal]**:
+These are added to the GDD §3 trait table. The names are **[Claude design]**:
 
 | # | Group | Trait | Effect |
 | --- | --- | --- | --- |
@@ -147,7 +144,7 @@ These are added to the GDD §3 trait table. The names are **[Claude proposal]**:
 
 The GDD rule stays: 2–3 traits each, at least one negative.
 
-## 6. Community skills and books **[Claude proposal]**
+## 6. Community skills and books **[Claude design]**
 
 J asked for this to be designed in the spirit of State of Decay. The rules:
 - Each survivor has **one community skill slot**: a trade they bring to the base.
@@ -178,12 +175,12 @@ tailor, radio, pro diver, fisher, teacher, cook):
 | Fishing | fish traps from the dock; food from the water | Net fishing (more food) · Bait & lures (rare catches) | Trader |
 | Teaching | members learn skills faster | Library (books read in half the time) · Mentoring (pass on one specialization) | any |
 
-Outstanding-citizen buff **[Claude proposal]**, still open from 2026-11-05:
+Outstanding-citizen buff **[Claude design]**:
 - An outstanding citizen's community skill also works **base-wide at half strength** while they are in the base.
   For example, a Medicine citizen speeds up healing for everyone a little.
 - So every outstanding citizen's buff applies at once, leader or not, as J set.
 
-## 7. Combat classes **[Claude proposal]**
+## 7. Combat classes **[Claude design]**
 
 A class is the survivor's role in a fight. Each has:
 - a weapon it prefers
@@ -205,8 +202,7 @@ melee skill). Teammates use their class ability on their own, with simple rules 
 | Engineer (ช่างสนาม) | SMG, shotgun | repairs barricades and boats 2× faster | **Deploy**: a quick barricade or a noise decoy that draws the horde for 10 s (50 s) |
 | Grenadier (พลระเบิด) | grenade launcher, AR | +2 grenades carried; −25 % self-blast damage | **Barrage**: three frags thrown in a fan (60 s) |
 
-The demo needs only the data model plus 3 classes, Rifleman, Breacher and Medic, behind `demo_build`. The others are
-data entries for later.
+The demo has all six classes (J).
 
 ## 8. What 1.6 builds, and what waits for later systems
 
@@ -229,13 +225,14 @@ effects whose systems exist now:
 
 All of it is content-flagged (`demo_build`), not forked.
 
-## 9. Open questions for J
+## 9. J's answers (2026-11-06)
 
-1. What does the second climb 0–7 after a specialization give (§3)? Is the proposal OK?
-2. Wits level 1: +5 % or +50 % search speed?
-3. The unlock goals for the Researcher and the Programmer (§2): are the proposals OK?
-4. Do the GDD §12 end goals stay alongside the unlock goals?
-5. Community skills, books and the outstanding-citizen buff (§6): OK as proposed?
-6. The combat classes (§7): OK? Which three go in the demo?
-7. Diving specializations and the trait names (§3, §5): OK?
-8. Can status be lost (open since 2026-11-05)?
+1. The second climb 0–7 after a specialization: as proposed. The specialization's numbers grow step by step and are
+   full at 7.
+2. Wits level 1: +5 % search speed.
+3. The Researcher and Programmer unlock goals: OK.
+4. No game-ending goals: the game goes on, long and open-ended.
+5. Community skills, books and the outstanding-citizen buff: OK.
+6. Combat classes: OK, and the demo has all six.
+7. Diving specializations and the trait names: OK.
+8. Status is never lost. A leader who steps down goes back to outstanding citizen, keeping that buff.

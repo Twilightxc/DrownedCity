@@ -63,8 +63,8 @@ Pad layout now:
 ## Waiting on J
 - J sent the 1.6 citizen spec on 2026-11-06: **`docs/CITIZENS_1_6.md`**. It holds J's spec, plus Claude's
   proposals for the parts J asked to have designed (diving specializations, community skills and books, combat
-  classes, two unlock goals, trait names). J answers the open questions in §9 there; Part B (1.6 SimCore) starts
-  from it.
+  classes, two unlock goals, trait names). J approved them all and answered every open question (§9 there,
+  PR `docs/citizen-answers`). Part B (1.6 SimCore) starts from it.
 - Arc playtests of #60–#65. The PRs list what to check.
 
 ## Next session must know
