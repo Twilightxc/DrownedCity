@@ -128,6 +128,11 @@ func _ready() -> void:
 
 	if level_scene == null:
 		_build_level_meshes()
+	var melee_arg: String = SpikeLauncher.arg("melee", "")  # ?melee=axe: try another melee weapon
+	if melee_arg != "" and ResourceLoader.exists("res://data/weapons/%s.tres" % melee_arg):
+		var mw: MeleeConfig = load("res://data/weapons/%s.tres" % melee_arg) as MeleeConfig
+		if mw != null:
+			_player.melee_weapon = mw
 	_player.setup(_grid, _horde, _camera, GROUND_Y)
 	_player.position = Vector3(0.5, GROUND_Y, 2.5)
 	_player.fired.connect(_tracers.add)

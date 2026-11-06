@@ -54,3 +54,16 @@ func test_damage_armor_and_silent_takedowns() -> void:
 	assert_gte(Melee.damage_to(KNIFE, _horde, 1), 100, "kills a Walker (HP 100) in one")
 	_horde.armor[0] = WeaponConfig.Armor.M
 	assert_eq(Melee.damage_to(KNIFE, _horde, 0), roundi(KNIFE.damage * 0.25), "a knife against armor")
+
+
+func test_the_axe_hits_two_harder_and_slower_and_cuts_armor() -> void:
+	var axe: MeleeConfig = preload("res://data/weapons/axe.tres")
+	var me: Vector2 = Vector2(10, 10)
+	_horde.spawn(Vector2(10.5, 11.0), 0)
+	_horde.spawn(Vector2(9.5, 11.0), 0)
+	_horde.spawn(Vector2(10.0, 11.4), 0)
+	assert_eq(Melee.targets(axe, _horde, _grid, me, Vector2(0, 1)).size(), 2, "two at once")
+	assert_gt(axe.damage, KNIFE.damage)
+	assert_gt(axe.swing_sec, KNIFE.swing_sec)
+	_horde.armor[0] = WeaponConfig.Armor.M
+	assert_eq(Melee.damage_to(axe, _horde, 0), roundi(axe.damage * 0.75), "pen M against M armor")

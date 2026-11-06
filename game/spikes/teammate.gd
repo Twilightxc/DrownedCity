@@ -38,6 +38,7 @@ func _ready() -> void:
 
 func setup(nav: NavGrid, crowd: Horde, cam: Camera3D, y: float) -> void:
 	super.setup(nav, crowd, cam, y)
+	brain.melee_reach = melee_weapon.reach_m if melee_weapon != null else 0.0  # the loadout may bring an axe
 	throwable = teammate_config.throwable
 	grenade_count = teammate_config.grenades
 

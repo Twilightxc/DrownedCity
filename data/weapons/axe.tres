@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MeleeConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/melee_config.gd" id="1_melee"]
+
+[resource]
+script = ExtResource("1_melee")
+display_name = "Axe"
+damage = 70
+armor_pen = 2
+sneak_mul = 1.5
+reach_m = 1.6
+arc_deg = 140.0
+max_targets = 2
+windup_sec = 0.25
+swing_sec = 0.8
+knockback = 4.5
+stagger_sec = 0.6
+noise_m = 3.0
+stamina = 18.0

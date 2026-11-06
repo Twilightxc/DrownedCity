@@ -107,7 +107,13 @@ func _arm() -> void:
 			guns.append(Gun.new(slot.weapon, slot.attachments, pouch))
 	gun = guns[0]
 	motion = FighterMotion.new(movement)
+	if loadout != null and loadout.melee != null:
+		melee_weapon = loadout.melee
 	melee = Melee.new(melee_weapon) if melee_weapon != null else null
+	if _swipe != null:  # the swipe's arc and reach follow the weapon
+		_swipe.queue_free()
+		_swipe = null
+		_build_swipe()
 	_show_gun()
 	var worn: Array[ArmorConfig] = []
 	if loadout != null:
