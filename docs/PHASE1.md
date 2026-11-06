@@ -172,10 +172,10 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 
 | # | Item | Group | Where |
 | --- | --- | --- | --- |
-| 1, 7 | ~~Teammates don't revive the downed player~~ fixed (PR #53) | Teammate AI | code |
-| 1 | ~~Teammates don't throw grenades, crouch or go prone~~ fixed (PR #53; stance is their own call by cover) | Teammate AI | code |
-| 2 | ~~Teammates take no damage from Bloater gas~~ fixed (PR #53, ground fire too) | Teammate AI | code |
-| 5 | ~~Teammates look lost when the player is downed~~ fixed (PR #53) | Teammate AI | code |
+| 1, 7 | ~~Teammates don't revive the downed player~~ fixed (PR #53, J passed 2026-11-06) | Teammate AI | code |
+| 1 | ~~Teammates don't throw grenades, crouch or go prone~~ fixed (PR #53, J passed 2026-11-06; stance is their own call by cover) | Teammate AI | code |
+| 2 | ~~Teammates take no damage from Bloater gas~~ fixed (PR #53, J passed 2026-11-06; ground fire too) | Teammate AI | code |
+| 5 | ~~Teammates look lost when the player is downed~~ fixed (PR #53, J passed 2026-11-06) | Teammate AI | code |
 | 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code (design with J) |
 | 3 | No crosshair for the pistol while downed | HUD | code |
 | 16 | A downed icon over the player and teammates | HUD | code |
