@@ -61,8 +61,10 @@ Pad layout now:
 6. Optional: more barricade stages (`prop_barricade_*_N.glb` in `kit_props.py`). The code takes any count.
 
 ## Waiting on J
-- 1.6 SimCore and the citizen system details: buffs, leader system, core skills, background special skills, traits,
-  community skills, books. Part B starts there.
+- J sent the 1.6 citizen spec on 2026-11-06: **`docs/CITIZENS_1_6.md`**. It holds J's spec, plus Claude's
+  proposals for the parts J asked to have designed (diving specializations, community skills and books, combat
+  classes, two unlock goals, trait names). J approved them all and answered every open question (§9 there,
+  PR `docs/citizen-answers`). Part B (1.6 SimCore) starts from it.
 - Arc playtests of #60–#65. The PRs list what to check.
 
 ## Next session must know
