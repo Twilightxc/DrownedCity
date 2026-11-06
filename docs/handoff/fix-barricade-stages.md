@@ -1,6 +1,6 @@
 # fix/barricade-stages
 
-- **PR:** opening (pushed? yes)
+- **PR:** #61 (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ 924dab5 (PR #60, the water, is still open; no shared files)
 - **Updated:** 2026-11-06
