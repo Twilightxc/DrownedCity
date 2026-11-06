@@ -11,6 +11,8 @@ extends RefCounted
 ## near the blast, and picks its own stance: the lowest one (steadier, harder to see) whose muzzle still clears
 ## the cover between it and its target, as long as no hunter is close; crouched while sneaking past sleepers
 ## (bug list 2026-11-05, items 1, 5, 7; J: its own call, not a copy of the player).
+## Under "hold fire" it doesn't shoot but knifes a zombie that reaches it, and backs off only when mob_count
+## crowd it (J 2026-11-06, item 10); it also knifes one in reach while its gun is empty or reloading.
 
 enum Order { FOLLOW, HOLD }
 
@@ -34,6 +36,7 @@ var target_pos: Vector2 = Vector2.ZERO
 var stance: int = FighterMotion.Stance.STAND
 var reviving: bool = false
 var want_throw: bool = false
+var want_melee: bool = false  ## swing the knife this frame
 var throw_at: Vector2 = Vector2.ZERO
 
 # Inputs set by the Teammate before think()
@@ -44,6 +47,7 @@ var patient_radius: float = 1.6  ## that fighter's FighterConfig.revive_radius_m
 var can_throw: bool = false  ## up, with a grenade and something to throw it with
 var throw_blast_m: float = 0.0
 var throw_range: Vector2 = Vector2.ZERO  ## (min, max) m
+var melee_reach: float = 0.0  ## the fighter's MeleeConfig.reach_m, 0 = no melee
 var allies: PackedVector2Array = PackedVector2Array()  ## everyone a grenade must miss, itself included
 
 var _retarget_left: float = 0.0
@@ -57,6 +61,8 @@ var _throw_left: float = 0.0
 var _check_left: float = 0.0
 var _stance_left: float = 0.0
 var _sneaking: bool = false
+var _mobbed: bool = false
+var _melee_at: Vector2 = Vector2.ZERO
 
 
 func _init(cfg: TeammateConfig, own_side: float = 1.0) -> void:
@@ -76,6 +82,7 @@ func think(delta: float, me: Vector2, gun: Gun, muzzle_over: float, leader: Vect
 	reviving = has_patient and me.distance_to(patient_pos) <= patient_radius * 0.75
 	_pick_target(delta, me, gun, muzzle_over, leader, horde, grid)
 	_plan_throw(delta, me, muzzle_over, horde, grid)
+	_plan_melee(me, gun, horde)
 	_turn(delta, me)
 	_shoot(delta, me, gun)
 	_walk(delta, me, leader, leader_aim, horde, grid)
@@ -115,7 +122,9 @@ func _pick_target(delta: float, me: Vector2, gun: Gun, over: float, leader: Vect
 
 func _turn(delta: float, me: Vector2) -> void:
 	var want: Vector2 = aim
-	if target >= 0 and target_pos.distance_squared_to(me) > 0.01:
+	if want_melee and _melee_at.distance_squared_to(me) > 0.0001:
+		want = (_melee_at - me).normalized()
+	elif target >= 0 and target_pos.distance_squared_to(me) > 0.01:
 		want = (target_pos - me).normalized()
 	elif move.length_squared() > 0.04:
 		want = move.normalized()
@@ -166,10 +175,13 @@ func _walk(delta: float, me: Vector2, leader: Vector2, leader_aim: Vector2, hord
 				near_d2 = d2
 				near = a
 	sprint = false
-	if near >= 0:
+	if near >= 0 and (not hold_fire or _mobbed or melee_reach <= 0.0):
 		var away: Vector2 = (me - horde.positions[near]).normalized()
 		var home: Vector2 = (spot - me).normalized() if spot.distance_to(me) > 1.0 else Vector2.ZERO
 		move = (away * 0.8 + home * 0.4).normalized()
+		return
+	if want_melee and not has_patient:
+		move = Vector2.ZERO  # stand and fight it
 		return
 	var dist: float = me.distance_to(spot)
 	if dist <= arrive or reviving:
@@ -262,6 +274,32 @@ func _plan_throw(delta: float, me: Vector2, over: float, horde: Horde, grid: Nav
 			return
 	want_throw = true
 	throw_at = best_at
+
+
+## The nearest hunter in knife reach: swing at it under "hold fire" or with the gun empty / reloading.
+## Also counts the crowd: mob_count hunters within kite_m and it backs off instead.
+func _plan_melee(me: Vector2, gun: Gun, horde: Horde) -> void:
+	want_melee = false
+	var near: int = -1
+	var near_d2: float = INF
+	var crowd: int = 0
+	var kite2: float = config.kite_m * config.kite_m
+	for a: int in horde.count:
+		if horde.state[a] != Horde.State.HUNTING:
+			continue
+		var d2: float = me.distance_squared_to(horde.positions[a])
+		if d2 < kite2:
+			crowd += 1
+		if d2 < near_d2:
+			near_d2 = d2
+			near = a
+	_mobbed = crowd >= config.mob_count
+	var reach: float = melee_reach * 0.95
+	if near < 0 or melee_reach <= 0.0 or reviving or near_d2 > reach * reach:
+		return
+	if hold_fire or gun.is_reloading() or gun.ammo == 0:
+		want_melee = true
+		_melee_at = horde.positions[near]
 
 
 func threw() -> void:

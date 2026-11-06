@@ -551,8 +551,8 @@ func _update_help() -> void:
 ## Controls cheat sheet for the device in use; subclasses append their extras.
 func _help_text(pad: bool) -> String:
 	if pad:
-		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT · Grenade type D-pad right\nSprint L3 · Roll B · Crouch D-pad down · Prone D-pad up · Next gun R3 · Fire mode D-pad left · Camera LB/RB · Back: debug overlay"
-	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB · Grenade type G\nSprint Shift · Roll Space · Crouch C · Prone Z · Guns 1–4 · Fire mode V · Camera Q/E, wheel · F3: debug overlay"
+		return "Move L-stick · Aim R-stick · Fire RT · Reload X · Throw hold LT · Grenade type D-pad right\nSprint L3 · Roll B · Crouch D-pad down · Prone D-pad up · Knife R3 · Next gun RB · Fire mode D-pad left · Camera LB · Back: debug overlay"
+	return "Move WASD · Aim mouse · Fire LMB · Reload R · Throw hold RMB · Grenade type G\nSprint Shift · Roll Space · Crouch C · Prone Z · Knife X · Guns 1–4 · Fire mode V · Camera Q/E, wheel · F3: debug overlay"
 
 
 func _build_level_meshes() -> void:

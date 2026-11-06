@@ -20,6 +20,9 @@ extends Resource
 @export var burst_pause_sec: float = 0.25  ## ...with this pause so the bloom settles
 @export var tactical_reload_frac: float = 0.4  ## reloads when nothing is near and the mag is below this
 
+@export_group("Melee")
+@export var mob_count: int = 3  ## under "hold fire" it stands and knifes a lone zombie; this many within kite_m: it backs off
+
 @export_group("Stance")
 @export var stance_check_sec: float = 0.5  ## how often it rethinks its stance while standing still
 @export var crouch_safe_m: float = 5.0  ## crouches only with no hunting zombie closer than this

@@ -25,6 +25,7 @@ func _ready() -> void:
 	set_process_unhandled_input(false)
 	brain = TeammateBrain.new(teammate_config)
 	brain.muzzle_heights = movement.muzzle_height_m
+	brain.melee_reach = melee_weapon.reach_m if melee_weapon != null else 0.0
 	_prompt = Label3D.new()
 	_prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_prompt.font_size = 36
@@ -116,6 +117,10 @@ func _wants_sprint() -> bool:
 
 func _wants_fire() -> bool:
 	return brain != null and brain.fire
+
+
+func _wants_melee() -> bool:
+	return brain != null and brain.want_melee
 
 
 func _update_aim() -> void:

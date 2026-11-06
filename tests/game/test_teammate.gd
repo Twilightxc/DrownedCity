@@ -88,3 +88,24 @@ func test_a_teammate_walks_to_the_downed_player_and_gets_it_up() -> void:
 			break
 	assert_eq(player.health.state, FighterHealth.State.ALIVE, "helped up")
 	assert_lt(mate.ground_position().distance_to(player.ground_position()), player.health.config.revive_radius_m)
+
+
+func test_the_knife_hits_after_the_windup_costs_stamina_and_stops_shooting() -> void:
+	var cam: Camera3D = Camera3D.new()
+	add_child_autofree(cam)
+	var grid: NavGrid = NavGrid.new(20, 20)
+	var p: SpikePlayer = _fighter(SpikePlayer.new(), grid, cam, Vector2(10, 10))
+	p.horde.spawn(Vector2(10, 11), 0)
+	p.aim_dir = Vector2(0, 1)
+	var hp0: int = p.horde.hp[0]
+	var stamina0: float = p.motion.stamina
+	assert_true(p.try_melee())
+	assert_lt(p.motion.stamina, stamina0, "costs stamina")
+	p.auto_trigger = true
+	var shots: int = p.shots_fired
+	p._update_melee(p.melee_weapon.windup_sec + 0.01)
+	assert_eq(p.horde.hp[0], hp0 - p.melee_weapon.damage, "hit once")
+	assert_eq(p.shots_fired, shots)
+	p.motion.stance = FighterMotion.Stance.PRONE
+	p.melee.left = 0.0
+	assert_false(p.try_melee(), "not from prone")

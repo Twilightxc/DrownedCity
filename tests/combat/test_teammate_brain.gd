@@ -164,3 +164,32 @@ func test_it_crouches_to_sneak_past_sleepers() -> void:
 	_horde.spawn(Vector2(28.5, 20.5), 0, Horde.State.DORMANT)
 	_think(0.6, Vector2(20, 20), gun, Vector2(20, 30))
 	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH, "sleepers near, nobody hunting: low and quiet")
+
+
+func test_under_hold_fire_it_knifes_a_lone_zombie_and_backs_off_a_crowd() -> void:
+	var gun: Gun = Gun.new(AR)
+	_brain.hold_fire = true
+	_brain.melee_reach = 1.4
+	_brain.order = TeammateBrain.Order.HOLD
+	_brain.hold_point = Vector2(20, 20)
+	_horde.spawn(Vector2(21.0, 20.0), 0)  # 1 m to its right
+	_think(0.3, Vector2(20, 20), gun)
+	assert_false(_brain.fire, "holds its fire")
+	assert_true(_brain.want_melee, "knifes it")
+	assert_eq(_brain.move, Vector2.ZERO, "stands its ground")
+	assert_gt(_brain.aim.dot(Vector2(1, 0)), 0.9, "faces it")
+	_horde.spawn(Vector2(20.0, 21.8), 0)
+	_horde.spawn(Vector2(18.5, 20.5), 0)
+	_think(0.1, Vector2(20, 20), gun)
+	assert_ne(_brain.move, Vector2.ZERO, "three on it: backs off")
+
+
+func test_firing_freely_it_knifes_only_while_the_gun_is_empty() -> void:
+	var gun: Gun = Gun.new(AR)
+	_brain.melee_reach = 1.4
+	_horde.spawn(Vector2(21.0, 20.0), 0)
+	_think(0.1, Vector2(20, 20), gun)
+	assert_false(_brain.want_melee, "shoots instead")
+	gun.ammo = 0
+	_think(0.1, Vector2(20, 20), gun)
+	assert_true(_brain.want_melee, "empty: knife")
