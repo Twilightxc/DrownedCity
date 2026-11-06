@@ -1,6 +1,8 @@
-// Flood water (WebGL2-safe): murky teal tinted lighter near buildings, two scrolling normal
-// layers, and a foam ring along building footprints. "Near" comes from a signed-distance test
-// against up to 16 footprint boxes instead of the depth buffer, so it costs no extra pass.
+// Flood water (WebGL2-safe): murky teal tinted a little lighter near buildings, two scrolling normal
+// layers, a dark wet line where the water meets a wall, and a thin broken foam line that laps back and
+// forth (bug list item 13: the old 1 m soft foam band read as a glowing halo). "Near" comes from a
+// signed-distance test against up to 16 footprint boxes instead of the depth buffer, so it costs no
+// extra pass.
 shader_type spatial;
 render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 
@@ -14,8 +16,14 @@ uniform vec2 scroll_b = vec2(-0.015, 0.018);
 uniform float tiling_a = 0.06;  // texture repeats per metre
 uniform float tiling_b = 0.11;
 uniform float normal_depth : hint_range(0.0, 2.0) = 0.5;
-uniform float shallow_width = 6.0;  // metres
-uniform float foam_width = 1.0;
+uniform float shallow_width = 4.0;  // metres
+uniform float shallow_strength : hint_range(0.0, 1.0) = 0.35;
+uniform float foam_width = 0.45;  // metres, before the lapping
+uniform float foam_strength : hint_range(0.0, 1.0) = 0.55;
+uniform float lap_m = 0.18;  // how far the foam line moves in and out
+uniform float lap_speed = 0.9;  // radians per second
+uniform float contact_width = 0.35;  // metres of darker water against the wall
+uniform float contact_dark : hint_range(0.0, 1.0) = 0.45;
 uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float specular : hint_range(0.0, 1.0) = 0.3;
 
@@ -50,9 +58,15 @@ void fragment() {
 
 	float shallow = 1.0 - smoothstep(0.0, shallow_width, dist);
 	float ripple = (na.x + nb.y) * 0.5;  // reuse the normal maps as breakup noise
-	float foam = (1.0 - smoothstep(0.0, foam_width, dist + (ripple - 0.5) * 0.8)) * smoothstep(0.38, 0.55, ripple);
+	// The foam line laps: its outer edge moves in and out, out of step along the wall (ripple as phase).
+	float lap = sin(TIME * lap_speed + ripple * 6.0) * lap_m;
+	float edge = foam_width + lap + (ripple - 0.5) * 0.5;
+	float band = (1.0 - smoothstep(edge * 0.55, edge, dist)) * smoothstep(0.02, 0.12, dist);  // edge0 < edge1 for GLSL
+	float foam = band * smoothstep(0.45, 0.62, ripple) * foam_strength;
+	float contact = 1.0 - smoothstep(0.0, contact_width, dist);
 
-	vec3 albedo = mix(deep_color, shallow_color, shallow * 0.7);
+	vec3 albedo = mix(deep_color, shallow_color, shallow * shallow_strength);
+	albedo *= 1.0 - contact * contact_dark;
 	ALBEDO = mix(albedo, foam_color, foam);
 	ROUGHNESS = mix(roughness, 0.9, foam);
 	SPECULAR = specular;

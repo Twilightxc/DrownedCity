@@ -184,7 +184,7 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 | 9 | ~~The reload ring stays on dead teammates / the player~~ fixed (`fix/hud-downed`) | HUD bug | code |
 | 8 | ~~Zombies keep attacking the dead player's body~~ fixed (`fix/hud-downed`: they turn to a teammate still up or down; with nobody left they gather without attacking) | Horde bug | code |
 | 18 | Barricades should show damage by level (3 stages exist; make them clearer or add more) | Arena | code + desktop pieces |
-| 13 | The water next to buildings looks odd (foam ring / shore) | Water shader | code |
+| 13 | ~~The water next to buildings looks odd (foam ring / shore)~~ fixed (`fix/water-shore`: thin broken lapping foam, a dark wet line at the wall, less tint; `docs/art/19_water_shore_*.png`) | Water shader | code |
 | 4 | Weapon switch animation | Animation | desktop |
 | 6 | No death animation; the downed pose freezes | Animation | desktop |
 | 11 | Standing → prone looks like just falling over | Animation | desktop |
