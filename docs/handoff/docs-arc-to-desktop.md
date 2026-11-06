@@ -1,5 +1,7 @@
 # docs/arc-to-desktop
 
+> Superseded by `docs-handoff-to-desktop.md` (2026-11-06, after PRs #60-#65 merged).
+
 - **PR:** #64 (pushed? yes)
 - **Machine:** laptop (ASUS, Intel Arc 140V) → desktop (RTX 4080)
 - **Base:** main @ 924dab5
