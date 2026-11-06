@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="MeleeConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://combat/melee_config.gd" id="1_melee"]
+
+[resource]
+script = ExtResource("1_melee")
+display_name = "Knife"
+damage = 40

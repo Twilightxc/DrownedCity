@@ -25,7 +25,8 @@ own scene flow, reusing the Phase 0 modules (`sim/`, `combat/`, `game/fx/`, `gam
       .308). Calibers and ammo pick-ups; the two grenades already exist (frag, incendiary).
       → loose rounds per caliber (`AmmoPouch`); the supply crate tops them up (pick-ups in the world: 1.5).
 - [x] Weapon switching (keys 1–4, wheel / pad Y+stick), ammo in the HUD, reload per class (shotgun: shell by shell).
-      → keys 1–4, pad R3 = next gun (the wheel stays the orders wheel); fire mode V / pad L3.
+      → keys 1–4, pad RB = next gun (was R3 until the knife took it, 2026-11-06; the wheel stays the orders
+      wheel); fire mode V / pad D-pad left.
 - [x] Gun attachments ×4 (GDD §6 demo list): silencer, red dot, extended mag, flashlight (the 0.8 flashlight
       moves onto the gun). → no models yet; the interior flashlight is on only with a flashlight on the gun.
 - [x] Noise: every shot emits `noise_m` into the horde perception (1.2). → `SpikePlayer.noise`; inside a
@@ -176,10 +177,10 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 | 1 | ~~Teammates don't throw grenades, crouch or go prone~~ fixed (PR #53, J passed 2026-11-06; stance is their own call by cover) | Teammate AI | code |
 | 2 | ~~Teammates take no damage from Bloater gas~~ fixed (PR #53, J passed 2026-11-06; ground fire too) | Teammate AI | code |
 | 5 | ~~Teammates look lost when the player is downed~~ fixed (PR #53, J passed 2026-11-06) | Teammate AI | code |
-| 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code (design with J) |
+| 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code. Designed with J 2026-11-06 (DECISIONS). Step 1 melee: `phase1/melee`; step 2 the 8-slot wheel |
 | 3 | No crosshair for the pistol while downed | HUD | code |
 | 16 | A downed icon over the player and teammates | HUD | code |
-| 17 | A weapon UI | HUD | code (design with J) |
+| 17 | A weapon UI | HUD | code. Designed with J 2026-11-06: a bottom-right panel (DECISIONS); gun icons from Blender on the desktop |
 | 9 | The reload ring stays on dead teammates / the player | HUD bug | code |
 | 8 | Zombies keep attacking the dead player's body | Horde bug | code |
 | 18 | Barricades should show damage by level (3 stages exist; make them clearer or add more) | Arena | code + desktop pieces |

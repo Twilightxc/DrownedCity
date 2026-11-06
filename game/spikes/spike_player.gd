@@ -12,6 +12,7 @@ signal footstep(at: Vector2, noise_m: float)  ## one per step (1.5+ A3): its sou
 signal device_changed(pad: bool)
 signal restart_requested  ## reload / X pressed while dead
 signal shot(gun: Gun)  ## one per round fired (muzzle flash, casings, shake)
+signal meleed(cfg: MeleeConfig, hit: bool)  ## a melee hit landing (hit = it struck someone): sound, swipe
 signal hit_confirmed(kills: int)  ## a round that hit something; kills = how many it killed (hit markers, hit-stop)
 
 const MUZZLE_HEIGHT: float = 0.9
@@ -25,6 +26,7 @@ const AIM_LINE_ASSIST_COLOR: Color = Color(0.55, 1.0, 0.5, 0.85)
 @export var loadout: LoadoutConfig  ## null: one default gun with endless rounds (tests)
 @export var fighter: FighterConfig = preload("res://data/combat/player_fighter.tres")  ## HP, downed time (1.3)
 @export var throwable: ThrowableConfig
+@export var melee_weapon: MeleeConfig = preload("res://data/weapons/knife.tres")  ## every fighter carries one (GDD §6)
 @export var throwables: Array[ThrowableConfig] = []  ## more than one: "throwable_next" cycles them (shared count)
 @export var controls: TwinStickConfig
 @export var gun_hold: Vector3 = Vector3(-0.12, 0.95, 0.34)  ## the right hand in the aim marker's space (+Z = aim)
@@ -74,6 +76,9 @@ var _throw_ring: MeshInstance3D
 var gun_view: GunView
 var body: SurvivorView  ## null with survivor_body off
 var motion: FighterMotion  ## stance, sprint, roll, stamina
+var melee: Melee  ## the knife swing (bug list item 10); null without a melee_weapon
+var _swipe: MeshInstance3D  ## placeholder slash until the desktop keys a clip
+var _swipe_left: float = 0.0
 var _gun_before_down: Gun  ## the gun in hand when it went down (back in hand once revived)
 var _step_left: float = 0.0
 
@@ -102,6 +107,7 @@ func _arm() -> void:
 			guns.append(Gun.new(slot.weapon, slot.attachments, pouch))
 	gun = guns[0]
 	motion = FighterMotion.new(movement)
+	melee = Melee.new(melee_weapon) if melee_weapon != null else null
 	_show_gun()
 	var worn: Array[ArmorConfig] = []
 	if loadout != null:
@@ -219,6 +225,7 @@ func _ready() -> void:
 	_throw_ring.top_level = true
 	_throw_ring.visible = false
 	add_child(_throw_ring)
+	_build_swipe()
 
 
 ## Move onto another walk plane (a storey inside a building, or back to the roof).
@@ -312,6 +319,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		motion.toggle_prone()
 	elif event.is_action_pressed("roll"):
 		roll()
+	elif event.is_action_pressed("melee"):
+		try_melee()
 
 
 ## Dodge roll along the movement input, or along the aim when standing still.
@@ -357,7 +366,9 @@ func _process(delta: float) -> void:
 	_move(delta)
 	if not aim_locked:
 		_update_aim()
-	_update_weapon(delta)
+	_update_melee(delta)
+	if melee == null or not melee.is_swinging():
+		_update_weapon(delta)
 	_update_throw()
 	_update_interact()
 	_draw_aim_line()
@@ -411,6 +422,92 @@ func _wants_sprint() -> bool:
 
 func _wants_fire() -> bool:
 	return Input.is_action_pressed("fire") or auto_trigger
+
+
+## A melee swing this frame (the player presses melee in _unhandled_input instead; a teammate's brain asks here).
+func _wants_melee() -> bool:
+	return false
+
+
+# Melee (GDD §6, bug list item 10): a knife swing along the aim; no shooting while it lasts.
+
+## Starts a swing: not down, rolling or prone, and with the stamina for it.
+func try_melee() -> bool:
+	if melee == null or not health.is_alive() or motion.is_rolling():
+		return false
+	if motion.stance == FighterMotion.Stance.PRONE or motion.stamina < melee.config.stamina or not melee.try_swing():
+		return false
+	motion.stamina -= melee.config.stamina
+	gun.reload_left = 0.0  # a swing drops a reload in progress
+	_swipe_left = melee.config.swing_sec
+	return true
+
+
+func _update_melee(delta: float) -> void:
+	if melee == null:
+		return
+	if _wants_melee():
+		try_melee()
+	_update_swipe(delta)
+	if not melee.step(delta):
+		return
+	var cfg: MeleeConfig = melee.config
+	var hit: PackedInt32Array = Melee.targets(cfg, horde, grid, ground_position(), aim_dir)
+	if not hit.is_empty():
+		var damages: PackedInt32Array = PackedInt32Array()
+		var knocks: PackedFloat32Array = PackedFloat32Array()
+		for a: int in hit:
+			damages.append(Melee.damage_to(cfg, horde, a))
+			knocks.append(cfg.knockback)
+		var kills: int = horde.apply_hits(hit, damages, ground_position(), false, cfg.stagger_sec, knocks)
+		kills_by_gun[cfg.display_name] = kills_by_gun.get(cfg.display_name, 0) + kills
+		hit_confirmed.emit(kills)
+	noise.emit(ground_position(), cfg.noise_m)
+	meleed.emit(cfg, not hit.is_empty())
+
+
+## A flat pale crescent in front of the fighter, swept across the aim during a swing (placeholder animation).
+func _build_swipe() -> void:
+	var mesh: ImmediateMesh = ImmediateMesh.new()
+	var half: float = deg_to_rad(melee_weapon.arc_deg if melee_weapon != null else 110.0) * 0.5
+	var reach: float = melee_weapon.reach_m if melee_weapon != null else 1.4
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	const STEPS: int = 12
+	for i: int in STEPS:
+		var a0: float = lerpf(-half, half, float(i) / STEPS)
+		var a1: float = lerpf(-half, half, float(i + 1) / STEPS)
+		var k0: float = float(i) / STEPS
+		var k1: float = float(i + 1) / STEPS
+		for v: Array in [[a0, 0.55, k0], [a0, 1.0, k0], [a1, 1.0, k1], [a0, 0.55, k0], [a1, 1.0, k1], [a1, 0.55, k1]]:
+			mesh.surface_set_color(Color(1.0, 0.97, 0.9, 0.15 + 0.6 * float(v[2])))
+			mesh.surface_add_vertex(Vector3(sin(v[0]), 0.0, cos(v[0])) * reach * float(v[1]))
+	mesh.surface_end()
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.vertex_color_use_as_albedo = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_swipe = MeshInstance3D.new()
+	_swipe.mesh = mesh
+	_swipe.material_override = mat
+	_swipe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_swipe.position = Vector3(0.0, 1.0, 0.0)
+	_swipe.visible = false
+	_aim_marker.add_child(_swipe)
+
+
+func _update_swipe(delta: float) -> void:
+	if _swipe == null:
+		return
+	_swipe_left = maxf(_swipe_left - delta, 0.0)
+	var cfg: MeleeConfig = melee.config
+	var t: float = cfg.swing_sec - _swipe_left  # time into the swing
+	var on: bool = _swipe_left > 0.0 and t >= cfg.windup_sec * 0.5 and t <= cfg.windup_sec + 0.12
+	_swipe.visible = on
+	if on:
+		var k: float = clampf((t - cfg.windup_sec * 0.5) / (cfg.windup_sec * 0.5 + 0.12), 0.0, 1.0)
+		_swipe.rotation.y = lerpf(0.6, -0.6, k)  # sweeps right to left
+		_swipe.position.y = (0.45 if motion.stance == FighterMotion.Stance.CROUCH else 1.0)
 
 
 func _move(delta: float) -> void:
