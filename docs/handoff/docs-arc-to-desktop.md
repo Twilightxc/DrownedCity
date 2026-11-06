@@ -1,6 +1,6 @@
 # docs/arc-to-desktop
 
-- **PR:** opening (pushed? yes)
+- **PR:** #64 (pushed? yes)
 - **Machine:** laptop (ASUS, Intel Arc 140V) → desktop (RTX 4080)
 - **Base:** main @ 924dab5
 - **Updated:** 2026-11-06
