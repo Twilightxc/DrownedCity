@@ -1,6 +1,6 @@
 # phase1/axe
 
-- **PR:** opening (pushed? yes)
+- **PR:** #62 (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ 924dab5
 - **Updated:** 2026-11-06
