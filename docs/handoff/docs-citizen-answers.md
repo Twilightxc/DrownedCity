@@ -1,6 +1,6 @@
 # docs/citizen-answers
 
-- **PR:** opening (pushed? yes)
+- **PR:** #67 (pushed? yes)
 - **Machine:** laptop (ASUS, Intel Arc 140V)
 - **Base:** main @ ead1da5
 - **Updated:** 2026-11-06
