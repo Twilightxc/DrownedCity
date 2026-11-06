@@ -1,6 +1,6 @@
 # fix/hud-downed
 
-- **PR:** opening (pushed? yes)
+- **PR:** #59 (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ af4466f
 - **Updated:** 2026-11-06
