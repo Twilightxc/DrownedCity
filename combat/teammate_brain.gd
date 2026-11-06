@@ -13,8 +13,15 @@ extends RefCounted
 ## (bug list 2026-11-05, items 1, 5, 7; J: its own call, not a copy of the player).
 ## Under "hold fire" it doesn't shoot but knifes a zombie that reaches it, and backs off only when mob_count
 ## crowd it (J 2026-11-06, item 10); it also knifes one in reach while its gun is empty or reloading.
+## Orders (J 2026-11-06, the 8-slot wheel): one movement order and one fire rule at a time.
+## Movement: FOLLOW its spot beside the leader; SNEAK the same spot, crouched and never sprinting; HOLD a point,
+## backing off what comes close; STAY on a point without backing off. Helping a downed squad member up still
+## comes first. Fire rule: AT_WILL; HOLD_FIRE (knife only in self-defence, no grenades); QUIET (only a gun
+## quieter than quiet_noise_m, e.g. a silenced pistol; else as hold fire); MELEE (knife only, and it steps in
+## to a lone zombie within melee_charge_m).
 
-enum Order { FOLLOW, HOLD }
+enum Order { FOLLOW, SNEAK, HOLD, STAY }
+enum FireRule { AT_WILL, HOLD_FIRE, QUIET, MELEE }
 
 const LOS_CHECKS: int = 6  ## line-of-sight tests per retarget, best scores first
 const THROW_CANDIDATES: int = 12  ## nearest hunters in range tried as a grenade's centre
@@ -22,7 +29,7 @@ const THROW_CANDIDATES: int = 12  ## nearest hunters in range tried as a grenade
 var config: TeammateConfig
 var order: Order = Order.FOLLOW
 var hold_point: Vector2 = Vector2.ZERO
-var hold_fire: bool = false
+var fire_rule: FireRule = FireRule.AT_WILL
 var side: float = 1.0  ## +1 = the leader's left, -1 = right
 
 # Wishes, read after think()
@@ -63,6 +70,17 @@ var _stance_left: float = 0.0
 var _sneaking: bool = false
 var _mobbed: bool = false
 var _melee_at: Vector2 = Vector2.ZERO
+var _guns_free: bool = true  ## this frame's fire rule lets the gun in hand shoot
+
+
+## Whether the rule lets `gun` shoot (QUIET: only a gun at or under quiet_noise_m).
+func may_shoot(gun: Gun) -> bool:
+	match fire_rule:
+		FireRule.AT_WILL:
+			return true
+		FireRule.QUIET:
+			return gun.noise_m <= config.quiet_noise_m
+	return false
 
 
 func _init(cfg: TeammateConfig, own_side: float = 1.0) -> void:
@@ -80,6 +98,7 @@ func follow_spot(leader: Vector2, leader_aim: Vector2) -> Vector2:
 func think(delta: float, me: Vector2, gun: Gun, muzzle_over: float, leader: Vector2, leader_aim: Vector2,
 		horde: Horde, grid: NavGrid) -> void:
 	reviving = has_patient and me.distance_to(patient_pos) <= patient_radius * 0.75
+	_guns_free = may_shoot(gun)
 	_pick_target(delta, me, gun, muzzle_over, leader, horde, grid)
 	_plan_throw(delta, me, muzzle_over, horde, grid)
 	_plan_melee(me, gun, horde)
@@ -136,7 +155,7 @@ func _turn(delta: float, me: Vector2) -> void:
 func _shoot(delta: float, me: Vector2, gun: Gun) -> void:
 	fire = false
 	_reaction_left -= delta
-	if hold_fire or reviving or target < 0 or _reaction_left > 0.0:
+	if not _guns_free or reviving or target < 0 or _reaction_left > 0.0:
 		_burst_left = 0.0
 		return
 	var off: float = absf(aim.angle_to(target_pos - me))
@@ -158,7 +177,8 @@ func _shoot(delta: float, me: Vector2, gun: Gun) -> void:
 
 
 func _walk(delta: float, me: Vector2, leader: Vector2, leader_aim: Vector2, horde: Horde, grid: NavGrid) -> void:
-	var spot: Vector2 = hold_point if order == Order.HOLD else follow_spot(leader, leader_aim)
+	var holding: bool = order == Order.HOLD or order == Order.STAY
+	var spot: Vector2 = hold_point if holding else follow_spot(leader, leader_aim)
 	var arrive: float = config.arrive_m
 	var kite: float = config.kite_m
 	if has_patient:
@@ -175,7 +195,8 @@ func _walk(delta: float, me: Vector2, leader: Vector2, leader_aim: Vector2, hord
 				near_d2 = d2
 				near = a
 	sprint = false
-	if near >= 0 and (not hold_fire or _mobbed or melee_reach <= 0.0):
+	var stays: bool = order == Order.STAY and not has_patient
+	if near >= 0 and not stays and (_guns_free or _mobbed or melee_reach <= 0.0):
 		var away: Vector2 = (me - horde.positions[near]).normalized()
 		var home: Vector2 = (spot - me).normalized() if spot.distance_to(me) > 1.0 else Vector2.ZERO
 		move = (away * 0.8 + home * 0.4).normalized()
@@ -183,6 +204,14 @@ func _walk(delta: float, me: Vector2, leader: Vector2, leader_aim: Vector2, hord
 	if want_melee and not has_patient:
 		move = Vector2.ZERO  # stand and fight it
 		return
+	if stays:
+		move = Vector2.ZERO
+		return
+	if fire_rule == FireRule.MELEE and not has_patient and not _mobbed and melee_reach > 0.0:
+		var prey: int = _nearest_hunter(me, horde, config.melee_charge_m)
+		if prey >= 0:
+			move = (horde.positions[prey] - me).normalized()  # step in to knife it
+			return
 	var dist: float = me.distance_to(spot)
 	if dist <= arrive or reviving:
 		move = Vector2.ZERO
@@ -194,6 +223,18 @@ func _walk(delta: float, me: Vector2, leader: Vector2, leader_aim: Vector2, hord
 	var to: Vector2 = _path_point - me
 	move = to.normalized() * clampf(dist / 1.5, 0.3, 1.0) if to.length_squared() > 0.0001 else Vector2.ZERO
 	sprint = target < 0 and dist > (3.0 if has_patient else config.sprint_beyond_m) and (has_patient or not _sneaking)
+
+
+func _nearest_hunter(me: Vector2, horde: Horde, within: float) -> int:
+	var best: int = -1
+	var best_d2: float = within * within
+	for a: int in horde.count:
+		if horde.state[a] == Horde.State.HUNTING:
+			var d2: float = me.distance_squared_to(horde.positions[a])
+			if d2 < best_d2:
+				best_d2 = d2
+				best = a
+	return best
 
 
 ## Kneels to help someone up; moves standing (crouched while sneaking). Standing still it rethinks every
@@ -218,7 +259,8 @@ func _pick_stance(delta: float, me: Vector2, horde: Horde, grid: NavGrid) -> voi
 			hunter_d2 = minf(hunter_d2, d2)
 		elif d2 <= sneak2:
 			calm_near = true
-	_sneaking = hunter_d2 == INF and calm_near
+	var told_to_sneak: bool = order == Order.SNEAK and hunter_d2 >= config.crouch_safe_m * config.crouch_safe_m
+	_sneaking = (hunter_d2 == INF and calm_near) or told_to_sneak
 	if moving:
 		stance = FighterMotion.Stance.CROUCH if _sneaking and not sprint else FighterMotion.Stance.STAND
 		return
@@ -240,7 +282,7 @@ func _plan_throw(delta: float, me: Vector2, over: float, horde: Horde, grid: Nav
 	want_throw = false
 	_throw_left -= delta
 	_check_left -= delta
-	if not can_throw or reviving or hold_fire or _throw_left > 0.0 or _check_left > 0.0:
+	if not can_throw or reviving or fire_rule != FireRule.AT_WILL or _throw_left > 0.0 or _check_left > 0.0:
 		return
 	_check_left = config.throw_check_sec
 	var r: float = throw_blast_m * 0.8
@@ -297,7 +339,7 @@ func _plan_melee(me: Vector2, gun: Gun, horde: Horde) -> void:
 	var reach: float = melee_reach * 0.95
 	if near < 0 or melee_reach <= 0.0 or reviving or near_d2 > reach * reach:
 		return
-	if hold_fire or gun.is_reloading() or gun.ammo == 0:
+	if not _guns_free or gun.is_reloading() or gun.ammo == 0:
 		want_melee = true
 		_melee_at = horde.positions[near]
 

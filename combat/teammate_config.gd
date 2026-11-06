@@ -21,6 +21,8 @@ extends Resource
 @export var tactical_reload_frac: float = 0.4  ## reloads when nothing is near and the mag is below this
 
 @export_group("Melee")
+@export var melee_charge_m: float = 4.0  ## "melee only": steps in to a lone hunting zombie this close
+@export var quiet_noise_m: float = 15.0  ## "quiet only": shoots only a gun this quiet or quieter (a silenced pistol: 10 m)
 @export var mob_count: int = 3  ## under "hold fire" it stands and knifes a lone zombie; this many within kite_m: it backs off
 
 @export_group("Stance")

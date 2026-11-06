@@ -323,18 +323,36 @@ func _end_run() -> void:
 	print("arena run: ", JSON.stringify(run))
 
 
-## Orders wheel (1.5+ A5): Follow me, Hold here, Hold fire (toggles); the rest come with expeditions.
+## Orders wheel (1.5+ A5; 8 slots, J 2026-11-06): a movement order or a fire rule for every teammate.
+const MOVE_ORDERS: Dictionary[String, TeammateBrain.Order] = {
+	"Follow me": TeammateBrain.Order.FOLLOW, "Sneak-follow": TeammateBrain.Order.SNEAK,
+	"Hold here": TeammateBrain.Order.HOLD, "Stay still": TeammateBrain.Order.STAY,
+}
+const FIRE_RULES: Dictionary[String, TeammateBrain.FireRule] = {
+	"Fire at will": TeammateBrain.FireRule.AT_WILL, "Hold fire": TeammateBrain.FireRule.HOLD_FIRE,
+	"Quiet only": TeammateBrain.FireRule.QUIET, "Melee only": TeammateBrain.FireRule.MELEE,
+}
+
+
 func _on_order(i: int) -> void:
-	match ORDERS[i]:
-		"Follow me":
-			for m: Teammate in _mates:
-				m.brain.order = TeammateBrain.Order.FOLLOW
-		"Hold here":
-			for m: Teammate in _mates:
-				m.brain.order = TeammateBrain.Order.HOLD
-				m.brain.hold_point = m.ground_position()
-		"Hold fire":
-			var on: bool = _mates.is_empty() or not _mates[0].brain.hold_fire
-			for m: Teammate in _mates:
-				m.brain.hold_fire = on
-			_toast.text = tr("Hold fire: on") if on else tr("Hold fire: off (weapons free)")
+	var order: String = ORDERS[i]
+	for m: Teammate in _mates:
+		if MOVE_ORDERS.has(order):
+			m.brain.order = MOVE_ORDERS[order]
+			m.brain.hold_point = m.ground_position()
+		elif FIRE_RULES.has(order):
+			m.brain.fire_rule = FIRE_RULES[order]
+
+
+func _active_orders() -> PackedInt32Array:
+	var out: PackedInt32Array = PackedInt32Array()
+	if _mates.is_empty():
+		return out
+	var b: TeammateBrain = _mates[0].brain
+	for k: int in ORDERS.size():
+		var order: String = ORDERS[k]
+		var move_on: bool = MOVE_ORDERS.has(order) and MOVE_ORDERS[order] == b.order
+		var fire_on: bool = FIRE_RULES.has(order) and FIRE_RULES[order] == b.fire_rule
+		if move_on or fire_on:
+			out.append(k)
+	return out

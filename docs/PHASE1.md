@@ -177,7 +177,7 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 | 1 | ~~Teammates don't throw grenades, crouch or go prone~~ fixed (PR #53, J passed 2026-11-06; stance is their own call by cover) | Teammate AI | code |
 | 2 | ~~Teammates take no damage from Bloater gas~~ fixed (PR #53, J passed 2026-11-06; ground fire too) | Teammate AI | code |
 | 5 | ~~Teammates look lost when the player is downed~~ fixed (PR #53, J passed 2026-11-06) | Teammate AI | code |
-| 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code. Designed with J 2026-11-06 (DECISIONS). Step 1 melee: `phase1/melee`; step 2 the 8-slot wheel |
+| 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code. Designed with J 2026-11-06 (DECISIONS). Step 1 melee: PR #55; step 2 the 8-slot wheel and its behaviours: `phase1/orders-wheel` (`docs/art/16_orders_wheel.png`) |
 | 3 | No crosshair for the pistol while downed | HUD | code |
 | 16 | A downed icon over the player and teammates | HUD | code |
 | 17 | A weapon UI | HUD | code. Designed with J 2026-11-06: a bottom-right panel (DECISIONS); gun icons from Blender on the desktop |

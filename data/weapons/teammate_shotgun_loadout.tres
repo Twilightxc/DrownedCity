@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="LoadoutConfig" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="LoadoutConfig" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://combat/loadout_config.gd" id="1_loadout"]
 [ext_resource type="Script" path="res://combat/weapon_slot.gd" id="2_slot"]
 [ext_resource type="Script" path="res://combat/attachment_config.gd" id="3_att"]
 [ext_resource type="Resource" path="res://data/weapons/shotgun_12g.tres" id="4_main"]
 [ext_resource type="Resource" path="res://data/weapons/pistol_9mm.tres" id="5_pistol"]
+[ext_resource type="Resource" path="res://data/weapons/attachments/silencer.tres" id="20_silencer"]
 
 [sub_resource type="Resource" id="Resource_main"]
 script = ExtResource("2_slot")
@@ -14,6 +15,7 @@ attachments = Array[ExtResource("3_att")]([])
 [sub_resource type="Resource" id="Resource_pistol"]
 script = ExtResource("2_slot")
 weapon = ExtResource("5_pistol")
+attachments = Array[ExtResource("3_att")]([ExtResource("20_silencer")])
 
 [resource]
 script = ExtResource("1_loadout")
