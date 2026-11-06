@@ -1,11 +1,11 @@
 """Audio pass 1 (PHASE1 1.5+ A1): cuts the approved CC0 packs into game-ready mono Ogg files.
 
-usage: python tools/audio/build_sfx.py <raw_dir> [out_dir]
+usage: python tools/audio/build_sfx.py <raw_dir> [out_dir [sound ...]]
 
 <raw_dir> holds the packs as downloaded and extracted (sources and licences: docs/audio/SOURCES.md):
     firearm/x/Prepared SFX Library/...   reload/*.wav   explosion/Chunky Explosion.mp3
     firestaff/x/...   fireloop/fire.wav   zomby/*.mp3   zombienoises/x/*.ogg   squish/x/impsplat/*.flac
-    kenney/x/Audio/*.ogg
+    kenney/x/Audio/*.ogg   medieval/x/*.wav (Weapon Textures, both 7z parts extracted into one folder)
 The raw packs are never committed; only this script and its output (assets/audio/*.ogg) are. Needs ffmpeg in
 PATH and numpy. Every cut is a row of SOUNDS, so a different take is a one-line change.
 """
@@ -19,6 +19,7 @@ RATE = 44100
 FIREARM = "firearm/x/Prepared SFX Library"
 FIRESTAFF = "firestaff/x/LEGIT Audio_FIRE STAFF - FREE/Wavs"
 KENNEY = "kenney/x/Audio"
+MEDIEVAL = "medieval/x"
 
 # out name: (source, start s or "onset", length s, options)
 # options: fade (s, at the end), gain_db, af (extra ffmpeg filter before the cut), loop (crossfade s), rate
@@ -51,6 +52,15 @@ SOUNDS = {
     "bloater_pop": ("squish/x/impsplat/impactsplat02.mp3.flac", "onset", 1.1, {"fade": 0.4, "gain_db": 2.0}),
     **{f"flesh_hit_{i}": (f"squish/x/impsplat/impactsplat0{i + 4}.mp3.flac", "onset", 0.25,
                           {"fade": 0.12, "gain_db": -6.0, "rate": 22050}) for i in (1, 2, 3)},
+    # melee (J bug list 2026-11-05): two swing takes each from Medieval SFX Weapon Textures (Seax = the knife);
+    # the axe's hit is a heavy punch pitched down (the knife's hit is flesh_hit)
+    "swing_knife_1": (f"{MEDIEVAL}/Seax Swing.wav", 3.2, 0.45, {"fade": 0.2, "rate": 22050}),
+    "swing_knife_2": (f"{MEDIEVAL}/Seax Swing.wav", 6.85, 0.45, {"fade": 0.2, "rate": 22050}),
+    "swing_axe_1": (f"{MEDIEVAL}/Axe Swing.wav", 5.8, 0.7, {"fade": 0.3, "rate": 22050}),
+    "swing_axe_2": (f"{MEDIEVAL}/Axe Swing.wav", 1.4, 0.7, {"fade": 0.3, "rate": 22050}),
+    **{f"hit_axe_{i + 1}": (f"{KENNEY}/impactPunch_heavy_00{n}.ogg", "onset", 0.45,
+                            {"fade": 0.2, "af": "asetrate=44100*0.78,aresample=44100,lowpass=f=2500", "rate": 22050})
+       for i, n in enumerate((2, 3))},
     # impacts and steps (Kenney Impact Sounds)
     "helmet_clang": (f"{KENNEY}/impactMetal_heavy_001.ogg", "onset", 0.6, {"fade": 0.3}),
     "player_hit": (f"{KENNEY}/impactPunch_heavy_000.ogg", "onset", 0.4, {"fade": 0.15}),
@@ -107,14 +117,19 @@ def main():
     out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), "..", "..", "assets", "audio")
     os.makedirs(out, exist_ok=True)
     total = 0
+    built = 0
+    only = set(sys.argv[3:])  # optional: rebuild just these sounds
     for name, (src, start, length, opts) in SOUNDS.items():
+        if only and name not in only:
+            continue
         x = cut(decode(os.path.join(raw, src), opts.get("af")), start, length, opts)
         path = os.path.join(out, name + ".ogg")
         encode(x, path, opts.get("rate", RATE))
         size = os.path.getsize(path)
         total += size
+        built += 1
         print(f"{name:24s} {len(x) / RATE:5.2f} s {size / 1024:6.1f} KB")
-    print(f"{len(SOUNDS)} sounds, {total / 1024 / 1024:.2f} MB")
+    print(f"{built} sounds, {total / 1024 / 1024:.2f} MB")
 
 
 if __name__ == "__main__":

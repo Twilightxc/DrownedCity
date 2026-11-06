@@ -16,6 +16,9 @@ extends Resource
 @export var stagger_sec: float = 0.35
 @export var noise_m: float = 2.0  ## GDD: 2 m
 @export var stamina: float = 8.0  ## a swing costs this; not enough stamina, no swing
+@export_group("Sound")
+@export var swing_sfx: StringName = &"swing_knife"  ## SfxBank event at the start of a swing (the whoosh peaks at the hit)
+@export var hit_sfx: StringName = &"flesh_hit"  ## played at the strike when it hits a zombie
 @export_group("Look")
 @export var mesh_scene: PackedScene  ## kit_props.py prop_melee_*; origin at the right hand's grip, blade along +Y
 @export var mesh_scale: float = 1.2  ## a little over real size so it reads from the camera

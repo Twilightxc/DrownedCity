@@ -8,3 +8,4 @@ script = ExtResource("1_melee")
 display_name = "Knife"
 damage = 40
 mesh_scene = ExtResource("2_mesh")
+swing_sfx = &"swing_knife"
