@@ -35,6 +35,8 @@ This branch is step 1: melee for everyone. Next come step 2 (the 8-slot orders w
   Arena wave 6 `--auto-shoot` in GL: no errors.
 
 ## Not done / next
+- Melee system agreed with J (DECISIONS 2026-11-06): one quick-use melee slot. Demo: knife + axe; crowbar and boat
+  hook in Early Access. Wear, skill and world uses come later. After the orders wheel.
 - No melee sound yet (SfxBank has no knife event; `meleed` is there to hook it).
 - Desktop: a knife model and a slash clip (stand, crouch) to replace the swipe.
 - Step 2: the 8-slot orders wheel with icons (Follow, Sneak-follow, Hold here, Stay still / Fire at will,
