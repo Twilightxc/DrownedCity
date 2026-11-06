@@ -5,6 +5,10 @@ extends "res://game/spikes/twin_stick_spike.gd"
 ## ends when the last wave is cleared or you die; a summary shows and the run is logged locally.
 ## Gate 1.G: J plays it 3 times on the Arc and calls it fun (or not).
 
+const BAR_SHAKE_SEC: float = 0.15
+const BAR_SHOW_SEC: float = 3.0  ## a barricade's HP bar stays this long after its last hit
+const BAR_UI_SIZE: Vector2 = Vector2(70.0, 7.0)
+const BAR_COLORS: Array[Color] = [Color(0.55, 0.85, 0.4), Color(0.95, 0.75, 0.25), Color(0.9, 0.3, 0.2)]  ## by stage
 const POCKET_CROWD: int = 12  ## zombies waiting in one entrance pocket at most; more spawn later
 ## Barricade pieces (kit_props.py), [kind][stage]: nailed planks or an upright pallet, whole / battered / nearly gone.
 const BARRICADE_PIECES: Array = [
@@ -27,6 +31,10 @@ var _bar_stage: PackedInt32Array = PackedInt32Array()  ## per barricade id: the 
 var _bar_cells: Array[Array] = []  ## per barricade id: its cells and the direction each faces (to the pocket)
 var _piece_meshes: Dictionary[Vector2i, Mesh] = {}  ## (kind, stage) → the piece's mesh, read once
 var _bar_rev: int = -1
+var _bar_hp_seen: PackedInt32Array = PackedInt32Array()  ## per barricade id: HP last frame (a drop = a hit)
+var _bar_shake: PackedFloat32Array = PackedFloat32Array()  ## per barricade id: seconds of hit shake left
+var _bar_bars_left: PackedFloat32Array = PackedFloat32Array()  ## per barricade id: seconds its HP bar stays up
+var _bar_ui: Control  ## HP bars over damaged barricades (bug list item 18)
 var _pockets: Array[PackedVector2Array] = []  ## per entrance: spawn points (cell centres) at the roof edge
 var _entrance_centres: PackedVector2Array = PackedVector2Array()
 var _crates: Array[SupplyCrate] = []
@@ -173,6 +181,9 @@ func _build_entrances() -> void:
 			faced.append([c, (_entrance_centres[_entrance_centres.size() - 1] - _grid.cell_center(c)).normalized()])
 		_bar_cells.append(faced)
 		_bar_stage.append(0)
+		_bar_hp_seen.append(hp)
+		_bar_shake.append(0.0)
+		_bar_bars_left.append(0.0)
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		add_child(mi)
 		_bar_meshes.append(mi)
@@ -207,18 +218,60 @@ func _piece(kind: int, stage: int) -> Mesh:
 	return _piece_meshes[key]
 
 
+## Damage made readable (bug list item 18): boards come off by stage with a burst of splinters, every hit shakes
+## the barricade, and an HP bar with a notch per stage shows over it for a while after each hit.
 func _update_barricade_meshes() -> void:
+	var delta: float = get_process_delta_time()
 	for id: int in _barricades.cells.size():
 		var mi: MeshInstance3D = _bar_meshes[id]
 		var standing: bool = _barricades.standing(id)
+		var c: Vector2 = _barricade_centre(id)
 		if mi.visible and not standing and _explosions != null:
-			var c: Vector2 = _grid.cell_center(_grid.cell_of_index(_barricades.cells[id][0]))
 			_explosions.blast(Vector3(c.x, GROUND_Y, c.y), 1.5, false, 0, false, false)  # splinters
 		mi.visible = standing
-		var left: float = float(_barricades.hp[id]) / float(maxi(_barricades.max_hp[id], 1))
-		var stage: int = 0 if left > 0.66 else 1 if left > 0.33 else 2
+		var hp: int = _barricades.hp[id]
+		if hp < _bar_hp_seen[id]:
+			_bar_shake[id] = BAR_SHAKE_SEC
+			_bar_bars_left[id] = BAR_SHOW_SEC
+		_bar_hp_seen[id] = hp
+		_bar_shake[id] = maxf(_bar_shake[id] - delta, 0.0)
+		_bar_bars_left[id] = maxf(_bar_bars_left[id] - delta, 0.0)
+		var k: float = _bar_shake[id] / BAR_SHAKE_SEC
+		mi.position = Vector3(sin(Time.get_ticks_msec() * 0.09) * 0.05 * k, 0.0, cos(Time.get_ticks_msec() * 0.11) * 0.05 * k)
+		var stage: int = _barricades.stage(id, BARRICADE_PIECES[0].size())
 		if standing and stage != _bar_stage[id]:
 			_build_barricade_mesh(id, stage)  # boards come off as it is hit
+			if _explosions != null:
+				_explosions.blast(Vector3(c.x, GROUND_Y, c.y), 0.8, false, 0, false, false)
+	if _bar_ui != null:
+		_bar_ui.queue_redraw()
+
+
+func _barricade_centre(id: int) -> Vector2:
+	var sum: Vector2 = Vector2.ZERO
+	for i: int in _barricades.cells[id]:
+		sum += _grid.cell_center(_grid.cell_of_index(i))
+	return sum / maxf(_barricades.cells[id].size(), 1.0)
+
+
+func _draw_barricade_bars() -> void:
+	for id: int in _barricades.cells.size():
+		if not _barricades.standing(id) or _bar_bars_left[id] <= 0.0:
+			continue
+		var c: Vector2 = _barricade_centre(id)
+		var head: Vector3 = Vector3(c.x, GROUND_Y + 1.9, c.y)
+		if _camera.is_position_behind(head):
+			continue
+		var at: Vector2 = _camera.unproject_position(head) - Vector2(BAR_UI_SIZE.x * 0.5, 0.0)
+		var left: float = float(_barricades.hp[id]) / float(maxi(_barricades.max_hp[id], 1))
+		var stages: int = BARRICADE_PIECES[0].size()
+		var col: Color = BAR_COLORS[mini(_barricades.stage(id, stages), BAR_COLORS.size() - 1)]
+		var a: float = clampf(_bar_bars_left[id] / 0.5, 0.0, 1.0)
+		_bar_ui.draw_rect(Rect2(at - Vector2(2, 2), BAR_UI_SIZE + Vector2(4, 4)), Color(0, 0, 0, 0.6 * a))
+		_bar_ui.draw_rect(Rect2(at, Vector2(BAR_UI_SIZE.x * left, BAR_UI_SIZE.y)), Color(col, a))
+		for s: int in range(1, stages):
+			var x: float = at.x + BAR_UI_SIZE.x * float(s) / stages
+			_bar_ui.draw_line(Vector2(x, at.y), Vector2(x, at.y + BAR_UI_SIZE.y), Color(0, 0, 0, 0.8 * a), 2.0)
 
 
 func _refill_crates() -> void:
@@ -250,6 +303,11 @@ func _build_arena_ui() -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
 	layer.layer = 45
 	add_child(layer)
+	_bar_ui = Control.new()
+	_bar_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_bar_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar_ui.draw.connect(_draw_barricade_bars)
+	layer.add_child(_bar_ui)
 	_banner = Label.new()
 	_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	_banner.offset_top = 90.0

@@ -106,3 +106,19 @@ func test_roof_arena_entrances_are_on_the_edge_and_waves_use_known_entrances() -
 		for e: int in w.entrances:
 			assert_between(e, 0, ARENA.entrance_cells.size() - 1)
 		assert_eq(w.counts.size(), 4, "one count per demo type")
+
+
+func test_barricade_stages_split_the_hp_evenly() -> void:
+	var b: Barricades = Barricades.new(NavGrid.new(10, 10))
+	var at: Array[Vector2i] = [Vector2i(2, 2)]
+	var id: int = b.add(at, 90)
+	assert_eq(b.stage(id), 0, "whole")
+	b.damage(id, 29)
+	assert_eq(b.stage(id), 0, "61 of 90 left: still whole")
+	b.damage(id, 2)
+	assert_eq(b.stage(id), 1, "59 left: battered")
+	b.damage(id, 30)
+	assert_eq(b.stage(id), 2, "29 left: nearly gone")
+	b.damage(id, 100)
+	assert_false(b.standing(id))
+	assert_eq(b.stage(id), 2)
