@@ -1,7 +1,7 @@
 class_name WeaponPanel
 extends CanvasLayer
-## The weapon panel at the bottom right (bug list item 17, J 2026-11-06): the gun in hand (its icon, or its name
-## until the desktop renders icons), the magazine as pips with the reserve, the fire mode, jams and wear, the
+## The weapon panel at the bottom right (bug list item 17, J 2026-11-06): the gun in hand (its side-view icon
+## from tools/blender/icons_guns.py, or its name without one), the magazine as pips with the reserve, the fire mode, jams and wear, the
 ## grenade type and count, the knife key, and slots 1–4 with the one in hand brighter (dimmed when it can't be
 ## used, e.g. a long gun while downed). Non-interactive, so nothing to navigate with a pad.
 
@@ -13,6 +13,7 @@ const PIP_GAP: float = 2.0
 const PIP_H: float = 12.0
 const PIPS_MAX: int = 60  ## a bigger magazine shows a bar instead
 const SLOT_SIZE: Vector2 = Vector2(72.0, 22.0)
+const ICON_BOX: Vector2 = Vector2(170.0, 30.0)  ## the gun icon fits in here, left of the fire mode
 const BACK: Color = Color(0.05, 0.06, 0.07, 0.62)
 const INK: Color = Color(0.95, 0.95, 0.92)
 const DIM: Color = Color(0.95, 0.95, 0.92, 0.35)
@@ -54,6 +55,13 @@ static func pip_width(mag: int, width: float) -> float:
 	return minf(PIP_MAX_W, (width + PIP_GAP) / mag - PIP_GAP)
 
 
+## Where a gun icon of `size` px goes: fitted into ICON_BOX at `at`, its aspect kept, sitting on the box's bottom.
+static func icon_rect(size: Vector2, at: Vector2) -> Rect2:
+	var k: float = minf(ICON_BOX.x / maxf(size.x, 1.0), ICON_BOX.y / maxf(size.y, 1.0))
+	var s: Vector2 = size * k
+	return Rect2(at + Vector2(0.0, ICON_BOX.y - s.y), s)
+
+
 ## Whether the gun in slot `i` can be taken in hand now (downed: sidearms only).
 static func slot_usable(p: SpikePlayer, i: int) -> bool:
 	if i >= p.guns.size():
@@ -72,9 +80,7 @@ func _on_draw() -> void:
 	var inner_w: float = SIZE.x - PAD * 2.0
 	# The gun: icon or name, with the fire mode and the knife key on the right.
 	if cfg.icon != null:
-		var tex_h: float = 34.0
-		var tex_w: float = tex_h * cfg.icon.get_width() / maxf(cfg.icon.get_height(), 1.0)
-		_draw.draw_texture_rect(cfg.icon, Rect2(o + Vector2(PAD, PAD - 4.0), Vector2(tex_w, tex_h)), false)
+		_draw.draw_texture_rect(cfg.icon, icon_rect(cfg.icon.get_size(), o + Vector2(PAD, PAD - 6.0)), false)
 	else:
 		_draw.draw_string(_font, o + Vector2(PAD, PAD + 18.0), tr(cfg.display_name), HORIZONTAL_ALIGNMENT_LEFT,
 				inner_w * 0.6, 20, INK)
