@@ -206,3 +206,83 @@ func test_guns_not_in_hand_are_slung_on_the_back_and_holstered() -> void:
 	_body.set_holstered(guns, guns[1])
 	assert_false(_body._slung[2].visible, "the pistol in hand leaves the holster empty")
 	assert_true(_body._slung[0].visible and _body._slung[1].visible)
+
+
+func test_getting_down_plays_a_clip_then_lies_prone() -> void:
+	var ar: Gun = _gun(0)
+	_body.set_gun(ar)
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
+	_body.stance = SurvivorView.Stance.PRONE
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
+	assert_eq(_body.lower, &"go_prone", "J bug 11: not a fall")
+	for i: int in 20:
+		_body._process(0.05)
+		_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
+	assert_eq(_body.lower, &"prone_idle")
+	_body.stance = SurvivorView.Stance.CROUCH
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
+	assert_eq(_body.lower, &"prone_to_crouch")
+
+
+func test_prone_roll_and_crawl_clips() -> void:
+	var ar: Gun = _gun(0)
+	_body.set_gun(ar)
+	_body.stance = SurvivorView.Stance.PRONE
+	_body._stance_was = SurvivorView.Stance.PRONE
+	_body.rolling = true
+	_body.drive(Vector2(2, 0), Vector2.UP, ar, false)
+	var first: StringName = _body.lower
+	_body.drive(Vector2(-2, 0), Vector2.UP, ar, false)
+	assert_true(String(first).begins_with("prone_roll_") and String(_body.lower).begins_with("prone_roll_"))
+	assert_ne(first, _body.lower, "left and right are different clips")
+	_body.rolling = false
+	_body.drive(Vector2(0, -0.6), Vector2.UP, ar, false)
+	assert_eq(_body.lower, &"crawl")
+
+
+func test_death_after_downed() -> void:
+	var ar: Gun = _gun(0)
+	_body.set_gun(ar)
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, true)
+	assert_eq(_body.lower, &"downed")
+	_body.dead = true
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, true)
+	assert_eq(_body.lower, &"death")
+	assert_eq(_body._anims.get_animation("death").loop_mode, Animation.LOOP_NONE, "the last frame holds")
+
+
+func test_switch_swaps_the_gun_halfway() -> void:
+	var guns: Array[Gun] = [_gun(0), _gun(1)]
+	_body.set_gun(guns[0])
+	_body.switch_gun(guns[1], guns)
+	_body.drive(Vector2.ZERO, Vector2.UP, guns[1], false)
+	assert_eq(_body.upper, &"switch", "J bug 4")
+	assert_eq(_body.gun_view.shown, guns[0], "still the old gun")
+	for i: int in 5:
+		_body._process(0.05)
+	assert_eq(_body.gun_view.shown, guns[1], "swapped halfway")
+	for i: int in 5:
+		_body._process(0.05)
+	_body.drive(Vector2.ZERO, Vector2.UP, guns[1], false)
+	assert_eq(_body.upper, &"aim_pistol")
+
+
+func test_a_swing_shows_the_melee_weapon_and_hides_the_gun() -> void:
+	var ar: Gun = _gun(0)
+	_body.set_gun(ar)
+	var axe: MeleeConfig = load("res://data/weapons/axe.tres")
+	_body.swing(axe)
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
+	assert_eq(_body.upper, &"slash_heavy")
+	assert_false(_body.gun_view.visible)
+	assert_true(_body._melee_mount.visible)
+	assert_not_null(_body._melee_view, "the axe model")
+	for i: int in 17:
+		_body._process(0.05)
+	assert_true(_body.gun_view.visible, "the gun is back after swing_sec")
+	assert_false(_body._melee_mount.visible)
+	_body.stance = SurvivorView.Stance.CROUCH
+	_body._stance_was = SurvivorView.Stance.CROUCH
+	_body.swing(load("res://data/weapons/knife.tres"))
+	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
+	assert_eq([_body.lower, _body.upper], [&"crouch_idle", &"slash_light"], "a crouched slash")

@@ -3,6 +3,23 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## Bug list animations + melee — 🟡 built (2026-11-06), waiting for J's look
+
+J's bug list items 4, 6, 11, 12, 14, 15 and the melee models / clips (desktop). Live: `?spike=poses` (new row of
+clips), `?spike=arena`.
+
+| Item | How |
+| --- | --- |
+| Weapon switch (4) | `switch` upper clip, 0.4 s: the hand drops to the holster / sling and comes back up; the gun model and the slung ones swap halfway |
+| Death (6) | `death` one-shot from the downed pose: the propped arm gives, flat on the back, head rolls aside; holds the last frame |
+| Downed (6) | `downed` is a 4 s cycle: heavy breaths, the head lolls, the bent leg pushes and slides, the wounded side curls |
+| Stand → prone (11), crouch → prone (12) | `go_prone` (0.67 s): both knees, hands to the floor, then flat behind the sights; `crouch_to_prone`, `prone_to_stand`, `prone_to_crouch`. Moving, rolling or falling cuts them short. Visual only: the stance itself still changes at once |
+| Prone side roll (14) | Space while prone: a log roll 1.2 m across the aim, 0.62 s, 12 stamina, to the side the stick leans to (refused along the aim). The body keeps facing the aim. `MovementConfig.prone_roll_*` |
+| Crawl (15) | elbows and knees, frog kick, the rifle across the forearms. **New rule: no shooting while crawling** (stop to fire) |
+| Melee | `prop_melee_knife` (104 tris), `prop_melee_axe` (88 tris, red fire axe), `MeleeConfig.mesh_scene / mesh_scale / clip`. Knife: `slash_light`, a backhand cut, crosses the aim at 0.12 s of 0.45 s. Axe: `slash_heavy`, overhead chop, at 0.25 s of 0.8 s. Standing or crouched (upper-body clips). The gun goes away for the swing; the placeholder crescent is gone when a body exists |
+| Tests | 7 new, 251 total, all passing on desktop |
+| Not checked | the Arc (no new draw calls except the melee weapon during a swing) |
+
 ## 1.G Gate "combat is fun" — ✅ pass (J, 2026-11-05)
 
 J played the arena night 3 times on the Arc laptop in Chrome (live build `e96d7dd · #144`):

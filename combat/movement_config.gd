@@ -25,6 +25,9 @@ extends Resource
 @export var roll_cooldown_sec: float = 0.6
 @export var roll_stamina: float = 25.0
 @export var roll_noise_m: float = 5.0
+@export var prone_roll_distance_m: float = 1.2  ## a log roll sideways while prone (J bug 14); stays prone
+@export var prone_roll_sec: float = 0.62  ## the survivor's prone_roll clip is this long
+@export var prone_roll_stamina: float = 12.0
 
 @export_group("Stamina")
 @export var stamina_max: float = 100.0

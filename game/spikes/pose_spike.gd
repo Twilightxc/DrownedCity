@@ -1,6 +1,6 @@
 extends Node3D
 ## `?spike=poses` (PHASE1 1.5+ A2): every survivor clip side by side, labelled, so J can judge them at a glance.
-## One-shots (roll, reloads) replay every few seconds. Q / E turn the camera, the wheel zooms.
+## One-shots (roll, reloads, getting down / up, death, switch, melee) replay every few seconds. Q / E turn the camera, the wheel zooms.
 
 const LOADOUT: LoadoutConfig = preload("res://data/weapons/spike_loadout.tres")
 const SPACING: float = 2.6
@@ -23,7 +23,19 @@ const POSES: Array = [
 	["reload (pistol)", &"idle", &"reload_pistol", 1.0, 1, 0.0],
 	["reload (rifle)", &"idle", &"reload_rifle", 1.0, 0, 0.0],
 	["reload (shell)", &"idle", &"reload_shell", 1.0, 2, 0.0],
+	["get down", &"go_prone", &"aim_rifle", 0.0, 0, 0.0],
+	["crouch to prone", &"crouch_to_prone", &"aim_rifle", 0.0, 0, 0.0],
+	["get up", &"prone_to_stand", &"aim_rifle", 0.0, 0, 0.0],
+	["prone roll", &"prone_roll_l", &"aim_rifle", 0.0, 0, 0.0],
+	["death", &"death", &"aim_pistol", 0.0, 1, 0.0],
+	["switch gun", &"idle", &"switch", 1.0, 0, 0.0],
+	["knife", &"idle", &"slash_light", 1.0, 0, 0.0],
+	["knife (crouched)", &"crouch_idle", &"slash_light", 1.0, 0, 0.0],
+	["axe", &"idle", &"slash_heavy", 1.0, 0, 0.0],
 ]
+const MELEE: Dictionary[StringName, MeleeConfig] = {
+	&"slash_light": preload("res://data/weapons/knife.tres"), &"slash_heavy": preload("res://data/weapons/axe.tres"),
+}
 
 var _bodies: Array[SurvivorView] = []
 var _replay_left: float = REPLAY_SEC
@@ -43,6 +55,8 @@ func _ready() -> void:
 		var speed: float = p[5]
 		body.animate(p[1], 1.0 if speed <= 0.0 else speed / SurvivorView.CLIP_SPEED.get(p[1], speed), p[2], 1.0, p[3])
 		_bodies.append(body)
+		if MELEE.has(p[2]):
+			body.swing(MELEE[p[2]])
 		var label: Label3D = Label3D.new()
 		label.text = p[0]
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -57,5 +71,9 @@ func _process(delta: float) -> void:
 	if _replay_left <= 0.0:
 		_replay_left = REPLAY_SEC
 		for i: int in _bodies.size():
-			if POSES[i][1] == &"roll" or String(POSES[i][2]).begins_with("reload") and POSES[i][2] != &"reload_shell":
+			var low: String = POSES[i][1]
+			var up: String = POSES[i][2]
+			if MELEE.has(POSES[i][2]):
+				_bodies[i].swing(MELEE[POSES[i][2]])
+			elif not low in SurvivorView.LOOP_CLIPS and not SurvivorView.WALK_SETS.has(low) 					or not up in SurvivorView.LOOP_CLIPS:
 				_bodies[i].replay()

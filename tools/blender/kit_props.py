@@ -10,6 +10,7 @@ Arena props (J 2026-11-04, replacing the spike's boxes): the supply crate (0.9 x
 top), barricade pieces for one 1 x 1 m cell in three damage stages (planks nailed across two posts, or an upright
 pallet; stage 0 whole, 1 battered, 2 nearly gone; the boards run along X, the game turns them), and the two
 throwables: a frag grenade and a Molotov bottle whose rag burns (emissive slot), both built at real size.
+Melee weapons (J bug list 2026-11-05): a combat knife and a red fire axe, real size, origin at the right hand's grip.
 
 Flood props (origin = water surface, not nav obstacles): two floating-debris clusters (~18 m across) with a
 sunken car, leaning street lamp, dead tree, road sign, planks, barrels and trash, so the empty streets read
@@ -27,6 +28,8 @@ K.PALETTE.update({
     "crate_olive": "#86934f", "crate_olive_dark": "#6c7a40", "crate_stencil": "#e2d9b0", "ammo_can": "#5d6b3c",
     "rope": "#9a8660", "plank": "#8f6a46", "plank_dark": "#6b4e34", "plank_pale": "#a98a64", "nail": "#4a4a4a",
     "frag_body": "#4b5532", "frag_metal": "#8d9296", "glass_bottle": "#5c7148", "rag": "#d8ccb0",
+    "knife_grip": "#2b2a27", "knife_steel": "#9aa3a8", "knife_steel_dark": "#53595d", "knife_edge": "#d6dde0",
+    "axe_haft": "#a8743e", "axe_head": "#b3302a", "axe_edge": "#c9cfd2",
 })
 
 
@@ -205,6 +208,27 @@ def molotov(mb):
     mb.box((0.004, 0, 0.265), (0.026, 0.026, 0.025), "lit", mat=1)          # burning rag
 
 
+def melee_knife(mb):
+    """Combat knife, real size (30 cm). Origin = the grip centre; the blade points +Z, its edge -Y."""
+    mb.cylinder((0, 0, 0.0), 0.017, 0.12, "knife_grip", segments=8)
+    mb.box((0, 0, 0.065), (0.016, 0.07, 0.012), "knife_steel_dark")          # guard
+    mb.box((0, -0.002, 0.145), (0.005, 0.032, 0.15), "knife_steel")
+    mb.box((0, 0.006, 0.232), (0.005, 0.018, 0.03), "knife_steel")           # clipped point
+    mb.box((0, -0.017, 0.14), (0.006, 0.004, 0.13), "knife_edge")            # bright edge
+    mb.cylinder((0, 0, -0.065), 0.019, 0.012, "knife_steel_dark", segments=8)  # pommel
+
+
+def melee_axe(mb):
+    """Fire axe, real size (80 cm). Origin = where the right hand holds, near the end of the haft; the haft runs +Z,
+    the blade faces -Y (the swing's front), a pick on the back."""
+    mb.cylinder((0, 0, 0.27), 0.019, 0.74, "axe_haft", segments=8)
+    mb.box((0, 0, 0.6), (0.04, 0.06, 0.1), "axe_head")                       # eye
+    mb.box((0, -0.09, 0.6), (0.028, 0.13, 0.12), "axe_head")                 # cheek
+    mb.box((0, -0.165, 0.6), (0.02, 0.04, 0.2), "axe_edge")                  # flared bit
+    mb.box((0, 0.08, 0.61), (0.024, 0.11, 0.035), "axe_head")                # pick
+    mb.box((0, -0.005, -0.08), (0.042, 0.042, 0.03), "knife_grip")           # knob
+
+
 # name, builder, AO distance, aging
 PROPS = [
     ("prop_water_tower", water_tower, 0.8, 0.5), ("prop_ac_unit", ac_unit, 0.4, 0.5),
@@ -215,6 +239,7 @@ PROPS = [
     ("prop_barricade_planks_2", barricade_planks_2, 0.25, 0.5), ("prop_barricade_pallet_0", barricade_pallet_0, 0.25, 0.5),
     ("prop_barricade_pallet_1", barricade_pallet_1, 0.25, 0.5), ("prop_barricade_pallet_2", barricade_pallet_2, 0.25, 0.5),
     ("prop_grenade_frag", grenade_frag, 0.03, 0.1), ("prop_molotov", molotov, 0.03, 0.1),
+    ("prop_melee_knife", melee_knife, 0.02, 0.1), ("prop_melee_axe", melee_axe, 0.03, 0.25),
 ]
 
 

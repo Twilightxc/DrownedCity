@@ -14,9 +14,10 @@ const SURFACE_MATERIAL: Material = preload("res://game/level/style15_surface.tre
 const SKELETON_PATH: String = "survivor_rig/Skeleton3D"
 const UPPER_BONES: PackedStringArray = ["torso", "head", "arm_l", "fore_l", "hand_l", "arm_r", "fore_r", "hand_r"]
 const LOWER_CLIPS: PackedStringArray = ["idle", "walk", "run", "crouch_idle", "crouch_walk", "prone_idle", "crawl",
-	"roll", "downed", "downed_aim"]  ## states; "walk" and "crouch_walk" are WALK_SETS
+	"roll", "downed", "downed_aim", "death", "go_prone", "crouch_to_prone", "prone_to_stand", "prone_to_crouch",
+	"prone_roll_l", "prone_roll_r"]  ## states; "walk" and "crouch_walk" are WALK_SETS
 const UPPER_CLIPS: PackedStringArray = ["aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_pistol",
-	"reload_rifle", "reload_shell"]
+	"reload_rifle", "reload_shell", "switch", "slash_light", "slash_heavy"]
 ## A walking state's backward and forward clips (blend positions -1 and +1).
 const WALK_SETS: Dictionary[String, Array] = {  # Array, not PackedStringArray: a typed const dict of those reads back empty strings in 4.7
 	"walk": ["walk_b", "walk_f"],
@@ -28,7 +29,16 @@ const FORWARD_FROM: float = deg_to_rad(85.0)  ## ...and back under this (no flic
 const TWIST_RATE: float = 10.0  ## 1/s the hips follow the travel
 const LOOP_CLIPS: PackedStringArray = ["idle", "walk_f", "walk_b", "run", "crouch_idle", "crouch_f", "crouch_b",
 	"prone_idle", "crawl", "downed", "downed_aim", "aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_shell"]
-const FULL_BODY: PackedStringArray = ["roll", "prone_idle", "crawl", "downed", "downed_aim"]  ## the arms follow the legs' clip
+const FULL_BODY: PackedStringArray = ["roll", "prone_idle", "crawl", "downed", "downed_aim", "death", "go_prone",
+	"crouch_to_prone", "prone_to_stand", "prone_to_crouch", "prone_roll_l", "prone_roll_r"]  ## the arms follow the legs' clip
+## Getting down and up (J bugs 11, 12): [from, to] stance → the clip played once on the change.
+const STANCE_SHIFTS: Dictionary[String, StringName] = {
+	"0>2": &"go_prone", "1>2": &"crouch_to_prone", "2>0": &"prone_to_stand", "2>1": &"prone_to_crouch",
+}
+const SWITCH_SEC: float = 0.4  ## a weapon switch (J bug 4); the gun model swaps halfway
+const ACTIONS: PackedStringArray = ["switch", "slash_light", "slash_heavy"]  ## one-shot upper clips; the left hand lets go
+## The melee weapon in the right hand: the blade along the hand (its -Y), the edge to the hand's +Z.
+const MELEE_GRIP: Transform3D = Transform3D(Basis(Vector3.BACK, PI), Vector3(0.0, -0.05, 0.0))
 ## m/s each moving clip's stride matches at 1× (kit_survivor.py); faster or slower movement scales the clip
 const CLIP_SPEED: Dictionary[StringName, float] = {&"walk": 4.5, &"run": 6.0, &"crouch_walk": 1.7, &"crawl": 0.85}
 const MOVING_SPEED: float = 0.25  ## m/s: slower than this stands still
@@ -36,14 +46,16 @@ const XFADE_SEC: float = 0.15
 const GRIP_BLEND: float = 12.0  ## 1/s: how fast the gun turns to a new clip's hold
 const TURN_RATE: float = 12.0  ## 1/s: the body turns toward a sprint or roll this fast, and back to the aim
 const IK_FADE: float = 6.0  ## 1/s: the left hand leaves / returns to the gun this fast
-const LEFT_HAND_BUSY: PackedStringArray = ["roll", "downed", "downed_aim"]
+const LEFT_HAND_BUSY: PackedStringArray = ["roll", "downed", "downed_aim", "death", "go_prone", "crouch_to_prone",
+	"prone_to_stand", "prone_to_crouch", "prone_roll_l", "prone_roll_r"]
 ## Where the gun points in each clip that sets its own hold, in the body's space (+Z ahead, +Y up, +X left).
 ## Other clips keep the aim hold and the gun simply follows the hand (reloads).
 const HOLD_DIR: Dictionary[StringName, Vector3] = {
 	&"aim_pistol": Vector3(0.0, 0.0, 1.0), &"aim_rifle": Vector3(0.0, 0.0, 1.0),
 	&"carry_high": Vector3(0.0, 1.0, 0.15),  # high ready: muzzle to the sky (J 2026-11-03)
 	&"carry_port": Vector3(0.6, 0.7, 0.35),  # port arms: across the chest, muzzle over the left shoulder
-	&"prone_idle": Vector3(0.0, 0.0, 1.0),  # prone: level along the ground (crawl uses it too)
+	&"prone_idle": Vector3(0.0, 0.0, 1.0),  # prone: level along the ground
+	&"crawl": Vector3(1.0, 0.0, 0.15),  # crawling: across the forearms, muzzle to the left (J bug 15)
 	&"downed_aim": Vector3(0.0, 0.0, 1.0),  # down, pistol out over the feet
 }
 const PRONE_CLIPS: PackedStringArray = ["prone_idle", "crawl"]
@@ -82,6 +94,7 @@ enum Stance { STAND, CROUCH, PRONE }
 var stance: Stance = Stance.STAND
 var sprinting: bool = false
 var rolling: bool = false
+var dead: bool = false  ## plays the death clip once and holds its last frame (drive's is_downed must be true too)
 
 var gun_view: GunView
 var skeleton: Skeleton3D
@@ -109,6 +122,18 @@ var _target_yaw: float = 0.0
 var _reload_phase: float = -1.0  ## last frame's phase of the reload clip, < 0 = none
 var _dropped: Array[Node3D] = []
 var _slung: Array[GunView] = []  ## back slots, then the holster
+var _stance_was: Stance = Stance.STAND
+var _shift: StringName = &""  ## the stance change clip playing
+var _shift_left: float = 0.0
+var _action: StringName = &""  ## the one-shot upper clip playing (ACTIONS)
+var _action_left: float = 0.0
+var _action_sec: float = 1.0
+var _pending_gun: Gun  ## a switch's new gun, shown halfway through
+var _pending_guns: Array[Gun] = []
+var _switch_pending: bool = false
+var _melee_mount: Node3D
+var _melee_view: Node3D
+var _melee_cfg: MeleeConfig
 
 
 func _ready() -> void:
@@ -127,6 +152,10 @@ func _ready() -> void:
 	skeleton.add_child(hand)
 	_mount = Node3D.new()
 	hand.add_child(_mount)
+	_melee_mount = Node3D.new()
+	_melee_mount.transform = MELEE_GRIP
+	_melee_mount.visible = false
+	hand.add_child(_melee_mount)
 	gun_view = GunView.new()
 	_mount.add_child(gun_view)
 	var hand_l: BoneAttachment3D = BoneAttachment3D.new()
@@ -189,6 +218,63 @@ func set_gun(gun: Gun) -> void:
 		Style15Level.apply_materials(hand_item, SURFACE_MATERIAL)
 
 
+## A weapon switch (J bug 4): the hand goes down for the other gun and comes back up; the model swaps halfway.
+## Without a gun in hand yet (or off-screen) it swaps at once.
+func switch_gun(gun: Gun, guns: Array[Gun]) -> void:
+	if _gun == null or not is_inside_tree() or _tree == null:
+		set_gun(gun)
+		set_holstered(guns, gun)
+		return
+	_pending_gun = gun
+	_pending_guns = guns
+	_switch_pending = true
+	_play_action(&"switch", SWITCH_SEC)
+
+
+## A melee swing: the gun goes away, the knife or axe comes out for `cfg.swing_sec` and the clip strikes at
+## `cfg.windup_sec` (kit_survivor.py keys the strike there).
+func swing(cfg: MeleeConfig) -> void:
+	if cfg != _melee_cfg:
+		_melee_cfg = cfg
+		if _melee_view != null:
+			_melee_view.queue_free()
+			_melee_view = null
+		if cfg.mesh_scene != null:
+			_melee_view = cfg.mesh_scene.instantiate() as Node3D
+			_melee_view.scale = Vector3.ONE * cfg.mesh_scale
+			_melee_mount.add_child(_melee_view)
+			Style15Level.apply_materials(_melee_view, SURFACE_MATERIAL)
+	if _switch_pending:  # a swing cuts a switch short: the new gun is in hand when the swing ends
+		_finish_switch()
+	_play_action(cfg.clip, cfg.swing_sec)
+	_melee_mount.visible = true
+	gun_view.visible = false
+
+
+func _play_action(clip: StringName, sec: float) -> void:
+	_action = clip
+	_action_sec = maxf(sec, 0.05)
+	_action_left = _action_sec
+	if _tree != null:
+		upper = clip
+		_tree.set(&"parameters/upper/transition_request", String(clip))
+
+
+func _finish_switch() -> void:
+	_switch_pending = false
+	set_gun(_pending_gun)
+	set_holstered(_pending_guns, _pending_gun)
+
+
+func _end_action() -> void:
+	_action = &""
+	_action_left = 0.0
+	_melee_mount.visible = false
+	gun_view.visible = true
+	if _switch_pending:
+		_finish_switch()
+
+
 ## Shows the fighter's other guns where they are carried: up to two long guns on the back, one sidearm on the thigh.
 func set_holstered(guns: Array[Gun], in_hand: Gun) -> void:
 	if _slung.is_empty():
@@ -232,10 +318,23 @@ func drive(velocity: Vector2, facing: Vector2, gun: Gun, is_downed: bool) -> voi
 	var speed: float = velocity.length()
 	var moving: bool = speed > MOVING_SPEED
 	var low: StringName = &"idle"
-	if is_downed:
+	if stance != _stance_was:
+		var key: String = "%d>%d" % [_stance_was, stance]
+		_stance_was = stance
+		_shift = STANCE_SHIFTS.get(key, &"")
+		_shift_left = _anims.get_animation(_shift).length if _shift != &"" else 0.0
+	if moving or rolling or is_downed:
+		_shift_left = 0.0  # moving off, a roll or a fall cuts getting down / up short
+	if dead:
+		low = &"death"
+	elif is_downed:
 		low = &"downed_aim" if gun != null and _aim_clip(gun) == &"aim_pistol" else &"downed"
+	elif rolling and stance == Stance.PRONE:
+		low = &"prone_roll_l" if _rolls_left(velocity, facing) else &"prone_roll_r"
 	elif rolling:
 		low = &"roll"
+	elif _shift_left > 0.0:
+		low = _shift
 	elif stance == Stance.PRONE:
 		low = &"crawl" if moving else &"prone_idle"
 	elif stance == Stance.CROUCH:
@@ -253,16 +352,24 @@ func drive(velocity: Vector2, facing: Vector2, gun: Gun, is_downed: bool) -> voi
 		_twist_target = clampf(legs, -MAX_TWIST, MAX_TWIST)
 	# A sprint or a roll faces where it goes; everything else faces the aim.
 	_target_yaw = 0.0
-	if (rolling or (sprinting and low == &"run")) and moving and facing != Vector2.ZERO:
+	if ((rolling and stance != Stance.PRONE) or (sprinting and low == &"run")) and moving and facing != Vector2.ZERO:
 		_target_yaw = wrapf(atan2(velocity.x, velocity.y) - atan2(facing.x, facing.y), -PI, PI)
 	var up: StringName = _aim_clip(gun) if gun != null else &"aim_rifle"
 	var up_speed: float = 1.0
-	if gun != null and gun.is_reloading() and not gun.jammed:
+	if _action_left > 0.0:
+		up = _action
+		up_speed = _anims.get_animation(_action).length / _action_sec
+	elif gun != null and gun.is_reloading() and not gun.jammed:
 		up = &"reload_pistol" if up == &"aim_pistol" else &"reload_shell" if gun.config.reload_per_round else &"reload_rifle"
 		up_speed = _anims.get_animation(up).length / maxf(gun.reload_sec, 0.05)
 	elif sprinting and low == &"run":
 		up = &"carry_high" if up == &"aim_pistol" else &"carry_port"
 	animate(low, low_speed, up, up_speed, 0.0 if String(low) in FULL_BODY else 1.0)
+
+
+## A prone log roll goes to the body's left (+X) when the travel has a leftward part.
+func _rolls_left(velocity: Vector2, facing: Vector2) -> bool:
+	return velocity.x * facing.y - velocity.y * facing.x > 0.0
 
 
 ## Plays `low` on the legs and `up` on the arms (weight 0 = the legs' clip moves the arms too).
@@ -275,7 +382,9 @@ func animate(low: StringName, low_speed: float, up: StringName, up_speed: float,
 		upper = up
 		_tree.set(&"parameters/upper/transition_request", String(up))
 	# The hold follows the clip that moves the arms: the legs' clip when it is a whole-body one.
-	var arms: StringName = up if up_weight > 0.0 else &"prone_idle" if String(low) in PRONE_CLIPS else up
+	var arms: StringName = up
+	if up_weight <= 0.0 and String(low) in PRONE_CLIPS:
+		arms = low if _grip.has(low) else &"prone_idle"
 	_grip_target = _grip[arms] if _grip.has(arms) else _grip[_hold]
 	_tree.set(&"parameters/lower_speed/scale", low_speed)
 	_tree.set(&"parameters/upper_speed/scale", up_speed)
@@ -283,6 +392,13 @@ func animate(low: StringName, low_speed: float, up: StringName, up_speed: float,
 
 
 func _process(delta: float) -> void:
+	_shift_left = maxf(_shift_left - delta, 0.0)
+	if _action_left > 0.0:
+		_action_left -= delta
+		if _switch_pending and _action_left <= _action_sec * 0.5:
+			_finish_switch()
+		if _action_left <= 0.0:
+			_end_action()
 	_mount.transform = _mount.transform.interpolate_with(_grip_target, clampf(delta * GRIP_BLEND, 0.0, 1.0))
 	rotation.y = lerp_angle(rotation.y, _target_yaw, clampf(delta * TURN_RATE, 0.0, 1.0))
 	_hip.twist = lerp_angle(_hip.twist, _twist_target, clampf(delta * TWIST_RATE, 0.0, 1.0))
@@ -295,7 +411,7 @@ func _process(delta: float) -> void:
 	var shouldered: bool = upper == &"aim_rifle" and not String(lower) in FULL_BODY
 	_shoulder.influence = move_toward(_shoulder.influence, 1.0 if shouldered else 0.0, delta * IK_FADE * 1.5)
 	_ik.enabled = _model_gun != null
-	var busy: bool = String(lower) in LEFT_HAND_BUSY
+	var busy: bool = String(lower) in LEFT_HAND_BUSY or String(upper) in ACTIONS
 	_ik.influence = move_toward(_ik.influence, 0.0 if busy else 1.0, delta * IK_FADE)
 	if REACH.has(upper) and _gun != null and _gun.is_reloading():
 		_step_reload(1.0 - _gun.reload_left / maxf(_gun.reload_sec, 0.001))

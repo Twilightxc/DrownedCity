@@ -260,10 +260,113 @@ def prone_idle(u):
 
 
 def crawl(u):
+    """Leopard crawl (J bug 15): flat on the elbows and knees, the rifle cradled across both forearms; the
+    elbows reach forward in turn and the opposite knee comes up beside the hip."""
     t = u * math.tau
+    s = math.sin(t)
+    p = {"pelvis": (math.pi / 2, 0.0, 0.06 * s), "torso": (-0.12, 0.0, 0.1 * s), "head": (-0.6, 0.0, -0.1 * s)}
+    # forearms flat and turned in under the chest, so the rifle lies across them; elbows step forward in turn
+    p["arm_l"] = (-1.75 - 0.35 * max(0.0, s), -0.55, 0.0)
+    p["arm_r"] = (-1.75 - 0.35 * max(0.0, -s), 0.55, 0.0)
+    p["fore_l"] = (-0.35, 0.0, 1.25)
+    p["fore_r"] = (-0.35, 0.0, -1.25)
+    # knees drawn up sideways in turn (frog kick), toes out
+    p["thigh_l"] = (-0.45 * max(0.0, -s), -0.3 - 0.55 * max(0.0, -s), 0.0)
+    p["thigh_r"] = (-0.45 * max(0.0, s), 0.3 + 0.55 * max(0.0, s), 0.0)
+    p["shin_l"] = (0.2 + 1.3 * max(0.0, -s), 0.0, 1.35)
+    p["shin_r"] = (0.2 + 1.3 * max(0.0, s), 0.0, -1.35)
+    return p, (0, 0, PRONE_HIP - 0.04 - HIP_HEIGHT + 0.015 * abs(s))
+
+
+def prone_roll(u, side):
+    """A log roll sideways while prone (J bug 14): arms and rifle pulled in to the chest, legs together, one full
+    turn about the body's long axis. side = +1 toward the left (+X), -1 right; the game moves the body."""
+    turn = _keys([(0.0, 0.0), (0.1, 0.3), (0.85, math.tau - 0.2), (1.0, math.tau)], u) * -side
+    tuck = _keys([(0.0, 0.0), (0.15, 1.0), (0.85, 1.0), (1.0, 0.0)], u)
     p = {}
-    _prone(p, t, 1.0)
-    return p, (0, 0, PRONE_HIP - HIP_HEIGHT + 0.02 * abs(math.sin(t)))
+    _prone(p)
+    p["pelvis"] = (math.pi / 2, turn, 0.0)
+    p["torso"] = (-0.32 * (1 - tuck), 0.0, 0.0)
+    p["head"] = (-0.75 * (1 - tuck), 0.0, 0.0)
+    for sd, sign in (("l", 1.0), ("r", -1.0)):
+        p[f"thigh_{sd}"] = (0.0, -0.22 * sign * (1 - tuck), 0.0)
+        p[f"shin_{sd}"] = (0.0, 0.0, 1.35 * sign * (1 - tuck))
+        p[f"arm_{sd}"] = (_ease(-1.9, -1.2, tuck), -0.6 * sign * (1 - tuck), 0.0)
+        p[f"fore_{sd}"] = (_ease(-2.05, -2.4, tuck), 0.0, 0.4 * sign)
+    return p, (0, 0, PRONE_HIP - HIP_HEIGHT + 0.08 * math.sin(math.pi * u))
+
+
+def prone_roll_l(u):
+    return prone_roll(u, 1.0)
+
+
+def prone_roll_r(u):
+    return prone_roll(u, -1.0)
+
+
+# ---- getting down and up (J bugs 11, 12): eased blends through key poses ----
+
+def _blend(a, b, k):
+    """Pose a → b at k (0..1), bone by bone; a pose is (bone rotations, root offset)."""
+    pa, ra = a
+    pb, rb = b
+    p = {}
+    for bone in set(pa) | set(pb):
+        x = pa.get(bone, (0.0, 0.0, 0.0))
+        y = pb.get(bone, (0.0, 0.0, 0.0))
+        p[bone] = tuple(x[i] + (y[i] - x[i]) * k for i in range(3))
+    return p, tuple(ra[i] + (rb[i] - ra[i]) * k for i in range(3))
+
+
+def _through(keys, u):
+    """[(u, pose), ...] with smoothstep easing between consecutive poses."""
+    for (u0, a), (u1, b) in zip(keys, keys[1:]):
+        if u <= u1:
+            k = max(0.0, min(1.0, (u - u0) / max(1e-6, u1 - u0)))
+            return _blend(a, b, k * k * (3 - 2 * k))
+    return keys[-1][1]
+
+
+def _kneel_both():
+    """Both knees on the floor, hands at the thighs."""
+    p = {"torso": (0.2, 0.0, 0.0), "head": (0.1, 0.0, 0.0)}
+    for sd in "lr":
+        p[f"thigh_{sd}"] = (0.1, 0.0, 0.0)
+        p[f"shin_{sd}"] = (math.pi / 2 - 0.05, 0.0, 0.0)
+    _arms_down(p)
+    return p, (0, 0, KNEEL_HIP - HIP_HEIGHT)
+
+
+def _hands_down():
+    """On the knees, leaning forward onto both hands, about to lie down."""
+    p = {"pelvis": (0.65, 0.0, 0.0), "torso": (0.45, 0.0, 0.0), "head": (-0.6, 0.0, 0.0)}
+    for sd in "lr":
+        p[f"thigh_{sd}"] = (-0.55, 0.0, 0.0)
+        p[f"shin_{sd}"] = (2.0, 0.0, 0.0)
+        p[f"arm_{sd}"] = (-1.05, 0.0, 0.0)
+        p[f"fore_{sd}"] = (-0.15, 0.0, 0.0)
+    return p, (0, 0, 0.42 - HIP_HEIGHT)
+
+
+def _pose(fn):
+    return fn(0.0)
+
+
+def go_prone(u):
+    """Standing to prone: down on the knees, hands to the floor, then flat behind the sights (not a fall)."""
+    return _through([(0.0, _pose(idle)), (0.35, _kneel_both()), (0.65, _hands_down()), (1.0, _pose(prone_idle))], u)
+
+
+def crouch_to_prone(u):
+    return _through([(0.0, _pose(crouch_idle)), (0.45, _hands_down()), (1.0, _pose(prone_idle))], u)
+
+
+def prone_to_stand(u):
+    return _through([(0.0, _pose(prone_idle)), (0.35, _hands_down()), (0.65, _kneel_both()), (1.0, _pose(idle))], u)
+
+
+def prone_to_crouch(u):
+    return _through([(0.0, _pose(prone_idle)), (0.5, _hands_down()), (1.0, _pose(crouch_idle))], u)
 
 
 def roll(u):
@@ -281,18 +384,38 @@ def roll(u):
 
 
 def downed(u):
-    """Down on the back, propped on one elbow, a hand pressed to the wound."""
+    """Down on the back, propped on one elbow, a hand pressed to the wound; never still (J bug 6): heavy breaths,
+    the head lolling, the bent leg pushing and sliding, the wounded side curling now and then."""
     t = u * math.tau
-    p = {"pelvis": (-1.35, 0.0, 0.1), "torso": (0.55 + 0.03 * math.sin(t), 0.0, -0.1), "head": (0.35, 0.0, 0.0)}
-    p["thigh_l"] = (-0.5, 0.0, 0.15)
-    p["shin_l"] = (0.9, 0.0, 0.0)
-    p["thigh_r"] = (-0.1, 0.0, -0.1)
-    p["shin_r"] = (0.2, 0.0, 0.0)
-    p["arm_l"] = (0.6, 0.0, -0.3)
+    breath = math.sin(3 * t)
+    p = {"pelvis": (-1.35, 0.0, 0.1 + 0.06 * math.sin(t)),
+         "torso": (0.55 + 0.06 * breath + 0.1 * max(0.0, math.sin(t + 1.0)), 0.0, -0.1 + 0.12 * math.sin(t)),
+         "head": (0.35 + 0.15 * math.sin(2 * t), 0.0, 0.35 * math.sin(t + 0.5))}
+    p["thigh_l"] = (-0.5 - 0.3 * max(0.0, math.sin(t)), 0.0, 0.15)
+    p["shin_l"] = (0.9 + 0.5 * max(0.0, math.sin(t)), 0.0, 0.0)
+    p["thigh_r"] = (-0.1 - 0.15 * max(0.0, -math.sin(t)), 0.0, -0.1)
+    p["shin_r"] = (0.2 + 0.3 * max(0.0, -math.sin(t)), 0.0, 0.0)
+    p["arm_l"] = (0.6 + 0.08 * breath, 0.0, -0.3)
     p["fore_l"] = (-1.4, 0.0, 0.0)
-    p["arm_r"] = (-0.6, 0.0, 0.4)
-    p["fore_r"] = (-1.9, 0.0, 0.3)
-    return p, (0, 0, 0.22 - HIP_HEIGHT + 0.01 * math.sin(t))
+    p["arm_r"] = (-0.6 + 0.1 * math.sin(2 * t), 0.0, 0.4)
+    p["fore_r"] = (-1.9 - 0.15 * math.sin(3 * t), 0.0, 0.3)
+    return p, (0, 0, 0.22 - HIP_HEIGHT + 0.015 * breath)
+
+
+def death(u):
+    """Bleeding out (J bug 6): the propped arm gives, the body sinks flat on its back, the head rolls aside and
+    the limbs go slack. One-shot; the last frame holds."""
+    start = downed(0.0)
+    flat = {"pelvis": (-1.55, 0.0, 0.15), "torso": (0.0, 0.0, -0.05), "head": (-0.1, 0.0, 0.7),
+            "thigh_l": (-0.15, 0.0, 0.25), "shin_l": (0.3, 0.0, 0.0), "thigh_r": (0.05, 0.0, -0.2),
+            "shin_r": (0.05, 0.0, 0.0), "arm_l": (0.3, 0.0, -0.9), "fore_l": (-0.3, 0.0, 0.0),
+            "arm_r": (0.1, 0.0, 1.0), "fore_r": (-0.6, 0.0, 0.2)}
+    slump = {"pelvis": (-1.45, 0.0, 0.2), "torso": (0.3, 0.0, -0.2), "head": (0.6, 0.0, 0.3),
+             "thigh_l": (-0.4, 0.0, 0.2), "shin_l": (0.8, 0.0, 0.0), "thigh_r": (-0.1, 0.0, -0.1),
+             "shin_r": (0.2, 0.0, 0.0), "arm_l": (0.9, 0.0, -0.5), "fore_l": (-0.8, 0.0, 0.0),
+             "arm_r": (-0.3, 0.0, 0.6), "fore_r": (-1.2, 0.0, 0.2)}
+    return _through([(0.0, start), (0.4, (slump, (0, 0, 0.17 - HIP_HEIGHT))),
+                     (1.0, (flat, (0, 0, 0.12 - HIP_HEIGHT)))], u)
 
 
 def downed_aim(u):
@@ -413,16 +536,76 @@ def reload_shell(u):
     return p, (0, 0, 0)
 
 
+def switch(u):
+    """Weapon switch (J bug 4): the right hand drops to the hip / over the shoulder for the other gun and brings
+    it up to aim; the game swaps the gun model at the halfway point."""
+    k = _keys([(0.0, 0.0), (0.45, 1.0), (0.55, 1.0), (1.0, 0.0)], u)
+    p = {}
+    _aim_rifle(p)
+    p["torso"] = (0.06 + 0.1 * k, 0.0, -0.6 + 0.35 * k)
+    p["head"] = (0.1 + 0.25 * k, 0.0, 0.55 - 0.3 * k)
+    p["arm_r"] = (_ease(-0.3, 0.35, k), 0.0, _ease(0.45, -0.15, k))  # down and back to the holster / sling
+    p["fore_r"] = (_ease(-1.6, -0.6, k), 0.0, _ease(0.35, 0.0, k))
+    p["arm_l"] = (_ease(-1.35, -0.2, k), 0.0, _ease(0.2, -0.05, k))
+    p["fore_l"] = (_ease(-0.2, -0.9, k), 0.0, 0.0)
+    return p, (0, 0, 0)
+
+
+def _guard(p):
+    """Melee guard: weapon hand forward at the chest, the other up to fend off."""
+    p["torso"] = (0.12, 0.0, 0.0)
+    p["head"] = (0.0, 0.0, 0.0)
+    p["arm_r"] = (-0.9, 0.0, 0.2)
+    p["fore_r"] = (-1.0, 0.0, 0.0)
+    p["hand_r"] = (0.0, 0.0, 0.0)
+    p["arm_l"] = (-0.8, 0.0, 0.1)
+    p["fore_l"] = (-1.3, 0.0, 0.0)
+    p["hand_l"] = (0.0, 0.0, 0.0)
+
+
+def slash_light(u):
+    """Knife (J melee): a quick backhand cut right to left across the front; the blade crosses the aim at
+    u = 0.27 (= MeleeConfig.windup_sec / swing_sec for the knife), then a short follow-through and back."""
+    p = {}
+    _guard(p)
+    sweep = _keys([(0.0, 0.0), (0.15, -1.0), (0.27, 0.0), (0.42, 1.0), (1.0, 0.0)], u)  # -1 wound right, +1 across left
+    reach = _keys([(0.0, 0.0), (0.15, 0.3), (0.27, 1.0), (0.42, 0.7), (1.0, 0.0)], u)
+    p["torso"] = (0.12 + 0.08 * reach, 0.0, 0.35 * sweep)
+    p["arm_r"] = (-0.9 - 0.6 * reach, 0.0, 0.2 + 0.85 * sweep)
+    p["fore_r"] = (-1.0 + 0.85 * reach, 0.0, 0.3 * sweep)
+    p["arm_l"] = (-0.8 + 0.3 * reach, 0.0, 0.1 - 0.3 * sweep)
+    return p, (0, 0, 0)
+
+
+def slash_heavy(u):
+    """Axe (J melee): both hands, raised over the right shoulder, chopped down across the front; the head crosses
+    the aim at u = 0.31 (= windup_sec / swing_sec for the axe), then a heavy follow-through and recovery."""
+    p = {}
+    _guard(p)
+    lift = _keys([(0.0, 0.0), (0.22, 1.0), (0.31, 0.15), (0.45, -0.45), (0.7, -0.3), (1.0, 0.0)], u)  # +1 overhead
+    turn = _keys([(0.0, 0.0), (0.22, -1.0), (0.31, 0.0), (0.45, 0.8), (1.0, 0.0)], u)
+    p["torso"] = (0.12 + 0.35 * max(0.0, -lift), 0.0, 0.45 * turn)
+    p["head"] = (0.2 * max(0.0, -lift), 0.0, -0.25 * turn)
+    for sd, side in (("r", 1.0), ("l", -1.0)):
+        p[f"arm_{sd}"] = (-1.2 - 1.4 * max(0.0, lift) + 0.4 * max(0.0, -lift), 0.0, 0.25 * side + 0.45 * turn)
+        p[f"fore_{sd}"] = (-0.9 + 0.6 * max(0.0, -lift), 0.0, 0.25 * side)
+    return p, (0, 0, 0)
+
+
 # name: (function, frames, loop)
 CLIPS = {
     "idle": (idle, 48, True), "walk_f": (walk, 18, True), "walk_b": (walk_b, 18, True), "run": (run, 16, True),
     "crouch_idle": (crouch_idle, 48, True), "crouch_f": (crouch_walk, 28, True), "crouch_b": (crouch_b, 28, True),
     "prone_idle": (prone_idle, 48, True), "crawl": (crawl, 32, True), "roll": (roll, 14, False),
-    "downed": (downed, 48, True), "downed_aim": (downed_aim, 48, True),
+    "downed": (downed, 96, True), "downed_aim": (downed_aim, 48, True), "death": (death, 30, False),
+    "go_prone": (go_prone, 16, False), "crouch_to_prone": (crouch_to_prone, 12, False),
+    "prone_to_stand": (prone_to_stand, 16, False), "prone_to_crouch": (prone_to_crouch, 12, False),
+    "prone_roll_l": (prone_roll_l, 15, False), "prone_roll_r": (prone_roll_r, 15, False),
     "aim_pistol": (aim_pistol, 48, True), "aim_rifle": (aim_rifle, 48, True),
     "carry_high": (carry_high, 16, True), "carry_port": (carry_port, 16, True),
     "reload_pistol": (reload_pistol, 29, False), "reload_rifle": (reload_rifle, 58, False),
     "reload_shell": (reload_shell, 12, True),
+    "switch": (switch, 12, False), "slash_light": (slash_light, 12, False), "slash_heavy": (slash_heavy, 20, False),
 }
 LOOP_CLIPS = [n for n, (_, _, loop) in CLIPS.items() if loop]
 # m/s each moving clip matches at 1× (survivor_view.gd CLIP_SPEED agrees and scales the clip by speed)
