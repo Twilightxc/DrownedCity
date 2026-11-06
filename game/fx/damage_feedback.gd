@@ -17,6 +17,7 @@ void fragment() {
 
 var health: FighterHealth
 var time_control: TimeControl  ## optional: shares Engine.time_scale with hit-stop (1.4)
+var messages: bool = true  ## false: no downed / dead line (a run summary is up instead)
 var helper: String = ""  ## downed: the teammate coming to help, "" = nobody (set by the scene each frame)
 
 var _edge: ColorRect
@@ -81,6 +82,9 @@ func _process(delta: float) -> void:
 	if _slowmo_until_ms > 0 and Time.get_ticks_msec() >= _slowmo_until_ms:
 		_slowmo_until_ms = 0
 		Engine.time_scale = 1.0
+	if not messages:
+		_label.visible = false
+		return
 	match health.state:
 		FighterHealth.State.DOWNED:
 			_label.visible = true
@@ -91,6 +95,12 @@ func _process(delta: float) -> void:
 			_label.text = tr("YOU DIED · press R / X to restart")
 		_:
 			_label.visible = false
+
+
+## No downed / dead line from now on (a run summary takes the screen); works while the tree is paused.
+func hide_messages() -> void:
+	messages = false
+	_label.visible = false
 
 
 func _exit_tree() -> void:

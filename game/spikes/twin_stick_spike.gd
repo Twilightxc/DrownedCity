@@ -1,7 +1,7 @@
 extends "res://game/spikes/horde_spike.gd"
 ## Spike C (Phase 0.5): does twin-stick feel right with mouse + keyboard AND gamepad?
 ## Spike B scene + horde, plus what 0.5 asks for on top of the harness: supply crates to
-## interact with, the hold-to-open orders wheel, and the F4 / Start live tuning panel.
+## interact with, the hold-to-open orders wheel, and the F4 live tuning panel.
 
 ## The orders wheel (J 2026-11-06): 8 slots turned half a slot, so movement fills the top half (left to right:
 ## Follow me, Sneak-follow, Hold here, Stay still) and the fire rule the bottom (left to right: Fire at will,
@@ -88,10 +88,14 @@ func _active_orders() -> PackedInt32Array:
 	return PackedInt32Array()
 
 
+func _can_pause() -> bool:
+	return not _radial.visible
+
+
 func _help_text(pad: bool) -> String:
 	if pad:
-		return super._help_text(pad) + "\nInteract A · Orders hold Y (R-stick picks, B cancels) · Start: tuning"
-	return super._help_text(pad) + "\nInteract F · Orders hold Tab (mouse picks, Esc cancels) · F4: tuning"
+		return super._help_text(pad) + "\nInteract A · Orders hold Y (R-stick picks, B cancels) · Start: pause"
+	return super._help_text(pad) + "\nInteract F · Orders hold Tab (mouse picks, Esc cancels) · Esc: pause · F4: tuning"
 
 
 func _build_twin_stick_ui() -> void:
