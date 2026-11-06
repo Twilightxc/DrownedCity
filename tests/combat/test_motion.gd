@@ -103,3 +103,23 @@ func test_a_prone_fighter_is_seen_from_less_far() -> void:
 	assert_eq(h.state[0], Horde.State.DORMANT, "prone at 0.6 × sight: unseen")
 	h.perceive(target, 1.0, 1.0)
 	assert_eq(h.state[0], Horde.State.HUNTING, "standing: seen")
+
+
+func test_prone_rolls_sideways_and_stays_prone() -> void:
+	_m.toggle_prone()
+	assert_false(_m.try_roll(Vector2.UP, Vector2.UP), "not along the aim")
+	assert_true(_m.try_roll(Vector2(1, -0.2), Vector2.UP), "J bug 14: a log roll to the side")
+	assert_eq(_m.roll_dir, Vector2(1, 0), "straight across the aim")
+	assert_almost_eq(_m.stamina, MOVE.stamina_max - MOVE.prone_roll_stamina, 0.001)
+	assert_almost_eq(_m.roll_velocity().length() * MOVE.prone_roll_sec, MOVE.prone_roll_distance_m, 0.001)
+	_run(MOVE.prone_roll_sec + 0.05, false)
+	assert_false(_m.is_rolling())
+	assert_eq(_m.stance, FighterMotion.Stance.PRONE)
+
+
+func test_no_shooting_while_crawling() -> void:
+	_m.toggle_prone()
+	_m.step(0.1, false, false)
+	assert_true(_m.can_shoot(), "prone and still")
+	_m.step(0.1, false, true)
+	assert_false(_m.can_shoot(), "J bug 15: the rifle rides on the forearms")

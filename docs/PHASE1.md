@@ -192,12 +192,12 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 | 8 | ~~Zombies keep attacking the dead player's body~~ fixed (`fix/hud-downed`: they turn to a teammate still up or down; with nobody left they gather without attacking) | Horde bug | code |
 | 18 | ~~Barricades should show damage by level (3 stages exist; make them clearer or add more)~~ clearer (`fix/barricade-stages`: HP bar with stage notches after a hit, a shake per hit, splinters at each stage; `docs/art/20_barricade_stages.png`). More stages = more kit pieces on the desktop | Arena | code + desktop pieces |
 | 13 | ~~The water next to buildings looks odd (foam ring / shore)~~ fixed (`fix/water-shore`: thin broken lapping foam, a dark wet line at the wall, less tint; `docs/art/19_water_shore_*.png`) | Water shader | code |
-| 4 | Weapon switch animation | Animation | desktop |
-| 6 | No death animation; the downed pose freezes | Animation | desktop |
-| 11 | Standing → prone looks like just falling over | Animation | desktop |
-| 12 | Crouch → prone transition | Animation | desktop |
-| 14 | Side roll while prone | Animation | desktop |
-| 15 | Prone crawl: rifle across the elbows, crawl on knees and elbows | Animation | desktop |
+| 4 | ~~Weapon switch animation~~ built (`phase1/anim-melee`: `switch` clip, the model swaps halfway) | Animation | desktop |
+| 6 | ~~No death animation; the downed pose freezes~~ built (`phase1/anim-melee`: `death` one-shot; `downed` breathes, rolls its head, pushes a leg) | Animation | desktop |
+| 11 | ~~Standing → prone looks like just falling over~~ built (`phase1/anim-melee`: knees, hands, then flat; `prone_to_stand` back up) | Animation | desktop |
+| 12 | ~~Crouch → prone transition~~ built (`phase1/anim-melee`: `crouch_to_prone`, `prone_to_crouch`) | Animation | desktop |
+| 14 | ~~Side roll while prone~~ built (`phase1/anim-melee`: Space while prone = a 1.2 m log roll to the side the stick leans to) | Animation + motion | desktop |
+| 15 | ~~Prone crawl: rifle across the elbows, crawl on knees and elbows~~ built (`phase1/anim-melee`; no shooting while crawling) | Animation | desktop |
 
 ## Settled with J
 - 2026-11-03: 1.5+ before the gate; CC0 sound packs; roll on Space; 2 AI teammates in the arena. Sprint carry:

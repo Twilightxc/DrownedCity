@@ -158,8 +158,7 @@ func _show_gun() -> void:
 	if gun_view == null:
 		return
 	if body != null:
-		body.set_gun(gun)
-		body.set_holstered(guns, gun)
+		body.switch_gun(gun, guns)
 	else:
 		gun_view.show_gun(gun)
 	var barrel: Node3D = _aim_marker.get_node_or_null("Barrel") as Node3D
@@ -335,7 +334,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func roll() -> bool:
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", controls.stick_deadzone)
 	var dir: Vector2 = AimMath.screen_to_world(input, camera.global_basis) if input != Vector2.ZERO else aim_dir
-	if not motion.try_roll(dir.normalized()):
+	if not motion.try_roll(dir.normalized(), aim_dir):
 		return false
 	noise.emit(ground_position(), movement.roll_noise_m)
 	footstep.emit(ground_position(), movement.roll_noise_m)
@@ -354,6 +353,7 @@ func _process(delta: float) -> void:
 		body.stance = motion.stance as SurvivorView.Stance
 		body.sprinting = motion.sprinting
 		body.rolling = motion.is_rolling()
+		body.dead = health.state == FighterHealth.State.DEAD
 		body.drive(velocity, aim_dir, gun, not health.is_alive())
 	if health.state == FighterHealth.State.DOWNED:
 		# Down but fighting (J 2026-11-04): no moving or throwing, but aim and fire the pistol.
@@ -448,6 +448,8 @@ func try_melee() -> bool:
 	motion.stamina -= melee.config.stamina
 	gun.reload_left = 0.0  # a swing drops a reload in progress
 	_swipe_left = melee.config.swing_sec
+	if body != null:
+		body.swing(melee.config)
 	return true
 
 
@@ -506,6 +508,9 @@ func _build_swipe() -> void:
 
 func _update_swipe(delta: float) -> void:
 	if _swipe == null:
+		return
+	if body != null:  # the survivor body swings the knife / axe itself
+		_swipe.visible = false
 		return
 	_swipe_left = maxf(_swipe_left - delta, 0.0)
 	var cfg: MeleeConfig = melee.config
