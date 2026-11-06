@@ -145,3 +145,38 @@ func test_a_loadout_brings_its_melee_weapon() -> void:
 	assert_almost_eq(mate.brain.melee_reach, mate.melee_weapon.reach_m, 0.001)
 	var p: SpikePlayer = _fighter(SpikePlayer.new(), grid, cam, Vector2(5, 5))
 	assert_eq(p.melee_weapon.display_name, "Knife", "everyone else: the knife")
+
+
+## These tests cover the melee code, which is switched off in the game for now (Features.melee).
+func before_all() -> void:
+	Features.melee = true
+
+
+func after_all() -> void:
+	Features.melee = false
+
+
+func test_melee_switched_off_means_no_knife() -> void:
+	Features.melee = false
+	var cam: Camera3D = Camera3D.new()
+	add_child_autofree(cam)
+	var grid: NavGrid = NavGrid.new(20, 20)
+	var player: SpikePlayer = _fighter(SpikePlayer.new(), grid, cam, Vector2(10, 10))
+	var mate_node: Teammate = Teammate.new()
+	mate_node.loadout = MATE_LOADOUT
+	var mate: Teammate = _fighter(mate_node, grid, cam, Vector2(11, 10)) as Teammate
+	Features.melee = true
+	assert_null(player.melee, "J 2026-11-06: melee cut for now")
+	assert_false(player.try_melee())
+	assert_eq(mate.brain.melee_reach, 0.0, "teammates back off instead of knifing")
+
+
+func test_the_wheel_greys_out_a_disabled_order() -> void:
+	var r: RadialMenu = RadialMenu.new()
+	add_child_autofree(r)
+	r.items = PackedStringArray(["a", "b", "c", "d"])
+	r.disabled = PackedInt32Array([2])
+	r._select(2)
+	assert_eq(r.selected, -1)
+	r._select(1)
+	assert_eq(r.selected, 1)

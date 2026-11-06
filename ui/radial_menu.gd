@@ -20,6 +20,7 @@ extends Control
 
 var selected: int = -1
 var active: PackedInt32Array = PackedInt32Array()  ## items in force now (the current orders)
+var disabled: PackedInt32Array = PackedInt32Array()  ## items shown greyed out that can't be picked
 
 var _center: Vector2 = Vector2.ZERO
 var _mouse_offset: Vector2 = Vector2.ZERO
@@ -66,6 +67,8 @@ func point_mouse(relative: Vector2) -> void:
 
 
 func _select(i: int) -> void:
+	if disabled.has(i):
+		i = -1
 	if i != selected:
 		selected = i
 		queue_redraw()
@@ -91,6 +94,8 @@ func _draw() -> void:
 		draw_polyline(points, active_color if is_active else Color(1, 1, 1, 0.25), 3.0 if is_active else 1.0, true)
 		var mid: Vector2 = _center + _dir(mid_angle) * (inner_radius + radius) * 0.5
 		var ink: Color = active_color if is_active and i != selected else Color.WHITE
+		if disabled.has(i):
+			ink = Color(1, 1, 1, 0.3)
 		var icon: StringName = icons[i] if i < icons.size() else &""
 		var label_at: Vector2 = mid
 		if icon != &"":

@@ -106,6 +106,8 @@ func _build_twin_stick_ui() -> void:
 	_radial.items = PackedStringArray(ORDERS)
 	_radial.icons = ORDER_ICONS
 	_radial.offset_steps = 0.5
+	if not Features.melee:
+		_radial.disabled = PackedInt32Array([ORDERS.find("Melee only")])
 	layer.add_child(_radial)
 	_toast = Label.new()
 	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)

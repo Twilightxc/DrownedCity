@@ -12,8 +12,8 @@ signal footstep(at: Vector2, noise_m: float)  ## one per step (1.5+ A3): its sou
 signal device_changed(pad: bool)
 signal restart_requested  ## reload / X pressed while dead
 signal shot(gun: Gun)  ## one per round fired (muzzle flash, casings, shake)
-signal meleed(cfg: MeleeConfig, hit: bool)
-signal swung(cfg: MeleeConfig)  ## a melee swing starts (its sound); meleed follows at the strike  ## a melee hit landing (hit = it struck someone): sound, swipe
+signal meleed(cfg: MeleeConfig, hit: bool)  ## a melee strike (hit = it struck someone): sound, swipe
+signal swung(cfg: MeleeConfig)  ## a melee swing starts (its sound); meleed follows at the strike
 signal hit_confirmed(kills: int)  ## a round that hit something; kills = how many it killed (hit markers, hit-stop)
 
 const MUZZLE_HEIGHT: float = 0.9
@@ -110,7 +110,7 @@ func _arm() -> void:
 	motion = FighterMotion.new(movement)
 	if loadout != null and loadout.melee != null:
 		melee_weapon = loadout.melee
-	melee = Melee.new(melee_weapon) if melee_weapon != null else null
+	melee = Melee.new(melee_weapon) if melee_weapon != null and Features.melee else null
 	if _swipe != null:  # the swipe's arc and reach follow the weapon
 		_swipe.queue_free()
 		_swipe = null
@@ -480,6 +480,8 @@ func _update_melee(delta: float) -> void:
 
 ## A flat pale crescent in front of the fighter, swept across the aim during a swing (placeholder animation).
 func _build_swipe() -> void:
+	if not Features.melee:
+		return
 	var mesh: ImmediateMesh = ImmediateMesh.new()
 	var half: float = deg_to_rad(melee_weapon.arc_deg if melee_weapon != null else 110.0) * 0.5
 	var reach: float = melee_weapon.reach_m if melee_weapon != null else 1.4
