@@ -18,9 +18,11 @@ const RING_COLOR: Color = Color(1.0, 0.92, 0.6)
 const JAM_COLOR: Color = Color(1.0, 0.55, 0.15)
 const BACK_COLOR: Color = Color(0.0, 0.0, 0.0, 0.55)
 const REVIVE_COLOR: Color = Color(0.45, 0.95, 0.45)
-const CARD_SIZE: Vector2 = Vector2(170.0, 40.0)  ## a teammate's card
+const CARD_SIZE: Vector2 = Vector2(230.0, 40.0)  ## a teammate's card
 const CARD_GAP: float = 6.0
 const MINI_BAR_H: float = 5.0
+const MOVE_WORDS: PackedStringArray = ["Follow", "Sneak", "Hold", "Stay"]  ## TeammateBrain.Order, short
+const FIRE_WORDS: PackedStringArray = ["At will", "Hold fire", "Quiet", "Melee"]  ## TeammateBrain.FireRule, short
 const BADGE_HEIGHT: float = 2.8  ## m above a downed fighter's feet (over the reload ring)
 const BADGE_RADIUS: float = 13.0
 const BADGE_COLOR: Color = Color(0.85, 0.12, 0.1)
@@ -133,7 +135,7 @@ func _stance_text(m: FighterMotion) -> String:
 	return tr("Stamina")
 
 
-## A teammate's card (J 2026-11-04): name, HP and stamina in a small panel above the player's bars. Downed, the
+## A teammate's card (J 2026-11-04): name, its orders (right, green), HP and stamina in a small panel above the player's bars. Downed, the
 ## HP bar counts down the time to be helped up; dead, the card greys out.
 func _card(f: SpikePlayer, at: Vector2) -> void:
 	var h: FighterHealth = f.health
@@ -145,11 +147,21 @@ func _card(f: SpikePlayer, at: Vector2) -> void:
 	var text_col: Color = Color(0.6, 0.6, 0.6) if dead else Color(1, 1, 1)
 	_draw.draw_string(_font, at + Vector2(8.0, 16.0), name + status, HORIZONTAL_ALIGNMENT_LEFT, CARD_SIZE.x - 16.0, 13,
 		text_col)
+	if f is Teammate and not dead:
+		_draw.draw_string(_font, at + Vector2(8.0, 16.0), orders_text((f as Teammate).brain), HORIZONTAL_ALIGNMENT_RIGHT,
+			CARD_SIZE.x - 16.0, 11, Color(0.7, 0.95, 0.7))
 	var bar_w: float = CARD_SIZE.x - 16.0
 	var hp_fill: float = 0.0 if dead else h.downed_left / maxf(h.config.downed_sec, 0.01) if downed else h.hp_frac()
 	_mini_bar(at + Vector2(8.0, 22.0), bar_w, hp_fill, DOWNED_COLOR if downed else HP_COLOR)
 	var m: FighterMotion = f.motion
 	_mini_bar(at + Vector2(8.0, 31.0), bar_w, 0.0 if dead or m == null else m.stamina_fraction(), STAMINA_COLOR)
+
+
+## A teammate's orders in force, short: "Follow · At will" (the orders wheel, J 2026-11-06).
+static func orders_text(b: TeammateBrain) -> String:
+	if b == null:
+		return ""
+	return "%s · %s" % [TranslationServer.translate(MOVE_WORDS[b.order]), TranslationServer.translate(FIRE_WORDS[b.fire_rule])]
 
 
 func _mini_bar(at: Vector2, width: float, fill: float, col: Color) -> void:
