@@ -1,6 +1,6 @@
 # docs/handoff-to-desktop
 
-- **PR:** opening (pushed? yes)
+- **PR:** #66 (pushed? yes)
 - **Machine:** laptop (ASUS, Intel Arc 140V) → desktop (RTX 4080)
 - **Base:** main @ 10da5da
 - **Updated:** 2026-11-06
