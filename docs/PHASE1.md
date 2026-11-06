@@ -163,8 +163,14 @@ Part A (combat, 1.1–1.5) ≈ 80 h, so the total is ≈ 750 h.
 - [ ] Leader: picked from outstanding citizens; becoming leader opens a quest line to a tier-4 special room and
       special items made in tier-4 buildings. Leader personality from the survivor's special skill, or added by
       reading a book.
-- Open (J to send): the buffs; leader system detail; core skills; background special skills (add-on special);
-      more traits; community skills; reading books. Also undecided: can status be lost (morale, misconduct)?
+- [ ] J's full spec, 2026-11-06: **`docs/CITIZENS_1_6.md`**. It covers:
+      - 6 leaders: room, items, community effect, unlock goal
+      - core skills 0–7 twice, with 4 specializations each
+      - 9 backgrounds and 9 more traits
+      - community skills + books, and combat classes, as Claude proposals for J to confirm
+      1.6 builds the data model and rules for all of it, and wires only the effects whose systems exist now
+      (§8 there). The open questions are in §9 there.
+- Undecided: can status be lost (morale, misconduct)?
 - SimCore rule: all of this is pure data + rules in `sim/`, unit-tested, saved in the survivor state (save v2).
 
 ## J's bug list after 1.G (2026-11-05)
