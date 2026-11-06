@@ -15,7 +15,9 @@ folder with the layout in the script's docstring and run `python tools/audio/bui
 | [Zomby sfx pack](https://opengameart.org/content/zomby-sfx-pack) | saturn91 | CC0 | zombie_groan_1–6 |
 | [Zombie noises and moans](https://opengameart.org/content/zombie-noises-and-moans) | ianzazz | CC0 | zombie_moan_1–3, zombie_alert (Runner) |
 | [8 wet squish, slurp impacts](https://opengameart.org/content/8-wet-squish-slurp-impacts) | Independent.nu (submitted by qubodup) | CC0 | bloater_pop, flesh_hit_1–3 |
-| [Impact Sounds](https://kenney.nl/assets/impact-sounds) | Kenney | CC0 | footstep_1–5 (concrete), helmet_clang, player_hit, dry_click, shell_insert |
+| [Impact Sounds](https://kenney.nl/assets/impact-sounds) | Kenney | CC0 | footstep_1–5 (concrete), helmet_clang, player_hit, dry_click, shell_insert, hit_axe_1–2 (punches pitched down) |
+| [Medieval sound effects – Weapon Textures](https://opengameart.org/content/medieval-sound-effects-weapon-textures) (`medieval_sfx_textures_1_of_2.7z`, `_2_of_2.7z`) | Ben Jaszczak, Brian Nelson (Still North Media) | CC0 | swing_knife_1–2 (Seax Swing), swing_axe_1–2 (Axe Swing). J approved the download 2026-11-06 |
 
-Rejected while choosing: "Gunshot Sounds" by Tabasco (heavy background noise), "Gunshots" by kurt (the uploader
+Rejected while choosing (melee, 2026-11-06): "Medieval sound effects – Weapon impacts" (weapon on weapon, not on a
+body), "Swishes sound pack" and Kenney "RPG Audio" (the Still North takes match the gun sounds). Earlier: "Gunshot Sounds" by Tabasco (heavy background noise), "Gunshots" by kurt (the uploader
 did not own the guns, so the licence is unclear), "Tactical Weapons And Tactics" by XCVG (CC-BY, not CC0).

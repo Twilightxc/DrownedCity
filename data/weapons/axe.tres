@@ -20,3 +20,5 @@ noise_m = 3.0
 stamina = 18.0
 mesh_scene = ExtResource("2_mesh")
 clip = &"slash_heavy"
+swing_sfx = &"swing_axe"
+hit_sfx = &"hit_axe"

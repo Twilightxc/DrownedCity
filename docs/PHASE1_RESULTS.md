@@ -3,6 +3,13 @@
 Measured numbers and J's verdicts per milestone (plan: `docs/PHASE1.md`). Device/browser on every row; J's Arc
 laptop is the pass/fail reference. New rows go at the top of each section.
 
+## Melee sounds — 🟡 built (2026-11-06), waiting for J's ear
+
+J approved one CC0 download (Still North Media "Medieval sound effects – Weapon Textures"). `swing_knife` (2 takes,
+Seax Swing), `swing_axe` (2 takes, Axe Swing) play when a swing starts, so the whoosh peaks at the strike; a hit plays
+`MeleeConfig.hit_sfx`: the knife's is `flesh_hit`, the axe's `hit_axe` (2 Kenney punches pitched down). Teammates'
+swings are heard too. +32 KB. Sources: `docs/audio/SOURCES.md`. 252 tests passing on desktop.
+
 ## Bug list animations + melee — 🟡 built (2026-11-06), waiting for J's look
 
 J's bug list items 4, 6, 11, 12, 14, 15 and the melee models / clips (desktop). Live: `?spike=poses` (new row of

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="SfxBank" load_steps=57 format=3]
+[gd_resource type="Resource" script_class="SfxBank" load_steps=66 format=3]
 
 [ext_resource type="Script" path="res://audio/sfx_bank.gd" id="1_bank"]
 [ext_resource type="Script" path="res://audio/sfx_event.gd" id="2_event"]
@@ -37,6 +37,12 @@
 [ext_resource type="AudioStream" path="res://assets/audio/zombie_moan_2.ogg" id="35_zombie_moan_2"]
 [ext_resource type="AudioStream" path="res://assets/audio/zombie_moan_3.ogg" id="36_zombie_moan_3"]
 
+[ext_resource type="AudioStream" path="res://assets/audio/swing_knife_1.ogg" id="m_swing_knife_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/swing_knife_2.ogg" id="m_swing_knife_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/swing_axe_1.ogg" id="m_swing_axe_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/swing_axe_2.ogg" id="m_swing_axe_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/hit_axe_1.ogg" id="m_hit_axe_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/hit_axe_2.ogg" id="m_hit_axe_2"]
 [sub_resource type="Resource" id="E_shot_pistol"]
 script = ExtResource("2_event")
 streams = Array[AudioStream]([ExtResource("24_shot_pistol")])
@@ -217,6 +223,30 @@ max_distance_m = 10.0
 max_voices = 2
 min_interval_sec = 0.1
 
+[sub_resource type="Resource" id="E_swing_knife"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("m_swing_knife_1"), ExtResource("m_swing_knife_2")])
+volume_db = -6.0
+pitch_jitter = 0.1
+max_distance_m = 15.0
+max_voices = 3
+
+[sub_resource type="Resource" id="E_swing_axe"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("m_swing_axe_1"), ExtResource("m_swing_axe_2")])
+volume_db = -4.0
+pitch_jitter = 0.08
+max_distance_m = 18.0
+max_voices = 3
+
+[sub_resource type="Resource" id="E_hit_axe"]
+script = ExtResource("2_event")
+streams = Array[AudioStream]([ExtResource("m_hit_axe_1"), ExtResource("m_hit_axe_2")])
+volume_db = -4.0
+pitch_jitter = 0.1
+max_distance_m = 20.0
+max_voices = 3
+
 [resource]
 script = ExtResource("1_bank")
 events = Dictionary[StringName, ExtResource("2_event")]({
@@ -239,6 +269,9 @@ events = Dictionary[StringName, ExtResource("2_event")]({
 &"flesh_hit": SubResource("E_flesh_hit"),
 &"helmet_clang": SubResource("E_helmet_clang"),
 &"player_hit": SubResource("E_player_hit"),
-&"footstep": SubResource("E_footstep")
+&"footstep": SubResource("E_footstep"),
+&"swing_knife": SubResource("E_swing_knife"),
+&"swing_axe": SubResource("E_swing_axe"),
+&"hit_axe": SubResource("E_hit_axe")
 })
 voices = 24

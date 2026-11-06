@@ -23,6 +23,9 @@ func test_every_event_has_takes_and_every_config_names_a_known_event() -> void:
 		var e: EnemyConfig = load("res://data/enemies/%s.tres" % path)
 		names.append_array([e.voice_sfx, e.death_sfx])
 	names.append((load("res://data/weapons/attachments/silencer.tres") as AttachmentConfig).shot_sfx)
+	for path: String in ["knife", "axe"]:
+		var m: MeleeConfig = load("res://data/weapons/%s.tres" % path)
+		names.append_array([m.swing_sfx, m.hit_sfx])
 	names.append_array([&"dry_click", &"flesh_hit", &"helmet_clang", &"player_hit", &"footstep", &"fire_loop"])
 	for n: StringName in names:
 		assert_true(BANK.events.has(n), "bank has %s" % n)
@@ -79,3 +82,14 @@ func test_reload_sounds_once_per_mag_or_per_shell_and_dry_fire_clicks() -> void:
 	assert_eq(sg.dry_fires, 1)
 	sg.step(0.05, true, rng)  # still held: no second click
 	assert_eq(sg.dry_fires, 1)
+
+
+func test_a_melee_swing_whooshes_and_a_hit_thuds() -> void:
+	var sfx: SfxPlayer = SfxPlayer.new()
+	add_child_autofree(sfx)
+	sfx.setup(BANK)
+	var axe: MeleeConfig = load("res://data/weapons/axe.tres")
+	assert_true(sfx.play(axe.swing_sfx, Vector3.ZERO))
+	assert_true(sfx.play(axe.hit_sfx, Vector3.ZERO))
+	assert_eq(sfx.played.get(&"swing_axe", 0), 1)
+	assert_eq(sfx.played.get(&"hit_axe", 0), 1)

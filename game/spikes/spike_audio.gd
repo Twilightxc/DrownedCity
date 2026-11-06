@@ -51,6 +51,7 @@ func bind(bank: SfxBank, player: SpikePlayer, rig: Node3D) -> void:
 		add_child(_fire)
 	volume_db = volume_db
 	player.shot.connect(_on_shot)
+	_hear_melee(player)
 	player.health.damaged.connect(func(_amount: int, _kind: StringName) -> void:
 		sfx.play(&"player_hit", _at(player.ground_position())))
 	# Steps come from the player (1.5+ A3): crouched and prone ones are quieter, sprinting ones louder.
@@ -66,9 +67,19 @@ func _on_shot(g: Gun, f: SpikePlayer = null) -> void:
 		sfx.play(g.config.cycle_sfx, at, 1.0, -1.0, g.config.cycle_delay_sec)
 
 
+## A fighter's knife or axe: the whoosh when the swing starts, the hit at the strike when it connects.
+func _hear_melee(f: SpikePlayer) -> void:
+	f.swung.connect(func(cfg: MeleeConfig) -> void:
+		sfx.play(cfg.swing_sfx, _at(f.ground_position())))
+	f.meleed.connect(func(cfg: MeleeConfig, hit: bool) -> void:
+		if hit:
+			sfx.play(cfg.hit_sfx, _at(f.ground_position())))
+
+
 ## Another fighter (an AI teammate): its shots, reloads and steps are heard where it is.
 func add_fighter(f: SpikePlayer) -> void:
 	f.shot.connect(_on_shot.bind(f))
+	_hear_melee(f)
 	f.footstep.connect(func(at: Vector2, noise_m: float) -> void:
 		sfx.play(&"footstep", _at(at), 1.0, -1.0, 0.0, linear_to_db(clampf(noise_m / STEP_NOISE_REF_M, 0.15, 2.0)) - 4.0))
 	f.health.damaged.connect(func(_amount: int, _kind: StringName) -> void:

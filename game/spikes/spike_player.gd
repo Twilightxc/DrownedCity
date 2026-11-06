@@ -12,7 +12,8 @@ signal footstep(at: Vector2, noise_m: float)  ## one per step (1.5+ A3): its sou
 signal device_changed(pad: bool)
 signal restart_requested  ## reload / X pressed while dead
 signal shot(gun: Gun)  ## one per round fired (muzzle flash, casings, shake)
-signal meleed(cfg: MeleeConfig, hit: bool)  ## a melee hit landing (hit = it struck someone): sound, swipe
+signal meleed(cfg: MeleeConfig, hit: bool)
+signal swung(cfg: MeleeConfig)  ## a melee swing starts (its sound); meleed follows at the strike  ## a melee hit landing (hit = it struck someone): sound, swipe
 signal hit_confirmed(kills: int)  ## a round that hit something; kills = how many it killed (hit markers, hit-stop)
 
 const MUZZLE_HEIGHT: float = 0.9
@@ -450,6 +451,7 @@ func try_melee() -> bool:
 	_swipe_left = melee.config.swing_sec
 	if body != null:
 		body.swing(melee.config)
+	swung.emit(melee.config)
 	return true
 
 
