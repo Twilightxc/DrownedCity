@@ -1,6 +1,6 @@
 # ui/card-orders
 
-- **PR:** opening (pushed? yes)
+- **PR:** #63 (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ 924dab5
 - **Updated:** 2026-11-06
