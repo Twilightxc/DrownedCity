@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_cfg")
 display_name = "Pump shotgun"
+short_name = "Shotgun"
 weapon_class = "shotgun"
 caliber = "12g"
 damage = 9

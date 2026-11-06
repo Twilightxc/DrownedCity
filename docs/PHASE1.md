@@ -180,7 +180,7 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 | 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code. Designed with J 2026-11-06 (DECISIONS). Step 1 melee: PR #55; step 2 the 8-slot wheel and its behaviours: `phase1/orders-wheel` (`docs/art/16_orders_wheel.png`) |
 | 3 | No crosshair for the pistol while downed | HUD | code |
 | 16 | A downed icon over the player and teammates | HUD | code |
-| 17 | A weapon UI | HUD | code. Designed with J 2026-11-06: a bottom-right panel (DECISIONS); gun icons from Blender on the desktop |
+| 17 | A weapon UI | HUD | code. Designed with J 2026-11-06: a bottom-right panel (DECISIONS). `ui/weapon_panel.gd` on `phase1/weapon-panel` (`docs/art/17_weapon_panel.png`); gun icons (`WeaponConfig.icon`) from Blender on the desktop |
 | 9 | The reload ring stays on dead teammates / the player | HUD bug | code |
 | 8 | Zombies keep attacking the dead player's body | Horde bug | code |
 | 18 | Barricades should show damage by level (3 stages exist; make them clearer or add more) | Arena | code + desktop pieces |

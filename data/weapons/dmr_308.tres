@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_cfg")
 display_name = "DMR .308"
+short_name = "DMR"
 weapon_class = "rifle"
 caliber = ".308"
 damage = 70

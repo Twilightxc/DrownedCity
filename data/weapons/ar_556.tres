@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_cfg")
 display_name = "AR 5.56"
+short_name = "AR"
 weapon_class = "ar"
 caliber = "5.56"
 damage = 34

@@ -44,6 +44,8 @@ enum Armor { NONE, L, M, H }  ## armor_pen against a target's armor or cover (GD
 @export var waterproof: bool = false
 @export var attachment_slots: PackedStringArray = PackedStringArray(["muzzle", "optic", "under", "mag"])
 @export var model: GunModel  ## mesh + mount points from tools/blender/kit_guns.py; null = the placeholder barrel
+@export var icon: Texture2D  ## side view for the weapon panel (desktop renders them in Blender); null = the name
+@export var short_name: String = ""  ## for the panel's slot boxes; empty = display_name
 
 @export_group("Sound")
 @export var shot_sfx: StringName = &"shot_ar"  ## SfxBank event; heard up to noise_m away
