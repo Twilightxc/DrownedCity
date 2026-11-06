@@ -129,6 +129,8 @@ func _on_health_state(s: FighterHealth.State) -> void:
 			if is_sidearm(guns[k]):
 				select_gun(k)
 				break
+	elif s == FighterHealth.State.DEAD:
+		gun.reload_left = 0.0  # no reload ring on a body (bug 9)
 	elif s == FighterHealth.State.ALIVE and _gun_before_down != null:
 		select_gun(guns.find(_gun_before_down))
 		_gun_before_down = null

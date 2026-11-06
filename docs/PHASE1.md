@@ -178,11 +178,11 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 | 2 | ~~Teammates take no damage from Bloater gas~~ fixed (PR #53, J passed 2026-11-06; ground fire too) | Teammate AI | code |
 | 5 | ~~Teammates look lost when the player is downed~~ fixed (PR #53, J passed 2026-11-06) | Teammate AI | code |
 | 10 | Under "hold fire" teammates only dodge: add behaviours (melee, suppressed fire, stay still, stealth-follow), fire modes (suppressed / not, melee) and a wider orders wheel with icons | Teammate AI + orders | code. Designed with J 2026-11-06 (DECISIONS). Step 1 melee: PR #55; step 2 the 8-slot wheel and its behaviours: `phase1/orders-wheel` (`docs/art/16_orders_wheel.png`) |
-| 3 | No crosshair for the pistol while downed | HUD | code |
-| 16 | A downed icon over the player and teammates | HUD | code |
+| 3 | ~~No crosshair for the pistol while downed~~ fixed (`fix/hud-downed`) | HUD | code |
+| 16 | ~~A downed icon over the player and teammates~~ fixed (`fix/hud-downed`: red cross badge, ringed by time left or the revive; `docs/art/18_downed_badge.png`) | HUD | code |
 | 17 | A weapon UI | HUD | code. Designed with J 2026-11-06: a bottom-right panel (DECISIONS). `ui/weapon_panel.gd` on `phase1/weapon-panel` (`docs/art/17_weapon_panel.png`); gun icons (`WeaponConfig.icon`) from Blender on the desktop |
-| 9 | The reload ring stays on dead teammates / the player | HUD bug | code |
-| 8 | Zombies keep attacking the dead player's body | Horde bug | code |
+| 9 | ~~The reload ring stays on dead teammates / the player~~ fixed (`fix/hud-downed`) | HUD bug | code |
+| 8 | ~~Zombies keep attacking the dead player's body~~ fixed (`fix/hud-downed`: they turn to a teammate still up or down; with nobody left they gather without attacking) | Horde bug | code |
 | 18 | Barricades should show damage by level (3 stages exist; make them clearer or add more) | Arena | code + desktop pieces |
 | 13 | The water next to buildings looks odd (foam ring / shore) | Water shader | code |
 | 4 | Weapon switch animation | Animation | desktop |

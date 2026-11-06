@@ -21,6 +21,9 @@ const REVIVE_COLOR: Color = Color(0.45, 0.95, 0.45)
 const CARD_SIZE: Vector2 = Vector2(170.0, 40.0)  ## a teammate's card
 const CARD_GAP: float = 6.0
 const MINI_BAR_H: float = 5.0
+const BADGE_HEIGHT: float = 2.8  ## m above a downed fighter's feet (over the reload ring)
+const BADGE_RADIUS: float = 13.0
+const BADGE_COLOR: Color = Color(0.85, 0.12, 0.1)
 
 var player: SpikePlayer
 ## Every fighter that gets a reload ring (the player; teammates join in 1.5+ A5).
@@ -59,7 +62,7 @@ func _process(delta: float) -> void:
 ## this reload loads, so it fills one step per shell.
 func reload_fill(f: SpikePlayer) -> float:
 	var g: Gun = f.gun
-	if g == null or not g.is_reloading():
+	if g == null or not g.is_reloading() or (f.health != null and f.health.state == FighterHealth.State.DEAD):
 		return -1.0
 	if g.config.reload_per_round and not g.jammed and _reload_from.has(f):
 		var from: Vector2i = _reload_from[f]
@@ -106,6 +109,7 @@ func _on_draw() -> void:
 			_card(f, Vector2(x, card_y))
 			card_y -= CARD_SIZE.y + CARD_GAP
 		_ring(f)
+		_downed_badge(f)
 
 
 func _bar(at: Vector2, fill: float, col: Color, text: String) -> void:
@@ -151,6 +155,31 @@ func _card(f: SpikePlayer, at: Vector2) -> void:
 func _mini_bar(at: Vector2, width: float, fill: float, col: Color) -> void:
 	_draw.draw_rect(Rect2(at, Vector2(width, MINI_BAR_H)), BACK_COLOR)
 	_draw.draw_rect(Rect2(at, Vector2(width * clampf(fill, 0.0, 1.0), MINI_BAR_H)), col)
+
+
+## Downed (bug list item 16): a red badge with a white cross over the fighter, ringed by the time left to be
+## helped up (red, pulsing as it runs out), or by the revive in green while someone helps.
+func _downed_badge(f: SpikePlayer) -> void:
+	var h: FighterHealth = f.health
+	if h == null or h.state != FighterHealth.State.DOWNED or f.camera == null:
+		return
+	var head: Vector3 = Vector3(f.position.x, f.ground_y + BADGE_HEIGHT, f.position.z)
+	if f.camera.is_position_behind(head):
+		return
+	var at: Vector2 = f.camera.unproject_position(head)
+	var left: float = h.downed_left / maxf(h.config.downed_sec, 0.01)
+	var pulse: float = 1.0 + (0.12 * sin(_blink * 10.0) if left < 0.3 else 0.0)
+	var r: float = BADGE_RADIUS * pulse
+	_draw.draw_circle(at, r + 4.0, BACK_COLOR)
+	_draw.draw_circle(at, r, BADGE_COLOR)
+	var arm: float = r * 0.55
+	_draw.draw_rect(Rect2(at - Vector2(arm, arm * 0.32), Vector2(arm * 2.0, arm * 0.64)), Color.WHITE)
+	_draw.draw_rect(Rect2(at - Vector2(arm * 0.32, arm), Vector2(arm * 0.64, arm * 2.0)), Color.WHITE)
+	var start: float = -PI / 2.0
+	var revive: float = f.revive_fill()
+	var fill: float = revive if revive >= 0.0 else left
+	var col: Color = REVIVE_COLOR if revive >= 0.0 else Color(1.0, 0.35, 0.3)
+	_draw.draw_arc(at, r + 4.0, start, start + TAU * clampf(fill, 0.0, 1.0), 32, col, 3.0, true)
 
 
 ## The reload ring over `f`'s head: a dark track, the filled arc from the top clockwise, a tick per shell.

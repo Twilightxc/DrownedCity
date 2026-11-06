@@ -48,7 +48,8 @@ func _process(delta: float) -> void:
 		return
 	_marker_left = maxf(_marker_left - delta, 0.0)
 	# The OS cursor hides while playing with the mouse; menus and pauses get it back.
-	var hide_cursor: bool = not player.using_pad and not get_tree().paused and player.health.is_alive()
+	var fighting: bool = player.health.state != FighterHealth.State.DEAD  # downed still aims the pistol (bug 3)
+	var hide_cursor: bool = not player.using_pad and not get_tree().paused and fighting
 	var want: Input.MouseMode = Input.MOUSE_MODE_HIDDEN if hide_cursor else Input.MOUSE_MODE_VISIBLE
 	if Input.mouse_mode != want:
 		Input.mouse_mode = want
@@ -62,7 +63,7 @@ func _process(delta: float) -> void:
 
 
 func _on_draw() -> void:
-	if player == null or not player.health.is_alive() or get_tree().paused:
+	if player == null or player.health.state == FighterHealth.State.DEAD or get_tree().paused:
 		return
 	var at: Vector2
 	if player.using_pad:
