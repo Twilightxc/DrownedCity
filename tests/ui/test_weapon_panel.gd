@@ -31,3 +31,14 @@ func test_downed_only_the_sidearm_slot_is_usable_and_it_draws() -> void:
 	assert_false(WeaponPanel.slot_usable(p, 7), "no such slot")
 	await wait_process_frames(2)
 	assert_true(true, "drew without errors")
+
+
+func test_every_gun_has_an_icon_that_fits_the_box() -> void:
+	for path: String in ["pistol_9mm", "ar_556", "shotgun_12g", "dmr_308"]:
+		var cfg: WeaponConfig = load("res://data/weapons/%s.tres" % path)
+		assert_not_null(cfg.icon, path)
+		var r: Rect2 = WeaponPanel.icon_rect(cfg.icon.get_size(), Vector2.ZERO)
+		assert_true(r.size.x <= WeaponPanel.ICON_BOX.x + 0.01 and r.size.y <= WeaponPanel.ICON_BOX.y + 0.01, path)
+	var pistol: Vector2 = (load("res://data/weapons/pistol_9mm.tres") as WeaponConfig).icon.get_size()
+	var rifle: Vector2 = (load("res://data/weapons/ar_556.tres") as WeaponConfig).icon.get_size()
+	assert_lt(pistol.x, rifle.x, "same scale: a pistol is shorter than a rifle")

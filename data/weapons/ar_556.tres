@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://combat/weapon_config.gd" id="1_cfg"]
 [ext_resource type="Resource" path="res://assets/models/gun_ar_556.tres" id="90_model"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/gun_ar_556.png" id="91_icon"]
 
 [resource]
 script = ExtResource("1_cfg")
@@ -40,3 +41,4 @@ waterproof = false
 model = ExtResource("90_model")
 shot_sfx = &"shot_ar"
 reload_sfx = &"reload_rifle"
+icon = ExtResource("91_icon")
