@@ -3,7 +3,7 @@
 - **PR:** #53 (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ 810e7f8
-- **Updated:** 2026-11-05
+- **Updated:** 2026-11-06
 
 ## J asked
 J's bug list after gate 1.G (2026-11-05), "Teammate bugs first":
@@ -35,7 +35,10 @@ J's bug list after gate 1.G (2026-11-05), "Teammate bugs first":
 - PHASE1 bug table: items 1, 2, 5, 7 marked fixed (after merging main with PR #52).
 - Later code bugs: HUD (3, 9, 16), 8, 13, 18. Items 10 and 17 need a design talk with J. Animation bugs are desktop.
 
-## J must test
+## J tested
+J, 2026-11-06: "ผ่านหมด". All five checks below pass (revive the player and each other, frags, stance by cover, gas). Ready to merge.
+
+## J must test (done)
 - `?spike=arena`: get downed on purpose. Does a teammate come to you, kneel and get you up? Does the downed line
   name them? With both teammates up, does only one come while the other keeps fighting?
 - Let a teammate go down: does the other one help it up?
