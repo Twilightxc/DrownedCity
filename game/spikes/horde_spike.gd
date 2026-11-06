@@ -44,6 +44,7 @@ var _flow_timer: float = 0.0
 var _flow_cells: Array[Vector2i] = []  ## the flow field's goals last computed (player + teammates)
 var _mates: Array[Teammate] = []  ## AI teammates (1.5+ A5): hunted like the player, drawn, heard, hurt
 var _squad: Array[SpikePlayer] = []  ## the player and the teammates: who helps whom up (shared with each Teammate)
+var _main_mate: Teammate  ## the player is dead: the teammate the horde's main target is now (bug 8)
 var _targeted: Array[Teammate] = []  ## the teammates in the horde's extra_targets this frame, same order
 var _spawn_budget: float = 0.0
 var _perimeter: Array[Vector2i] = []
@@ -221,11 +222,24 @@ func _process(delta: float) -> void:
 
 func _step_roof_horde(delta: float, target: Vector2) -> void:
 	_flow_timer -= delta
-	var cells: Array[Vector2i] = [_grid.world_to_cell(target)]
+	# Dead, the player is no target (bug list item 8): the horde turns to a teammate still up or down, or, with
+	# nobody left, gathers without attacking.
+	var main: Vector2 = target
+	var attack: bool = true
+	_main_mate = null
+	if _player.health.state == FighterHealth.State.DEAD:
+		attack = false
+		for m: Teammate in _mates:
+			if m.health.state != FighterHealth.State.DEAD:
+				_main_mate = m
+				main = m.ground_position()
+				attack = true
+				break
+	var cells: Array[Vector2i] = [_grid.world_to_cell(main)]
 	_targeted.clear()
 	var extras: PackedVector2Array = PackedVector2Array()
 	for m: Teammate in _mates:
-		if m.health.state != FighterHealth.State.DEAD:  # a downed one still draws them
+		if m.health.state != FighterHealth.State.DEAD and m != _main_mate:  # a downed one still draws them
 			_targeted.append(m)
 			extras.append(m.ground_position())
 			var mc: Vector2i = _grid.world_to_cell(m.ground_position())
@@ -247,7 +261,7 @@ func _step_roof_horde(delta: float, target: Vector2) -> void:
 		_auto_attack(delta, target)
 
 	var t1: int = Time.get_ticks_usec()
-	_horde.update(delta, target)
+	_horde.update(delta, main, attack)
 	_horde.update_fire(delta)
 	var t2: int = Time.get_ticks_usec()
 	_renderer.sync(_horde, GROUND_Y)
@@ -354,7 +368,7 @@ func _total_kills() -> int:
 
 ## Zombie hits, gas and fire on the player this frame (Phase 1 step 1.3).
 func _hurt_player(delta: float) -> void:
-	var health: FighterHealth = _player.health
+	var health: FighterHealth = _player.health if _main_mate == null else _main_mate.health
 	for dmg: int in _fx_horde.target_hits:
 		health.take_hit(dmg, _rng)
 	_fx_horde.target_hits.clear()

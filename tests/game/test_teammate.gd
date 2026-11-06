@@ -109,3 +109,25 @@ func test_the_knife_hits_after_the_windup_costs_stamina_and_stops_shooting() -> 
 	p.motion.stance = FighterMotion.Stance.PRONE
 	p.melee.left = 0.0
 	assert_false(p.try_melee(), "not from prone")
+
+
+func test_dying_mid_reload_leaves_no_reload_ring() -> void:
+	var cam: Camera3D = Camera3D.new()
+	add_child_autofree(cam)
+	var grid: NavGrid = NavGrid.new(20, 20)
+	var p: SpikePlayer = SpikePlayer.new()
+	p.loadout = preload("res://data/weapons/spike_loadout.tres")
+	_fighter(p, grid, cam, Vector2(10, 10))
+	var hud: FighterHud = FighterHud.new()
+	add_child_autofree(hud)
+	hud.bind(p)
+	p.gun.ammo = 0
+	p.start_reload()
+	assert_gte(hud.reload_fill(p), 0.0, "reloading: a ring")
+	p.health.take_hit(999, RandomNumberGenerator.new())
+	p.start_reload()  # downed: the pistol reloads, the ring shows
+	p.health.downed_left = 0.0
+	p.health.step(0.01)
+	assert_eq(p.health.state, FighterHealth.State.DEAD)
+	assert_lt(hud.reload_fill(p), 0.0, "dead: no ring (bug 9)")
+	assert_false(p.gun.is_reloading())
