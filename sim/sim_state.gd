@@ -19,6 +19,11 @@ static func new_game(rules: SimRules, p_seed: int) -> SimState:
 	rng.seed = p_seed
 	for survivor_name: String in rules.starting_survivors:
 		state.add_survivor(survivor_name, rng.randi())
+	var build_rng: RandomNumberGenerator = RandomNumberGenerator.new()  # its own stream: looks stay as before 1.6
+	build_rng.seed = p_seed ^ 0x5EED
+	var cat: SkillCatalog = SkillCatalog.load_default()
+	for s: Survivor in state.survivors:
+		SkillRules.setup(s, SkillRules.roll_background(build_rng, cat), cat)
 	for res: String in RESOURCES:
 		state.stock[res] = rules.starting_stock.get(res, 0.0)
 	return state

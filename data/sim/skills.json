@@ -1,0 +1,82 @@
+{
+	"_doc": "Core skills (docs/CITIZENS_1_6.md §3). A track gives values per level 0-7 of the first climb; a specialization's mods are full at level 7 of the second climb (J). op add = flat, mul = fraction summed then applied as base * (1 + sum). perks are effects without a number; they light up when their system arrives.",
+	"xp_to_next": [100, 150, 220, 320, 450, 620, 850],
+	"second_climb_xp_mul": 1.5,
+	"skills": {
+		"fitness": {
+			"name": "Fitness",
+			"tracks": [{"stat": "max_stamina", "op": "add", "values": [0, 3, 6, 9, 12, 15, 18, 21]}],
+			"grows_from": {"sprint_sec": 0.5, "row_sec": 0.5, "fitness_corner_hour": 20},
+			"specs": {
+				"acrobatics": {"name": "Acrobatics", "mods": [["max_stamina", "add", 21], ["climb_stamina", "mul", -0.5], ["dodge_stamina", "mul", -0.4]], "perks": ["dodge_farther_faster", "less_fall_damage"]},
+				"backpacking": {"name": "Backpacking", "mods": [["max_stamina", "add", 61], ["carry", "add", 30], ["ammo_capacity", "add", 60], ["grenades", "add", 2], ["inventory_slots", "add", 6], ["gun_slots", "add", 1]], "perks": []},
+				"marathon": {"name": "Marathon", "mods": [["max_stamina", "add", 21], ["sprint_stamina", "mul", -0.33], ["fatigue", "mul", -0.4], ["light_melee_stamina", "mul", -0.25]], "perks": ["free_sprint_light_load"]},
+				"powerhouse": {"name": "Powerhouse", "mods": [["max_stamina", "add", 21], ["melee_stamina", "mul", -0.25]], "perks": ["heavy_execution", "heavy_power_hit", "hammer_breaks_structures"]}
+			}
+		},
+		"melee": {
+			"name": "Melee",
+			"tracks": [{"stat": "max_hp", "op": "add", "values": [0, 4, 8, 12, 16, 20, 24, 28]}],
+			"grows_from": {"melee_hit": 2, "punching_bag_hour": 20},
+			"specs": {
+				"close_combat": {"name": "Close Combat", "mods": [["max_hp", "add", 28], ["close_combat_stamina", "mul", -0.5]], "perks": ["knife_execution", "better_close_combat", "shove"]},
+				"endurance": {"name": "Endurance", "mods": [["max_hp", "add", 84], ["injury_severity", "mul", -0.5]], "perks": ["slam"]},
+				"striking": {"name": "Striking", "mods": [["max_hp", "add", 28], ["blunt_knockdown", "mul", 0.3], ["grand_slam_stamina", "mul", -0.66]], "perks": ["grand_slam_hits_several"]},
+				"swordplay": {"name": "Swordplay", "mods": [["max_hp", "add", 28], ["blade_lethality", "mul", 0.3]], "perks": ["blade_execution", "leg_sweep"]}
+			}
+		},
+		"shooting": {
+			"name": "Shooting",
+			"tracks": [
+				{"stat": "sway", "op": "mul", "values": [0, -0.03, -0.06, -0.09, -0.12, -0.15, -0.18, -0.25]},
+				{"stat": "recoil", "op": "mul", "values": [0, -0.03, -0.06, -0.09, -0.12, -0.15, -0.18, -0.25]},
+				{"stat": "reload_speed", "op": "mul", "values": [0, 0.06, 0.12, 0.18, 0.25, 0.3, 0.4, 0.5]}
+			],
+			"grows_from": {"shot": 0.25, "gun_kill": 2, "watch_hour": 5},
+			"specs": {
+				"assault": {"name": "Assault", "mods": [["recoil", "mul", -0.8], ["firearm_knockdown", "mul", 0.5], ["sway", "mul", -0.25], ["reload_speed", "mul", 0.5]], "perks": ["aim_kick"]},
+				"gunslinging": {"name": "Gunslinging", "mods": [["reload_speed", "mul", 2.0], ["sway", "mul", -0.25], ["recoil", "mul", -0.25]], "perks": ["cheap_aim_snap", "aim_snap"]},
+				"sharpshooting": {"name": "Sharpshooting", "mods": [["sway", "mul", -0.8], ["dismemberment", "mul", 0.5], ["recoil", "mul", -0.25], ["reload_speed", "mul", 0.5]], "perks": ["bullets_pierce"]},
+				"weapon_handling": {"name": "Weapon Handling", "mods": [["wear_per_shot", "mul", -0.25], ["sway", "mul", -0.25], ["recoil", "mul", -0.25], ["reload_speed", "mul", 0.5]], "perks": ["fast_jam_clear"]}
+			}
+		},
+		"wits": {
+			"name": "Wits",
+			"tracks": [{"stat": "search_speed", "op": "mul", "values": [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35]}],
+			"grows_from": {"container_searched": 1, "reading_hour": 3},
+			"specs": {
+				"discipline": {"name": "Discipline", "mods": [["search_speed", "mul", 0.35], ["light_carry", "add", 30], ["melee_wear_per_hit", "mul", -0.25], ["max_stamina", "add", 24], ["stamina_per_melee_kill", "add", 5]], "perks": []},
+				"resourcefulness": {"name": "Resourcefulness", "mods": [["search_speed", "mul", 0.35], ["inventory_slots", "add", 1], ["stack_size", "add", 3], ["consumable_weight", "mul", -0.7]], "perks": ["more_bolts_recovered"]},
+				"scouting": {"name": "Scouting", "mods": [["search_speed", "mul", 0.35], ["detection_m", "add", 45], ["container_visibility", "mul", 0.7], ["wear_per_shot", "mul", -0.25]], "perks": ["reveal_containers"]},
+				"stealth": {"name": "Stealth", "mods": [["search_speed", "mul", 0.35], ["enemy_sight", "mul", -0.35], ["search_noise_chance", "mul", -0.5]], "perks": ["quick_stealth_kill", "crouch_sprint", "silent_lockpick"]}
+			}
+		},
+		"diving": {
+			"name": "Diving",
+			"tracks": [
+				{"stat": "breath_sec", "op": "add", "values": [0, 3, 6, 9, 12, 15, 18, 21]},
+				{"stat": "underwater_stamina", "op": "mul", "values": [0, -0.03, -0.06, -0.09, -0.12, -0.15, -0.18, -0.25]}
+			],
+			"grows_from": {"dive_sec": 0.5},
+			"specs": {
+				"free_diving": {"name": "Free Diving", "mods": [["breath_sec", "add", 21], ["underwater_swim_speed", "mul", 0.3], ["underwater_stamina", "mul", -0.5], ["breath_refill", "mul", 1.0]], "perks": []},
+				"salvage": {"name": "Salvage", "mods": [["breath_sec", "add", 21], ["underwater_search_speed", "mul", 0.5], ["underwater_carry", "add", 20]], "perks": ["extra_sunken_loot_roll"]},
+				"murk_sight": {"name": "Murk Sight", "mods": [["breath_sec", "add", 21], ["murky_sight", "mul", 1.0]], "perks": ["no_light_near_surface", "sunken_containers_15m"]},
+				"spearfishing": {"name": "Spearfishing", "mods": [["breath_sec", "add", 21], ["harpoon_damage", "mul", 0.5], ["harpoon_reload", "mul", 0.5]], "perks": ["silent_underwater_kill", "fish_from_boat"]}
+			}
+		}
+	},
+	"backgrounds": {
+		"_doc": "Exactly one per survivor, rolled at birth (§4). start = skill levels on day one. Numbers J left open are Claude's tunables (marked by note).",
+		"ex_soldier": {"name": "Ex-soldier", "start": {"shooting": 3}, "mods": [["spread", "mul", -0.25], ["throw_range", "mul", 0.15], ["reload_speed", "mul", 0.1]], "perks": [], "note": "throw / reload numbers are Claude's"},
+		"fisherman": {"name": "Fisherman", "start": {"diving": 3}, "mods": [["boat_fuel", "mul", -0.2], ["boat_wear", "mul", -0.25]], "perks": [], "note": "numbers are Claude's"},
+		"doctor": {"name": "Doctor", "start": {"wits": 3}, "mods": [["sickness_chance", "mul", -0.25], ["heal_rate", "mul", 0.25]], "perks": ["special_medicine"], "note": "numbers are Claude's"},
+		"teacher": {"name": "Teacher", "start": {"wits": 3}, "mods": [["base_xp_rate", "mul", 0.1]], "perks": [], "note": "numbers are Claude's"},
+		"programmer": {"name": "Programmer", "start": {"wits": 3}, "mods": [["power_use", "mul", -0.2]], "perks": [], "note": "numbers are Claude's"},
+		"researcher": {"name": "Researcher", "start": {"wits": 3}, "mods": [["craft_cost", "mul", -0.15], ["fuel_use", "mul", -0.15]], "perks": [], "note": "numbers are Claude's"},
+		"construction_worker": {"name": "Construction worker", "start": {"fitness": 3}, "mods": [["build_cost", "mul", -0.2]], "perks": [], "note": "numbers are Claude's"},
+		"farmer": {"name": "Farmer", "start": {"fitness": 3}, "mods": [["water_use", "mul", -0.15]], "perks": [], "note": "numbers are Claude's"},
+		"boxer": {"name": "Boxer", "start": {"fitness": 3, "melee": 3}, "mods": [], "perks": []}
+	},
+	"live_stats": ["max_hp", "max_stamina", "sprint_stamina", "dodge_stamina", "sway", "recoil", "reload_speed", "wear_per_shot", "melee_stamina", "spread", "search_speed", "enemy_sight", "detection_m"]
+}
