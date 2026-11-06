@@ -1,6 +1,6 @@
 # phase1/melee
 
-- **PR:** opening (pushed? yes)
+- **PR:** #55 (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ e230280
 - **Updated:** 2026-11-06
