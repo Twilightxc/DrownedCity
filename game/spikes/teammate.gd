@@ -26,7 +26,7 @@ func _ready() -> void:
 	set_process_unhandled_input(false)
 	brain = TeammateBrain.new(teammate_config)
 	brain.muzzle_heights = movement.muzzle_height_m
-	brain.melee_reach = melee_weapon.reach_m if melee_weapon != null else 0.0
+	brain.melee_reach = melee.config.reach_m if melee != null else 0.0
 	_prompt = Label3D.new()
 	_prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_prompt.font_size = 36
@@ -38,7 +38,7 @@ func _ready() -> void:
 
 func setup(nav: NavGrid, crowd: Horde, cam: Camera3D, y: float) -> void:
 	super.setup(nav, crowd, cam, y)
-	brain.melee_reach = melee_weapon.reach_m if melee_weapon != null else 0.0  # the loadout may bring an axe
+	brain.melee_reach = melee.config.reach_m if melee != null else 0.0  # the loadout may bring an axe
 	throwable = teammate_config.throwable
 	grenade_count = teammate_config.grenades
 

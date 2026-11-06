@@ -116,8 +116,8 @@ func _on_draw() -> void:
 	var extras: PackedStringArray = PackedStringArray()
 	if player.throwable != null:
 		extras.append("%s ×%d" % [tr(player.throwable.display_name), player.grenade_count])
-	if player.melee_weapon != null:
-		extras.append(tr(player.melee_weapon.display_name))
+	if player.melee != null:
+		extras.append(tr(player.melee.config.display_name))
 	_draw.draw_string(_font, o + Vector2(PAD, line_y), "  ·  ".join(extras), HORIZONTAL_ALIGNMENT_RIGHT, inner_w, 13,
 			INK if player.grenade_count > 0 else DIM)
 	# Slots 1–4.
