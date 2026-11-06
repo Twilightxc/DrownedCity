@@ -243,3 +243,10 @@ func test_sneak_follow_moves_crouched_and_never_sprints() -> void:
 	assert_ne(_brain.move, Vector2.ZERO)
 	assert_false(_brain.sprint, "no running while sneaking")
 	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH)
+
+
+func test_the_team_card_names_the_orders_in_force() -> void:
+	assert_eq(FighterHud.orders_text(_brain), "Follow · At will")
+	_brain.order = TeammateBrain.Order.SNEAK
+	_brain.fire_rule = TeammateBrain.FireRule.QUIET
+	assert_eq(FighterHud.orders_text(_brain), "Sneak · Quiet")
