@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_cfg")
 display_name = "Pistol 9mm"
+short_name = "Pistol"
 weapon_class = "pistol"
 caliber = "9mm"
 damage = 30

@@ -56,7 +56,6 @@ var _stats_timer: float = 0.0
 
 var _count_slider: HSlider
 var _count_label: Label
-var _status_label: Label
 var _help_label: Label
 var _grenades: Grenades
 var _corpses: CorpseLayer
@@ -75,6 +74,7 @@ var _chain: KillChain
 var _crosshair: CrosshairHud
 var _kills_seen: int = 0
 var _audio: SpikeAudio
+var _weapons: WeaponPanel  ## the gun, rounds, grenades and slots at the bottom right (bug list item 17)
 var _hud: FighterHud  ## HP / stamina bars, reload rings (1.5+ A4)
 var _fire_rev: int = -1
 var _water_y: float = WATER_Y
@@ -177,6 +177,9 @@ func _ready() -> void:
 	_hud = FighterHud.new()
 	add_child(_hud)
 	_hud.bind(_player)
+	_weapons = WeaponPanel.new()
+	add_child(_weapons)
+	_weapons.bind(_player)
 	if sfx_bank != null:
 		_audio = SpikeAudio.new()
 		add_child(_audio)
@@ -213,7 +216,6 @@ func _process(delta: float) -> void:
 	_burn_gas()
 
 	_rig.position = _rig.position.lerp(_player.position, clampf(delta * 6.0, 0.0, 1.0))
-	_update_status()
 	_publish_stats(delta)
 
 
@@ -528,22 +530,6 @@ func _publish_stats(delta: float) -> void:
 	DebugOverlay.set_stat("assist_target", str(_player.assist_target))
 
 
-func _update_status() -> void:
-	var g: Gun = _player.gun
-	# HP, stamina, stance and the reload are on FighterHud's bars and ring (1.5+ A4); this line is the gun.
-	var mode: String = ["semi", "auto", "burst"][g.mode()]
-	var text: String = "%s [%s]  %d / %d  · %d" % [tr(g.config.display_name), tr(mode), g.ammo, g.mag_size,
-		_player.pouch.count(g.config.caliber)]
-	if g.jammed and not g.is_reloading():
-		text += "  · " + tr("JAMMED: reload")
-	if g.durability < g.config.jam_below:
-		text += "  · %d%%" % int(g.durability)
-	if _player.throwable != null:
-		text += "   ·   %s %d" % [_player.throwable.display_name, _player.grenade_count]
-	if _status_label.text != text:
-		_status_label.text = text
-
-
 func _update_help() -> void:
 	_help_label.text = _help_text(_player.using_pad)
 
@@ -614,8 +600,6 @@ func _build_ui() -> void:
 	_count_slider.focus_mode = Control.FOCUS_NONE  # keep keys/pad for the game; [ ] and D-pad drive it
 	_count_slider.value_changed.connect(func(v: float) -> void: _set_count_index(int(v)))
 	box.add_child(_count_slider)
-	_status_label = Label.new()
-	box.add_child(_status_label)
 	_help_label = Label.new()
 	_help_label.add_theme_font_size_override("font_size", 12)
 	box.add_child(_help_label)
