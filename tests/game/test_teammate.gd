@@ -131,3 +131,17 @@ func test_dying_mid_reload_leaves_no_reload_ring() -> void:
 	assert_eq(p.health.state, FighterHealth.State.DEAD)
 	assert_lt(hud.reload_fill(p), 0.0, "dead: no ring (bug 9)")
 	assert_false(p.gun.is_reloading())
+
+
+func test_a_loadout_brings_its_melee_weapon() -> void:
+	var cam: Camera3D = Camera3D.new()
+	add_child_autofree(cam)
+	var grid: NavGrid = NavGrid.new(20, 20)
+	var mate_node: Teammate = Teammate.new()
+	mate_node.loadout = preload("res://data/weapons/teammate_shotgun_loadout.tres")
+	var mate: Teammate = _fighter(mate_node, grid, cam, Vector2(10, 10)) as Teammate
+	assert_eq(mate.melee_weapon.display_name, "Axe", "Jess carries the axe")
+	assert_eq(mate.melee.config, mate.melee_weapon)
+	assert_almost_eq(mate.brain.melee_reach, mate.melee_weapon.reach_m, 0.001)
+	var p: SpikePlayer = _fighter(SpikePlayer.new(), grid, cam, Vector2(5, 5))
+	assert_eq(p.melee_weapon.display_name, "Knife", "everyone else: the knife")
