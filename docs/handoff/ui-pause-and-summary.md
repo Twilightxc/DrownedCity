@@ -1,6 +1,6 @@
 # ui/pause-and-summary
 
-- **PR:** opening (pushed? yes)
+- **PR:** #65 (pushed? yes)
 - **Machine:** laptop (ASUS, Arc 140V)
 - **Base:** main @ 410f4f5 (PRs #61-#64 still open; #61 also touches `arena_spike.gd`)
 - **Updated:** 2026-11-06
