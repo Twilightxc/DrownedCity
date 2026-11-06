@@ -183,7 +183,7 @@ J: "รายงานข้อผิดพลาด", 18 items. Grouped by what
 | 17 | A weapon UI | HUD | code. Designed with J 2026-11-06: a bottom-right panel (DECISIONS). `ui/weapon_panel.gd` on `phase1/weapon-panel` (`docs/art/17_weapon_panel.png`); gun icons (`WeaponConfig.icon`) from Blender on the desktop |
 | 9 | ~~The reload ring stays on dead teammates / the player~~ fixed (`fix/hud-downed`) | HUD bug | code |
 | 8 | ~~Zombies keep attacking the dead player's body~~ fixed (`fix/hud-downed`: they turn to a teammate still up or down; with nobody left they gather without attacking) | Horde bug | code |
-| 18 | Barricades should show damage by level (3 stages exist; make them clearer or add more) | Arena | code + desktop pieces |
+| 18 | ~~Barricades should show damage by level (3 stages exist; make them clearer or add more)~~ clearer (`fix/barricade-stages`: HP bar with stage notches after a hit, a shake per hit, splinters at each stage; `docs/art/20_barricade_stages.png`). More stages = more kit pieces on the desktop | Arena | code + desktop pieces |
 | 13 | The water next to buildings looks odd (foam ring / shore) | Water shader | code |
 | 4 | Weapon switch animation | Animation | desktop |
 | 6 | No death animation; the downed pose freezes | Animation | desktop |

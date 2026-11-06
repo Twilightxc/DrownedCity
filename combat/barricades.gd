@@ -54,6 +54,12 @@ func solid_world(p: Vector2) -> bool:
 	return grid.in_bounds(c) and solid(grid.index_of(c))
 
 
+## Damage stage 0 (whole) .. stages - 1 (nearly gone) from the HP left, in equal steps; a fallen one is the last.
+func stage(id: int, stages: int = 3) -> int:
+	var left: float = float(hp[id]) / float(maxi(max_hp[id], 1))
+	return clampi(stages - 1 - floori(left * stages - 0.0001), 0, stages - 1) if hp[id] > 0 else stages - 1
+
+
 ## Damage from a zombie; returns true if this hit brought it down.
 func damage(id: int, amount: int) -> bool:
 	if hp[id] <= 0:
