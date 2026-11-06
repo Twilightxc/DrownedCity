@@ -16,6 +16,7 @@ var leader: SpikePlayer
 var squad: Array[SpikePlayer] = []  ## everyone on this side, the leader and itself included (shared array)
 var patient: SpikePlayer  ## the downed squad member it is going to help up, null when none
 var _prompt: Label3D
+var _gun_before_rule: Gun  ## the long gun put away for "quiet only"
 
 
 func _ready() -> void:
@@ -59,6 +60,7 @@ func _process(delta: float) -> void:
 			start_reload()
 		if health.is_alive():
 			_swap_if_dry()
+			_gun_for_rule()
 			_apply_stance()
 			if brain.reviving and patient != null:
 				patient.start_revive(self)
@@ -95,6 +97,24 @@ func _apply_stance() -> void:
 	if motion.stance != brain.stance and not motion.is_rolling():
 		motion.stance = brain.stance as FighterMotion.Stance
 		motion.sprinting = false
+
+
+## "Quiet only": out comes a gun quiet enough (the silenced pistol); once the rule allows the long gun again it
+## goes back to the one it had.
+func _gun_for_rule() -> void:
+	if brain.may_shoot(gun):
+		if _gun_before_rule != null and brain.fire_rule == TeammateBrain.FireRule.AT_WILL:
+			select_gun(guns.find(_gun_before_rule))
+			_gun_before_rule = null
+		return
+	if brain.fire_rule != TeammateBrain.FireRule.QUIET:
+		return
+	for g: Gun in guns:
+		if g != gun and brain.may_shoot(g):
+			if _gun_before_rule == null:
+				_gun_before_rule = gun
+			select_gun(guns.find(g))
+			return
 
 
 ## Out of rounds for the gun in hand (none in the mag, none left to load): the next gun that has some.

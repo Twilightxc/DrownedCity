@@ -43,7 +43,7 @@ func test_no_target_through_a_wall_and_hold_fire_holds() -> void:
 	_think(0.5, Vector2(20, 20), gun)
 	assert_eq(_brain.target, -1, "can't see it")
 	_grid.set_blocked_rect(Rect2i(22, 0, 1, 40), false)
-	_brain.hold_fire = true
+	_brain.fire_rule = TeammateBrain.FireRule.HOLD_FIRE
 	_think(1.0, Vector2(20, 20), gun)
 	assert_gt(_brain.target, -1, "sees it now")
 	assert_false(_brain.fire, "but holds its fire")
@@ -168,7 +168,7 @@ func test_it_crouches_to_sneak_past_sleepers() -> void:
 
 func test_under_hold_fire_it_knifes_a_lone_zombie_and_backs_off_a_crowd() -> void:
 	var gun: Gun = Gun.new(AR)
-	_brain.hold_fire = true
+	_brain.fire_rule = TeammateBrain.FireRule.HOLD_FIRE
 	_brain.melee_reach = 1.4
 	_brain.order = TeammateBrain.Order.HOLD
 	_brain.hold_point = Vector2(20, 20)
@@ -193,3 +193,53 @@ func test_firing_freely_it_knifes_only_while_the_gun_is_empty() -> void:
 	gun.ammo = 0
 	_think(0.1, Vector2(20, 20), gun)
 	assert_true(_brain.want_melee, "empty: knife")
+
+
+func test_quiet_only_shoots_a_silenced_gun_but_not_a_loud_one() -> void:
+	var loud: Gun = Gun.new(AR)
+	var quiet: Gun = Gun.new(preload("res://data/weapons/pistol_9mm.tres"), [preload("res://data/weapons/attachments/silencer.tres")])
+	_brain.fire_rule = TeammateBrain.FireRule.QUIET
+	assert_false(_brain.may_shoot(loud))
+	assert_true(_brain.may_shoot(quiet))
+	_horde.spawn(Vector2(20.5, 26.5), 0)
+	_brain.aim = Vector2(0, 1)
+	_think(0.6, Vector2(20.5, 20), loud)
+	assert_false(_brain.fire, "the rifle stays quiet")
+	var fired: bool = false
+	for i: int in 12:
+		_brain.think(0.05, Vector2(20.5, 20), quiet, 1.4, Vector2(20, 30), Vector2(0, -1), _horde, _grid)
+		fired = fired or _brain.fire
+	assert_true(fired, "the silenced pistol fires")
+
+
+func test_stay_still_never_backs_off_but_hold_here_does() -> void:
+	var gun: Gun = Gun.new(AR)
+	_brain.order = TeammateBrain.Order.STAY
+	_brain.hold_point = Vector2(10, 10)
+	_horde.spawn(Vector2(11.5, 10.0), 0)
+	_think(0.1, Vector2(10, 10), gun)
+	assert_eq(_brain.move, Vector2.ZERO, "stays put")
+	_brain.order = TeammateBrain.Order.HOLD
+	_think(0.1, Vector2(10, 10), gun)
+	assert_lt(_brain.move.x, 0.0, "hold here backs away")
+
+
+func test_melee_only_steps_in_to_a_lone_zombie() -> void:
+	var gun: Gun = Gun.new(AR)
+	_brain.fire_rule = TeammateBrain.FireRule.MELEE
+	_brain.melee_reach = 1.4
+	_brain.order = TeammateBrain.Order.HOLD
+	_brain.hold_point = Vector2(20, 20)
+	_horde.spawn(Vector2(23.0, 20.0), 0)  # 3 m to its right
+	_think(0.2, Vector2(20, 20), gun)
+	assert_false(_brain.fire)
+	assert_gt(_brain.move.x, 0.5, "goes for it")
+
+
+func test_sneak_follow_moves_crouched_and_never_sprints() -> void:
+	var gun: Gun = Gun.new(AR)
+	_brain.order = TeammateBrain.Order.SNEAK
+	_think(0.6, Vector2(20, 5), gun, Vector2(20, 30))  # 20+ m behind its spot
+	assert_ne(_brain.move, Vector2.ZERO)
+	assert_false(_brain.sprint, "no running while sneaking")
+	assert_eq(_brain.stance, FighterMotion.Stance.CROUCH)

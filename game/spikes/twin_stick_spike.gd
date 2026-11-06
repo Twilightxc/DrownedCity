@@ -3,7 +3,12 @@ extends "res://game/spikes/horde_spike.gd"
 ## Spike B scene + horde, plus what 0.5 asks for on top of the harness: supply crates to
 ## interact with, the hold-to-open orders wheel, and the F4 / Start live tuning panel.
 
-const ORDERS: Array[String] = ["Follow me", "Hold here", "Attack target", "Hold fire", "Search room", "Back to boat"]
+## The orders wheel (J 2026-11-06): 8 slots turned half a slot, so movement fills the top half (left to right:
+## Follow me, Sneak-follow, Hold here, Stay still) and the fire rule the bottom (left to right: Fire at will,
+## Hold fire, Quiet only, Melee only). Index order runs clockwise from just right of the top.
+const ORDERS: Array[String] = ["Hold here", "Stay still", "Melee only", "Quiet only", "Hold fire", "Fire at will",
+		"Follow me", "Sneak-follow"]
+const ORDER_ICONS: Array[StringName] = [&"hold", &"stay", &"melee", &"quiet", &"hold_fire", &"fire", &"follow", &"sneak"]
 const TOAST_TIME: float = 1.5
 
 @export var crate_positions: PackedVector2Array = PackedVector2Array([Vector2(-8, 3), Vector2(6, -4)])
@@ -55,6 +60,7 @@ func _exit_tree() -> void:
 func _open_radial() -> void:
 	if _radial.visible:
 		return
+	_radial.active = _active_orders()
 	_radial.open(get_viewport().get_visible_rect().size * 0.5)
 	_player.aim_locked = true
 	Engine.time_scale = _player.controls.radial_time_scale
@@ -67,7 +73,7 @@ func _close_radial(pick: bool) -> void:
 	_player.aim_locked = false
 	Engine.time_scale = 1.0
 	if pick and i >= 0:
-		_toast.text = "Order: %s" % ORDERS[i]
+		_toast.text = tr("Order: %s") % tr(ORDERS[i])
 		_toast_left = TOAST_TIME
 		_on_order(i)
 
@@ -75,6 +81,11 @@ func _close_radial(pick: bool) -> void:
 ## A picked order (ORDERS index); scenes with teammates act on it (the arena, 1.5+ A5).
 func _on_order(_i: int) -> void:
 	pass
+
+
+## ORDERS indices in force now, ringed on the wheel; none without teammates.
+func _active_orders() -> PackedInt32Array:
+	return PackedInt32Array()
 
 
 func _help_text(pad: bool) -> String:
@@ -89,6 +100,8 @@ func _build_twin_stick_ui() -> void:
 	add_child(layer)
 	_radial = RadialMenu.new()
 	_radial.items = PackedStringArray(ORDERS)
+	_radial.icons = ORDER_ICONS
+	_radial.offset_steps = 0.5
 	layer.add_child(_radial)
 	_toast = Label.new()
 	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
