@@ -187,13 +187,14 @@ Starts with 3 large + 3 small slots (J kept 3 + 3 over the GDD's 2 + 4: three ro
 - [x] Step 5, Observer mode (PR #83: O / pad Back; survivor card with a short log)
 
 ### 1.8 survivors on screen (J, 2026-11-07; GDD §3, §7, §13)
-J chose: **skinned bodies per the GDD** (male / female, head 1:6, ~3–5k tris, build shape keys, height by bone scale,
-modular hair, skin and hair colour per survivor); **hand-keyed clips now, Mixamo later** (same skeleton and bone names,
+J chose: ~~skinned bodies per the GDD~~ → **the blocky rigid-part figure, with joint blocks and detail** (J 2026-11-07,
+after seeing smooth skinned bodies: "the old blocky, Minecraft-like ones look better"; male / female × 4 builds, height
+by scale, modular hair, skin / hair / clothes tints per survivor); **hand-keyed clips now, Mixamo later** (same skeleton and bone names,
 so every current clip keeps working); **5 outfit sets × 4 slots** (head, torso, legs, back) with colour + pattern
 (plain / stripe / plaid / camo); wear and wet later.
-- [ ] Step 1, SimCore: each survivor's look rolled from the appearance seed and background, saved
-      (`phase1-8/looks-sim`)
-- [ ] Step 2, Blender: the two skinned bodies, 4 builds as shape keys, heads, 6 hair styles + facial hair
+- [x] Step 1, SimCore: each survivor's look rolled from the appearance seed and background, saved (PR #84)
+- [ ] Step 2, Blender: blocky bodies male / female × 4 builds with joint blocks and details, 6 hair styles + facial
+      hair, per-survivor tints; the base and the arena show each survivor's look (`phase1-8/bodies`)
 - [ ] Step 3, Blender: outfit pieces for the 5 sets × 4 slots, skinned to the same rig; colour / pattern shader
 - [ ] Step 4, SurvivorView builds a survivor from its look (pieces, shape keys, bone scale, tints) in the arena and
       the base; a `?spike=looks` gallery

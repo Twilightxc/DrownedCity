@@ -11,6 +11,8 @@ extends Node3D
 
 const MODEL: PackedScene = preload("res://assets/models/survivor.glb")
 const SURFACE_MATERIAL: Material = preload("res://game/level/style15_surface.tres")
+const BODY_SHADER: Shader = preload("res://game/shaders/survivor.gdshader")  ## per-survivor skin / hair / clothes tints
+const BODY_HEIGHT: float = 1.86  ## m, the body as built (kit_survivor.py); a look's height scales the figure
 const SKELETON_PATH: String = "survivor_rig/Skeleton3D"
 const UPPER_BONES: PackedStringArray = ["torso", "head", "arm_l", "fore_l", "hand_l", "arm_r", "fore_r", "hand_r"]
 const LOWER_CLIPS: PackedStringArray = ["idle", "walk", "run", "crouch_idle", "crouch_walk", "prone_idle", "crawl",
@@ -106,7 +108,9 @@ var dead: bool = false  ## plays the death clip once and holds its last frame (d
 
 var gun_view: GunView
 var skeleton: Skeleton3D
-var look: int = 0  ## which of survivor.glb's outfits shows (set_look); one per fighter, so no two alike
+var look: int = 0  ## a stand-in look for a fighter without a survivor (set_look); one per fighter, no two alike
+var survivor_look: SurvivorLook  ## what shows (apply_look, 1.8): body, hair, beard, tints, height
+var _body_mat: ShaderMaterial
 var lower: StringName = &""
 var upper: StringName = &""
 var hand_item: Node3D  ## the mag or shell in the left hand during a reload (null when nothing)
@@ -149,9 +153,13 @@ var _held: PackedScene
 func _ready() -> void:
 	_model = MODEL.instantiate() as Node3D
 	add_child(_model)
-	Style15Level.apply_materials(_model, SURFACE_MATERIAL)
 	skeleton = _model.get_node(SKELETON_PATH) as Skeleton3D
-	set_look(look)
+	_body_mat = ShaderMaterial.new()
+	_body_mat.shader = BODY_SHADER
+	if survivor_look != null:
+		apply_look(survivor_look)
+	else:
+		set_look(look)
 	_anims = _model.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
 	for clip: String in LOOP_CLIPS:
 		if _anims.has_animation(clip):
@@ -189,26 +197,34 @@ func _ready() -> void:
 	animate(&"idle", 1.0, &"aim_rifle", 1.0, 1.0)
 
 
-## Shows outfit `i` (survivor_<i> in the glb) and hides the others; out-of-range wraps around.
+## A stand-in look `i` for a fighter with no survivor behind it: the same i is always the same person.
 func set_look(i: int) -> void:
 	look = i
+	apply_look(LookRules.roll("", ["ex_soldier", "construction_worker", "fisherman", "doctor"][posmod(i, 4)], 9000 + i))
+
+
+## Builds the figure from a survivor's look (1.8): the body for their sex and build, their hair and beard, the skin,
+## hair and clothes tints (the outfit's torso, legs and shoes colours until the outfit pieces come) and their height.
+func apply_look(l: SurvivorLook) -> void:
+	survivor_look = l
 	if skeleton == null:
 		return
-	var bodies: Array[MeshInstance3D] = []
+	var show: Dictionary = {"body_%s_%s" % [l.sex, l.build]: true, "hair_" + l.hair: true}
+	if not l.facial_hair.is_empty():
+		show["beard_" + l.facial_hair] = true
 	for n: Node in skeleton.get_children():
-		if n is MeshInstance3D and String(n.name).begins_with("survivor_"):
-			bodies.append(n as MeshInstance3D)
-	bodies.sort_custom(func(a: MeshInstance3D, b: MeshInstance3D) -> bool: return String(a.name) < String(b.name))
-	for k: int in bodies.size():
-		bodies[k].visible = k == posmod(i, bodies.size())
-
-
-func look_count() -> int:
-	var n: int = 0
-	for c: Node in skeleton.get_children():
-		if c is MeshInstance3D and String(c.name).begins_with("survivor_"):
-			n += 1
-	return n
+		if n is MeshInstance3D:
+			var mi: MeshInstance3D = n as MeshInstance3D
+			var name_s: String = String(mi.name)
+			if name_s.begins_with("body_") or name_s.begins_with("hair_") or name_s.begins_with("beard_"):
+				mi.visible = show.has(name_s)
+				mi.material_override = _body_mat
+	_body_mat.set_shader_parameter("skin", Color.html(l.skin))
+	_body_mat.set_shader_parameter("hair", Color.html(l.hair_colour))
+	_body_mat.set_shader_parameter("top", Color.html(str(l.outfit.get("torso", {}).get("colour", "#c9652e"))))
+	_body_mat.set_shader_parameter("bottom", Color.html(str(l.outfit.get("legs", {}).get("colour", "#4f6178"))))
+	_body_mat.set_shader_parameter("shoes", Color.html("#3d3027"))
+	_model.scale = Vector3.ONE * (l.height / BODY_HEIGHT)
 
 
 ## The gun in hand; pistols and SMGs are held like a pistol, the rest like a rifle.

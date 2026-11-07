@@ -66,6 +66,7 @@ func _ready() -> void:
 	for i: int in POSES.size():
 		var p: Array = POSES[i]
 		var body: SurvivorView = SurvivorView.new()
+		body.look = i  # 1.8: a different person each, so the bodies and hair styles show too
 		body.position = Vector3((i % PER_ROW - (PER_ROW - 1) * 0.5) * SPACING, 0.0, (i / PER_ROW - (rows - 1) * 0.5) * SPACING * 1.4)
 		add_child(body)
 		body.set_gun(guns[p[4]] if p[4] >= 0 else null)  # < 0: daily life, empty hands or an item

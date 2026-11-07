@@ -286,3 +286,54 @@ func test_a_swing_shows_the_melee_weapon_and_hides_the_gun() -> void:
 	_body.swing(load("res://data/weapons/knife.tres"))
 	_body.drive(Vector2.ZERO, Vector2.UP, ar, false)
 	assert_eq([_body.lower, _body.upper], [&"crouch_idle", &"slash_light"], "a crouched slash")
+
+
+func _visible_parts() -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	for n: Node in _body.skeleton.get_children():
+		if n is MeshInstance3D and (n as MeshInstance3D).visible:
+			out.append(String(n.name))
+	out.sort()
+	return out
+
+
+func test_a_look_shows_one_body_its_hair_and_beard_at_its_height() -> void:
+	var l: SurvivorLook = LookRules.roll("Viktor", "ex_soldier", 42)
+	l.hair = "messy"
+	l.facial_hair = "beard"
+	l.build = "heavy"
+	l.height = 1.86
+	_body.apply_look(l)
+	assert_eq(_visible_parts(), PackedStringArray(["beard_beard", "body_male_heavy", "hair_messy"]))
+	assert_almost_eq(_body._model.scale.x, 1.0, 0.001)
+	l.sex = "female"
+	l.build = "slim"
+	l.hair = "bald"
+	l.facial_hair = ""
+	l.height = 1.55
+	_body.apply_look(l)
+	assert_eq(_visible_parts(), PackedStringArray(["body_female_slim"]), "bald: no hair mesh")
+	assert_almost_eq(_body._model.scale.y, 1.55 / SurvivorView.BODY_HEIGHT, 0.001)
+
+
+func test_every_body_hair_and_beard_the_data_can_ask_for_exists() -> void:
+	var names: Dictionary = {}
+	for n: Node in _body.skeleton.get_children():
+		names[String(n.name)] = true
+	var d: Dictionary = LookRules.data()
+	for sex: String in ["male", "female"]:
+		for build: String in d["builds"]:
+			if build != "note":
+				assert_true(names.has("body_%s_%s" % [sex, build]), "%s %s" % [sex, build])
+		for style: String in d["hair_styles"][sex]:
+			assert_true(style == "bald" or names.has("hair_" + style), style)
+	for style: String in d["facial_hair"]["styles"]:
+		assert_true(names.has("beard_" + style), style)
+
+
+func test_the_tints_come_from_the_look() -> void:
+	var l: SurvivorLook = LookRules.roll("Ana", "doctor", 7)
+	_body.apply_look(l)
+	var mat: ShaderMaterial = _body._body_mat
+	assert_eq(mat.get_shader_parameter("skin"), Color.html(l.skin))
+	assert_eq(mat.get_shader_parameter("top"), Color.html(l.outfit["torso"]["colour"]))
