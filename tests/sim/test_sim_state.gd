@@ -32,13 +32,17 @@ func test_advance_day_consumes_upkeep_and_moves_clock() -> void:
 	assert_eq(state.survivors[0].health, Survivor.MAX_STAT, "no shortage, no damage")
 
 
-func test_shortage_hurts_and_floors_stock_at_zero() -> void:
+func test_a_shortage_lowers_morale_at_once_and_starves_later() -> void:
 	var state: SimState = SimState.new_game(_rules, 1)
 	state.stock["food"] = 1.0
 	state.advance_day(_rules)
 	assert_eq(state.stock["food"], 0.0)
-	assert_eq(state.survivors[0].health, Survivor.MAX_STAT - _rules.hunger_health_loss)
 	assert_eq(state.survivors[0].morale, Survivor.MAX_STAT - _rules.shortage_morale_loss)
+	assert_eq(state.survivors[2].health, Survivor.MAX_STAT, "one missed meal: hungry by the next morning, not hurt")
+	assert_gt(state.survivors[2].needs.hunger, 40.0)
+	state.advance_day(_rules)
+	state.advance_day(_rules)
+	assert_lt(state.survivors[2].health, Survivor.MAX_STAT, "starving on the third day")
 
 
 func test_dead_survivors_do_not_eat() -> void:

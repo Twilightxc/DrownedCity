@@ -1,0 +1,53 @@
+{
+	"_doc": "Body needs (GDD §3 'status of body and mind', §11). Meters run 0..100, 0 = fine. Per-hour rates run on the hourly tick, meals / water / medicine on the morning upkeep. A stamina effect is a mul on max_stamina. Until 1.7 brings daily life, a survivor sleeps in the schedule's hours and works the rest. Every number here is Claude's unless a note says GDD.",
+	"schedule": {"sleep_from": 22, "sleep_to": 6},
+	"fatigue": {
+		"per_hour": {"sleep": -12.5, "idle": 2.0, "work": 4.0, "mission": 6.0},
+		"night_owl_day_mul": 0.25,
+		"stamina_mul_at_max": -0.5,
+		"note": "GDD: builds all day, lowers max stamina, goes with sleep in a bed. Short Sleeper (rest_need) scales the gain; Marathon (fatigue) scales the stamina loss; Night Owl tires 25 % faster by day"
+	},
+	"hunger": {
+		"per_hour": 2.0,
+		"hungry_at": 50.0,
+		"stamina_mul": -0.2,
+		"health_per_hour_starving": 0.5,
+		"note": "GDD: too hungry lowers stamina, too long costs health. Fed every morning; a missed meal starts starving (100) the next morning, about 12 health a day"
+	},
+	"thirst": {
+		"per_hour": 3.0,
+		"thirsty_at": 50.0,
+		"stamina_mul": -0.2,
+		"drinks_flood_water_at": 75.0,
+		"note": "GDD: thirsty = drinks the flood water = may get sick. Flood water is everywhere, so thirst never kills"
+	},
+	"injury": {
+		"kinds": {
+			"light": {"heal_hours": 48, "stamina_mul": -0.1},
+			"fracture": {"heal_hours": 240, "stamina_mul": -0.4, "heavy": true},
+			"open_wound": {"heal_hours": 168, "stamina_mul": -0.3, "heavy": true},
+			"burn": {"heal_hours": 144, "stamina_mul": -0.3, "heavy": true}
+		},
+		"medicine_per_heavy_day": 1.0,
+		"no_medicine_heal_mul": 0.5,
+		"note": "GDD: light / heavy (fracture, open wound, burn); heavy needs days in the infirmary (1.7) and keeps the survivor home. Without medicine (GDD §11) it heals at half speed. Endurance (injury_severity) shortens it; Fast Healer (heal_rate) speeds it"
+	},
+	"sickness": {
+		"days": 3,
+		"stamina_mul": -0.25,
+		"morale_per_day": -3.0,
+		"medicine_per_day": 1.0,
+		"medicine_extra_days": 1,
+		"chance": {"rain": 0.1, "flood_water": 0.3, "rotten_food": 0.2, "contagion": 0.1},
+		"dirty_sources": ["flood_water", "rotten_food"],
+		"note": "GDD: from rain, dirty water, rotten food; spreads in the base (contagion is per sick housemate, each morning). Weak Immune (sickness_chance) ×2; Iron Stomach is immune to the dirty sources; Robust (illness_recovery) shortens it; medicine takes a day more off each day"
+	},
+	"infection": {
+		"hours": 72,
+		"bite_chance": 0.25,
+		"stamina_mul": -0.15,
+		"quarantine_days": 3,
+		"community_morale": {"exile": -5.0, "quarantine": -2.0, "end_life": -10.0, "turned": -15.0},
+		"note": "GDD: from a bite or spores without a mask; 3 days (GDD) to find an antiviral, else choose: exile, quarantine or end their life. Quarantine buys quarantine_days more for an antiviral, then they turn (die). Resistant (infection_chance) lowers the bite chance"
+	}
+}

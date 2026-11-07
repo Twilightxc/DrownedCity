@@ -5,11 +5,11 @@ extends RefCounted
 ## version that rewrites the old "state" dictionary into the new shape.
 
 const GAME_ID: String = "drowned_city"
-const SCHEMA_VERSION: int = 3
+const SCHEMA_VERSION: int = 4
 
 ## from_version -> Callable(state: Dictionary) -> Dictionary, producing from_version + 1.
 static func migrations() -> Dictionary[int, Callable]:
-	return {1: _v1_to_v2, 2: _v2_to_v3}
+	return {1: _v1_to_v2, 2: _v2_to_v3, 3: _v3_to_v4}
 
 
 ## Schema 2 (1.6): survivors gain a background and the core skills. An old survivor has no background and every
@@ -33,6 +33,16 @@ static func _v2_to_v3(d: Dictionary) -> Dictionary:
 		s["traits"] = []
 		s["trait_days"] = {}
 		s["counters"] = {}
+	return d
+
+
+## Schema 4 (1.6): body needs, and medicine + antiviral in the stockpile. An old survivor is rested, fed and well.
+static func _v3_to_v4(d: Dictionary) -> Dictionary:
+	for sd: Variant in d.get("survivors", []):
+		(sd as Dictionary)["needs"] = SurvivorNeeds.new().to_dict()
+	var stock: Dictionary = d.get("stock", {})
+	for res: String in ["medicine", "antiviral"]:
+		stock[res] = stock.get(res, 0.0)
 	return d
 
 
