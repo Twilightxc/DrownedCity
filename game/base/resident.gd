@@ -35,8 +35,8 @@ func setup(s: Survivor, nav: BaseNav, wander_points: PackedVector2Array) -> void
 	_wander = wander_points
 	_rng.seed = s.appearance_seed
 	view = SurvivorView.new()
+	view.survivor_look = s.look
 	add_child(view)
-	view.set_look(s.id - 1)
 	view.set_gun(null)
 	tag = Label3D.new()
 	tag.text = s.name

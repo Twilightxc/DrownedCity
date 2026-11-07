@@ -131,6 +131,8 @@ func _arm() -> void:
 func set_survivor(s: Survivor) -> void:
 	survivor = s
 	display_name = s.name
+	if body != null:
+		body.apply_look(s.look)  # 1.8: the survivor's own body, hair and colours
 	build = FighterBuild.new(BuildRules.mods(s))
 	_apply_build()
 	grenade_count += build.extra_grenades()  # Grenadier

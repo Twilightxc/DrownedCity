@@ -25,6 +25,7 @@ drew no shadow at all for the skinned body.
 """
 import math
 import os
+import random
 import sys
 
 import bpy
@@ -32,6 +33,7 @@ from mathutils import Euler, Matrix, Quaternion, Vector
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kit_common as K  # noqa: E402
+import body_survivor as B  # noqa: E402
 
 K.PALETTE.update({
     "surv_skin": "#e2a77c", "surv_jacket": "#c9652e", "surv_shirt": "#e6d3a8", "surv_pants": "#4f6178",
@@ -64,48 +66,6 @@ SKELETON = {
     "shin_r": ("thigh_r", (0.0, 0.0, -0.42)),
 }
 UPPER = ["torso", "head", "arm_l", "fore_l", "hand_l", "arm_r", "fore_r", "hand_r"]  # survivor_view.gd agrees
-
-BOXES = {  # bone: [(centre in the bone's frame, size, colour)]
-    "pelvis": [((0, 0, 0.0), (0.34, 0.2, 0.2), "surv_pants"), ((0, 0, 0.08), (0.36, 0.22, 0.05), "surv_strap")],
-    "torso": [((0, 0, 0.27), (0.4, 0.24, 0.5), "surv_jacket"), ((0, -0.123, 0.42), (0.14, 0.02, 0.12), "surv_shirt"),
-              ((0, 0.17, 0.27), (0.3, 0.12, 0.36), "surv_pack"), ((0.1, -0.125, 0.3), (0.04, 0.02, 0.36), "surv_strap"),
-              ((-0.1, -0.125, 0.3), (0.04, 0.02, 0.36), "surv_strap")],
-    "head": [((0, -0.01, 0.15), (0.22, 0.24, 0.26), "surv_skin"), ((0, 0.02, 0.29), (0.235, 0.25, 0.06), "surv_hair"),
-             ((0, 0.1, 0.19), (0.235, 0.06, 0.18), "surv_hair")],
-    "thigh_l": [((0, 0, -0.21), (0.15, 0.16, 0.44), "surv_pants")],
-    "thigh_r": [((0, 0, -0.21), (0.15, 0.16, 0.44), "surv_pants")],
-    "shin_l": [((0, 0, -0.2), (0.13, 0.14, 0.42), "surv_pants"), ((0, -0.04, -0.41), (0.14, 0.25, 0.1), "surv_boots")],
-    "shin_r": [((0, 0, -0.2), (0.13, 0.14, 0.42), "surv_pants"), ((0, -0.04, -0.41), (0.14, 0.25, 0.1), "surv_boots")],
-}
-for _s in "lr":
-    BOXES[f"arm_{_s}"] = [((0, 0, -0.14), (0.1, 0.11, 0.3), "surv_jacket")]
-    BOXES[f"fore_{_s}"] = [((0, 0, -0.1), (0.095, 0.1, 0.2), "surv_jacket"), ((0, 0, -0.23), (0.08, 0.085, 0.08), "surv_skin")]
-    BOXES[f"hand_{_s}"] = [((0, -0.005, -0.045), (0.075, 0.09, 0.09), "surv_skin")]
-
-
-def boxes_for(look):
-    """A look's boxes: the same parts on the same bones, other clothes (J 2026-11-04: no two alike). All stay
-    warm so survivors read against the cool, bleached city."""
-    b = {k: list(v) for k, v in BOXES.items()}
-    if look == 1:
-        recol = {"surv_jacket": "surv1_jacket", "surv_pants": "surv1_pants", "surv_skin": "surv1_skin"}
-        b = {k: [(c, sz, recol.get(col, col)) for c, sz, col in v] for k, v in b.items()}
-        b["torso"] = [((0, 0, 0.27), (0.42, 0.25, 0.5), "surv1_jacket"), ((0, -0.128, 0.28), (0.3, 0.03, 0.22), "surv1_rig"),
-                      ((0.09, -0.142, 0.24), (0.08, 0.02, 0.08), "surv_strap"), ((-0.09, -0.142, 0.24), (0.08, 0.02, 0.08), "surv_strap")]
-        b["head"] = [((0, -0.01, 0.15), (0.22, 0.24, 0.26), "surv1_skin"), ((0, -0.02, 0.05), (0.2, 0.2, 0.1), "surv1_beard"),
-                     ((0, 0.01, 0.29), (0.25, 0.26, 0.07), "surv1_cap"), ((0, -0.15, 0.27), (0.22, 0.08, 0.025), "surv1_cap")]
-    elif look == 2:
-        recol = {"surv_jacket": "surv2_hoodie", "surv_pants": "surv2_pants", "surv_skin": "surv2_skin"}
-        b = {k: [(c, sz, recol.get(col, col)) for c, sz, col in v] for k, v in b.items()}
-        b["torso"] = [((0, 0, 0.27), (0.36, 0.23, 0.5), "surv2_hoodie"), ((0, 0.13, 0.46), (0.22, 0.06, 0.12), "surv2_hoodie"),
-                      ((0.12, 0.13, 0.14), (0.16, 0.08, 0.18), "surv2_bag"), ((0.05, -0.118, 0.3), (0.04, 0.02, 0.4), "surv_strap")]
-        b["head"] = [((0, -0.01, 0.15), (0.21, 0.23, 0.25), "surv2_skin"), ((0, 0.02, 0.28), (0.225, 0.245, 0.06), "surv2_hair"),
-                     ((0, 0.1, 0.19), (0.225, 0.06, 0.18), "surv2_hair"), ((0, 0.15, 0.1), (0.07, 0.06, 0.18), "surv2_hair")]
-    return b
-
-
-LOOKS = 3  # survivor.glb holds survivor_0 .. survivor_2, one skeleton and one set of clips for all
-
 
 def rest_positions():
     out = {}
@@ -805,26 +765,6 @@ CRAWL_SPEED = 0.85
 
 # ---- build ---------------------------------------------------------------------------------------
 
-def build_mesh(rest, look=0):
-    parts = []
-    for bone, boxes in boxes_for(look).items():
-        mb = K.MeshBuilder(aging=0.0)
-        with mb.transform(tuple(rest[bone])):
-            for c, s, col in boxes:
-                mb.box(c, s, col)
-        obj = mb.to_object("part_" + bone)
-        vg = obj.vertex_groups.new(name=bone)
-        vg.add(list(range(len(obj.data.vertices))), 1.0, "REPLACE")
-        parts.append(obj)
-    for o in bpy.context.scene.objects:
-        o.select_set(o in parts)
-    bpy.context.view_layer.objects.active = parts[0]
-    bpy.ops.object.join()
-    body = bpy.context.view_layer.objects.active
-    body.name = body.data.name = f"survivor_{look}"
-    return body
-
-
 def build_armature(rest):
     arm_data = bpy.data.armatures.new("survivor_rig")
     rig = bpy.data.objects.new("survivor_rig", arm_data)
@@ -877,29 +817,35 @@ if __name__ == "__main__":
     a = K.args()
     out = a[0] if a else os.path.join(os.path.dirname(__file__), "..", "..", "assets", "models")
     K.reset(23)
+    random.seed(23)
     bpy.context.scene.render.fps = FPS
     rest = rest_positions()
-    bodies = []
-    for look in range(LOOKS):
-        body = build_mesh(rest, look)
-        K.bake_vertex_ao(body, distance=0.25, samples=32)
-        bodies.append(body)
+    meshes = []
+    for sex in ("male", "female"):
+        for build in B.BUILDS:
+            meshes.append(B.body(rest, sex, build).to_object(f"body_{sex}_{build}"))
+    for style in B.HAIR_STYLES:
+        meshes.append(B.hair(style).to_object(f"hair_{style}"))
+    for style in B.BEARDS:
+        meshes.append(B.beard(style).to_object(f"beard_{style}"))
+    for m in meshes:
+        K.bake_vertex_ao(m, distance=0.25, samples=32)
     rig = build_armature(rest)
-    for body in bodies:
-        body.parent = rig
-        mod = body.modifiers.new("rig", "ARMATURE")
+    for m in meshes:
+        m.parent = rig
+        mod = m.modifiers.new("rig", "ARMATURE")
         mod.object = rig
     bake_clips(rig)
     os.makedirs(out, exist_ok=True)
     for o in bpy.context.scene.objects:
-        o.select_set(o in bodies or o == rig)
+        o.select_set(o in meshes or o == rig)
     bpy.context.view_layer.objects.active = rig
     path = os.path.join(out, "survivor.glb")
-    bpy.ops.export_scene.gltf(
+    bpy.ops.export_scene.gltf(  # texcoords on: UV.x is each face's tint channel (body_survivor.py)
         filepath=path, export_format="GLB", use_selection=True, export_yup=True, export_apply=False,
-        export_vertex_color="ACTIVE", export_normals=True, export_texcoords=False, export_materials="EXPORT",
+        export_vertex_color="ACTIVE", export_normals=True, export_texcoords=True, export_materials="EXPORT",
         export_animations=True, export_animation_mode="ACTIONS", export_force_sampling=True,
         export_skins=True, export_def_bones=False, export_optimize_animation_size=False,
     )
-    tris = [sum(len(p.vertices) - 2 for p in b.data.polygons) for b in bodies]
-    print(f"exported {path}  ({LOOKS} looks, {tris} tris, {len(CLIPS)} clips, loops: {', '.join(LOOP_CLIPS)})")
+    tris = {m.name: sum(len(p.vertices) - 2 for p in m.data.polygons) for m in meshes}
+    print(f"exported {path}  ({len(meshes)} meshes, tris {tris}, {len(CLIPS)} clips)")
