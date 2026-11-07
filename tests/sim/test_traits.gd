@@ -71,6 +71,7 @@ func test_survivors_guilt_lasts_five_days_and_lowers_morale() -> void:
 	state.survivors.append(_s)
 	for res: String in SimState.RESOURCES:
 		state.stock[res] = 100.0
+	state.stock["meals"] = 0.0  # rations, not cooked meals
 	TraitRules.on_event(_s, "close_friend_died")
 	assert_true("survivors_guilt" in _s.traits)
 	_s.morale = 50.0
@@ -87,6 +88,7 @@ func test_a_big_eater_eats_half_again() -> void:
 	state.survivors.append(_s)
 	for res: String in SimState.RESOURCES:
 		state.stock[res] = 100.0
+	state.stock["meals"] = 0.0  # rations, not cooked meals
 	TraitRules.give(_s, "big_eater")
 	state.advance_day(rules)
 	assert_almost_eq(state.stock["food"], 100.0 - rules.food_per_survivor * 1.5, 0.001)
@@ -99,6 +101,7 @@ func test_an_optimist_lifts_everyone() -> void:
 	state.survivors.append_array([_s, other])
 	for res: String in SimState.RESOURCES:
 		state.stock[res] = 100.0
+	state.stock["meals"] = 0.0  # rations, not cooked meals
 	TraitRules.give(_s, "optimist")
 	other.morale = 50.0
 	state.advance_day(rules)

@@ -174,6 +174,17 @@ Part A (combat, 1.1–1.5) ≈ 80 h, so the total is ≈ 750 h.
       leader at a time. There are no game-ending goals: play goes on indefinitely.
 - SimCore rule: all of this is pure data + rules in `sim/`, unit-tested, saved in the survivor state (save v2).
 
+### 1.7 base (J, 2026-11-07; GDD §4)
+Rooms (J: "survival set"): sleeping, farm, infirmary (large); water, kitchen, watchtower (small); tiers 1–2.
+Starts with 3 large + 3 small slots (GDD: 2 + 4, but three rooms are large), tents and rain barrels standing.
+- [ ] Step 1, SimCore: slots, build / upgrade by work hours, production queues, assignments, beds, meals
+      (`phase1-7/base-sim`)
+- [ ] Step 2, SimCore: utility AI daily life replaces the sleep 22–06 schedule
+- [ ] Step 3, the base scene on the arena roof: rooms by tier (Blender kit, desktop), survivors walking to their
+      activity, time speed-up
+- [ ] Step 4, UI: build / upgrade / queue / assign, gamepad
+- [ ] Step 5, Observer mode
+
 ## J's bug list after 1.G (2026-11-05)
 
 J: "รายงานข้อผิดพลาด", 18 items. Grouped by what they need; **code** = either machine, **desktop** = Blender / clips.

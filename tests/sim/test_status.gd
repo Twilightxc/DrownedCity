@@ -12,6 +12,7 @@ func before_each() -> void:
 	_s = _state.add_survivor("Rosa", 7)
 	for res: String in SimState.RESOURCES:
 		_state.stock[res] = 100.0
+	_state.stock["meals"] = 0.0  # rations, not cooked meals
 
 
 func _make_outstanding(s: Survivor) -> void:

@@ -24,6 +24,7 @@ var leader_paths: PackedStringArray = PackedStringArray()  ## leader types added
 var reading: String = ""  ## the book being read ("skill:<id>", "spec:<skill>:<spec>", "leader:<type>")
 var read_days: int = 0  ## days left on it
 var combat_class: String = ""  ## community.json classes id; "" until picked as a member
+var assignment: int = -1  ## the base slot this survivor works in (BaseRules); -1 = none
 
 
 func _init(p_id: int = 0, p_name: String = "", p_seed: int = 0) -> void:
@@ -53,7 +54,8 @@ func to_dict() -> Dictionary:
 		"counters": counters.duplicate(), "needs": needs.to_dict(),
 		"status": status, "rank_points": rank_points,
 		"community_skill": community_skill, "community_specs": Array(community_specs),
-		"leader_paths": Array(leader_paths), "reading": reading, "read_days": read_days, "combat_class": combat_class}
+		"leader_paths": Array(leader_paths), "reading": reading, "read_days": read_days, "combat_class": combat_class,
+		"assignment": assignment}
 
 
 static func from_dict(d: Dictionary) -> Survivor:
@@ -80,4 +82,5 @@ static func from_dict(d: Dictionary) -> Survivor:
 	s.reading = str(d["reading"])
 	s.read_days = int(d["read_days"])
 	s.combat_class = str(d["combat_class"])
+	s.assignment = int(d["assignment"])
 	return s

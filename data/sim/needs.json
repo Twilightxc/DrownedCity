@@ -2,7 +2,7 @@
 	"_doc": "Body needs (GDD §3 'status of body and mind', §11). Meters run 0..100, 0 = fine. Per-hour rates run on the hourly tick, meals / water / medicine on the morning upkeep. A stamina effect is a mul on max_stamina. Until 1.7 brings daily life, a survivor sleeps in the schedule's hours and works the rest. Every number here is Claude's unless a note says GDD.",
 	"schedule": {"sleep_from": 22, "sleep_to": 6},
 	"fatigue": {
-		"per_hour": {"sleep": -12.5, "idle": 2.0, "work": 4.0, "mission": 6.0},
+		"per_hour": {"sleep": -12.5, "rest": 1.0, "idle": 2.0, "work": 4.0, "mission": 6.0},
 		"night_owl_day_mul": 0.25,
 		"stamina_mul_at_max": -0.5,
 		"note": "GDD: builds all day, lowers max stamina, goes with sleep in a bed. Short Sleeper (rest_need) scales the gain; Marathon (fatigue) scales the stamina loss; Night Owl tires 25 % faster by day"
