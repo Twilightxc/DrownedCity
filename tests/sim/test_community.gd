@@ -13,6 +13,7 @@ func before_each() -> void:
 	_s.status = "member"
 	for res: String in SimState.RESOURCES:
 		_state.stock[res] = 100.0
+	_state.stock["meals"] = 0.0  # rations, not cooked meals
 
 
 func _outstanding(s: Survivor, skill: String) -> void:

@@ -16,15 +16,17 @@ static func data() -> Dictionary:
 	return _data
 
 
-## What the survivor does this hour: the game's override, else the schedule (sleep at night, work by day).
+## What the survivor does this hour: the game's override, else the schedule (sleep at night, work by day; hurt
+## or sick, rest). The utility AI replaces the schedule (1.7 step 2).
 static func activity(s: Survivor, hour: int) -> String:
 	if not s.needs.activity.is_empty():
 		return s.needs.activity
+	var awake_hurt: bool = heavily_injured(s) or s.needs.sick_days > 0  # rest instead of work (the infirmary)
 	var sch: Dictionary = data()["schedule"]
 	var from: int = int(sch["sleep_from"])
 	var to: int = int(sch["sleep_to"])
 	var asleep: bool = hour >= from or hour < to if from > to else (hour >= from and hour < to)
-	return "sleep" if asleep else "work"
+	return "sleep" if asleep else "rest" if awake_hurt else "work"
 
 
 ## One in-game hour. Returns what happened that the community feels: "turned" when a quarantined survivor's time
@@ -38,6 +40,8 @@ static func tick_hour(s: Survivor, hour: int, m: StatMods, rng: RandomNumberGene
 	var act: String = activity(s, hour)
 	var fat: Dictionary = d["fatigue"]
 	var rate: float = float((fat["per_hour"] as Dictionary).get(act, 0.0))
+	if rate < 0.0:  # asleep: a cot sleeps better, no bed worse (BaseRules.hour_mods)
+		rate *= maxf(1.0 + m.mul.get(&"sleep_quality", 0.0), 0.0)
 	if rate > 0.0:
 		rate = m.apply(&"rest_need", rate)  # Short Sleeper
 		if m.has_perk(&"night_owl") and act != "sleep":

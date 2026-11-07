@@ -5,11 +5,11 @@ extends RefCounted
 ## version that rewrites the old "state" dictionary into the new shape.
 
 const GAME_ID: String = "drowned_city"
-const SCHEMA_VERSION: int = 6
+const SCHEMA_VERSION: int = 7
 
 ## from_version -> Callable(state: Dictionary) -> Dictionary, producing from_version + 1.
 static func migrations() -> Dictionary[int, Callable]:
-	return {1: _v1_to_v2, 2: _v2_to_v3, 3: _v3_to_v4, 4: _v4_to_v5, 5: _v5_to_v6}
+	return {1: _v1_to_v2, 2: _v2_to_v3, 3: _v3_to_v4, 4: _v4_to_v5, 5: _v5_to_v6, 6: _v6_to_v7}
 
 
 ## Schema 2 (1.6): survivors gain a background and the core skills. An old survivor has no background and every
@@ -70,6 +70,20 @@ static func _v5_to_v6(d: Dictionary) -> Dictionary:
 		s["read_days"] = 0
 		s["combat_class"] = ""
 	d["books"] = {}
+	return d
+
+
+## Schema 7 (1.7): the base's rooms and who works where. An old community gets the starting base (rooms.json) and
+## nobody assigned; herbs and meals start at 0.
+static func _v6_to_v7(d: Dictionary) -> Dictionary:
+	var fresh: SimState = SimState.new()
+	BaseRules.init(fresh)
+	d["rooms"] = fresh.rooms.map(func(r: RoomState) -> Dictionary: return r.to_dict())
+	for sd: Variant in d.get("survivors", []):
+		(sd as Dictionary)["assignment"] = -1
+	var stock: Dictionary = d.get("stock", {})
+	for res: String in ["herbs", "meals"]:
+		stock[res] = stock.get(res, 0.0)
 	return d
 
 

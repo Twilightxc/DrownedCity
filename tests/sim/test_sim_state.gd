@@ -27,7 +27,7 @@ func test_advance_day_consumes_upkeep_and_moves_clock() -> void:
 	state.advance_day(_rules)
 	assert_eq(state.clock.day, 2)
 	assert_almost_eq(state.stock["food"], 5.0, 0.001)  # 8 - 3 people
-	assert_almost_eq(state.stock["water"], 7.5, 0.001)  # 12 - 4.5
+	assert_almost_eq(state.stock["water"], 10.5, 0.001)  # 12 + 3 rain barrels - 4.5
 	assert_almost_eq(state.stock["materials"], 5.0, 0.001)
 	assert_eq(state.survivors[0].health, Survivor.MAX_STAT, "no shortage, no damage")
 

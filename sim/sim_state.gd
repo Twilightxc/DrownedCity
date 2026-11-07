@@ -3,7 +3,7 @@ extends RefCounted
 ## SimCore root: the single source of truth that a save serializes (CLAUDE.md).
 ## Spike D scope: clock, survivors, stockpile and the daily upkeep tick.
 
-const RESOURCES: PackedStringArray = ["food", "water", "materials", "ammo", "medicine", "antiviral"]
+const RESOURCES: PackedStringArray = ["food", "water", "materials", "ammo", "medicine", "antiviral", "herbs", "meals"]
 
 var clock: GameClock = GameClock.new(1, 6)
 var survivors: Array[Survivor] = []
@@ -13,6 +13,7 @@ var next_survivor_id: int = 1
 var influence: float = 0.0  ## the base pool (GDD §11): trade, recruiting, outposts (StatusRules)
 var leader_id: int = 0  ## 0 = no leader; one at a time (StatusRules)
 var leader_type: String = ""  ## status.json leaders id
+var rooms: Array[RoomState] = []  ## the base's slots and rooms (BaseRules)
 var books: Dictionary[String, int] = {}  ## found books on the base's shelf -> copies (CommunityRules)
 
 
@@ -34,6 +35,7 @@ static func new_game(rules: SimRules, p_seed: int) -> SimState:
 		CommunityRules.roll_born(s, build_rng)
 	for res: String in RESOURCES:
 		state.stock[res] = rules.starting_stock.get(res, 0.0)
+	BaseRules.init(state)
 	return state
 
 
@@ -67,9 +69,16 @@ func advance_day(rules: SimRules) -> void:
 ## One in-game hour: every living survivor's needs move (NeedRules). Fast-forward = many of these.
 func advance_hour() -> void:
 	var base: StatMods = CommunityRules.base_wide(self)  # outstanding citizens' skills at half strength
+	var acts: Dictionary = {}
+	for s: Survivor in living():
+		acts[s.id] = NeedRules.activity(s, clock.hour)
+	var room: Dictionary = BaseRules.hour_mods(self, acts)  # beds, the infirmary
 	for s: Survivor in living():
 		var m: StatMods = BuildRules.base_mods(s)
 		m.absorb(base)
+		m.absorb(room[s.id])
+		if acts[s.id] == "work":
+			BaseRules.work_hour(self, s)
 		for event: String in NeedRules.tick_hour(s, clock.hour, m, rng_for(s.id)):
 			if event == "turned":
 				for o: Survivor in living():
@@ -86,6 +95,7 @@ func rng_for(salt: int) -> RandomNumberGenerator:
 
 
 func _morning(rules: SimRules) -> void:
+	BaseRules.tick_day(self)  # rain barrels first: today's water
 	var people: Array[Survivor] = living()
 	var community_morale: float = CommunityRules.base_wide(self).add.get(&"community_morale", 0.0)  # Leadership
 	var food_need: Dictionary[int, float] = {}
@@ -102,6 +112,10 @@ func _morning(rules: SimRules) -> void:
 		return a.needs.hunger > b.needs.hunger or (a.needs.hunger == b.needs.hunger and a.id < b.id))
 	var short_food: bool = false
 	for s: Survivor in hungriest:
+		if _take("meals", 1.0) >= 1.0:  # a cooked meal (the kitchen) instead of a ration
+			s.needs.hunger = 0.0
+			s.change_morale(float(BaseRules.data()["meal_morale"]))
+			continue
 		var got: float = _take("food", food_need[s.id])
 		s.needs.hunger *= 1.0 - got / food_need[s.id]  # a partial meal takes part of the hunger away
 		short_food = short_food or got < food_need[s.id]
@@ -182,6 +196,7 @@ func to_dict() -> Dictionary:
 		"leader_id": leader_id,
 		"leader_type": leader_type,
 		"books": books.duplicate(),
+		"rooms": rooms.map(func(r: RoomState) -> Dictionary: return r.to_dict()),
 	}
 
 
@@ -193,6 +208,8 @@ static func from_dict(d: Dictionary) -> SimState:
 	state.influence = float(d["influence"])
 	state.leader_id = int(d["leader_id"])
 	state.leader_type = str(d["leader_type"])
+	for rd: Variant in d["rooms"]:
+		state.rooms.append(RoomState.from_dict(rd as Dictionary))
 	var books_d: Dictionary = d["books"]
 	for b: Variant in books_d:
 		state.books[str(b)] = int(books_d[b])

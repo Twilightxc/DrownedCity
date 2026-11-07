@@ -14,6 +14,7 @@ func before_each() -> void:
 	_s = _state.add_survivor("Rosa", 7)
 	for res: String in SimState.RESOURCES:
 		_state.stock[res] = 100.0
+	_state.stock["meals"] = 0.0  # rations, not cooked meals
 	_state.stock["antiviral"] = 0.0
 	_m = StatMods.new()
 
@@ -130,6 +131,7 @@ func test_sickness_spreads_in_the_base() -> void:
 		state.game_seed = i
 		for res: String in SimState.RESOURCES:
 			state.stock[res] = 100.0
+		state.stock["meals"] = 0.0  # rations, not cooked meals
 		state.add_survivor("A", 1).needs.sick_days = 5
 		var b: Survivor = state.add_survivor("B", 2)
 		state.advance_day(_rules)
