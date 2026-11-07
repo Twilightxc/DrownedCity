@@ -32,6 +32,15 @@ const POSES: Array = [
 	["knife", &"idle", &"slash_light", 1.0, 0, 0.0],
 	["knife (crouched)", &"crouch_idle", &"slash_light", 1.0, 0, 0.0],
 	["axe", &"idle", &"slash_heavy", 1.0, 0, 0.0],
+	["stroll (base)", &"stroll", &"aim_rifle", 0.0, -1, 1.4],
+	["sleep", &"sleep", &"aim_rifle", 0.0, -1, 0.0],
+	["sit", &"sit", &"aim_rifle", 0.0, -1, 0.0],
+	["read", &"read", &"aim_rifle", 0.0, -1, 0.0],
+	["chat", &"chat", &"aim_rifle", 0.0, -1, 0.0],
+	["work (kneel)", &"work_kneel", &"aim_rifle", 0.0, -1, 0.0],
+	["work (stand)", &"work_stand", &"aim_rifle", 0.0, -1, 0.0],
+	["exercise", &"exercise", &"aim_rifle", 0.0, -1, 0.0],
+	["watch", &"watch", &"aim_rifle", 0.0, -1, 0.0],
 ]
 const MELEE: Dictionary[StringName, MeleeConfig] = {
 	&"slash_light": preload("res://data/weapons/knife.tres"), &"slash_heavy": preload("res://data/weapons/axe.tres"),
@@ -51,7 +60,7 @@ func _ready() -> void:
 		var body: SurvivorView = SurvivorView.new()
 		body.position = Vector3((i % PER_ROW - (PER_ROW - 1) * 0.5) * SPACING, 0.0, (i / PER_ROW - (rows - 1) * 0.5) * SPACING * 1.4)
 		add_child(body)
-		body.set_gun(guns[p[4]])
+		body.set_gun(guns[p[4]] if p[4] >= 0 else null)  # -1: daily life, empty hands
 		var speed: float = p[5]
 		body.animate(p[1], 1.0 if speed <= 0.0 else speed / SurvivorView.CLIP_SPEED.get(p[1], speed), p[2], 1.0, p[3])
 		_bodies.append(body)

@@ -8,7 +8,7 @@
 	"activities": {
 		"sleep": {
 			"fatigue_curve": [[0, 0.0], [40, 0.05], [60, 0.2], [80, 0.9], [100, 3.0]],
-			"night": 1.0,
+			"night": 1.5,
 			"wake_below": 5.0,
 			"note": "once asleep they sleep until fatigue is under wake_below. Hurt or sick sleepers get an infirmary bed first"
 		},

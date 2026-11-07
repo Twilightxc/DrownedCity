@@ -15,7 +15,8 @@ const SKELETON_PATH: String = "survivor_rig/Skeleton3D"
 const UPPER_BONES: PackedStringArray = ["torso", "head", "arm_l", "fore_l", "hand_l", "arm_r", "fore_r", "hand_r"]
 const LOWER_CLIPS: PackedStringArray = ["idle", "walk", "run", "crouch_idle", "crouch_walk", "prone_idle", "crawl",
 	"roll", "downed", "downed_aim", "death", "go_prone", "crouch_to_prone", "prone_to_stand", "prone_to_crouch",
-	"prone_roll_l", "prone_roll_r"]  ## states; "walk" and "crouch_walk" are WALK_SETS
+	"prone_roll_l", "prone_roll_r", "stroll", "sleep", "sit", "read", "chat", "work_kneel", "work_stand", "exercise",
+	"watch"]  ## states; "walk" and "crouch_walk" are WALK_SETS
 const UPPER_CLIPS: PackedStringArray = ["aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_pistol",
 	"reload_rifle", "reload_shell", "switch", "slash_light", "slash_heavy"]
 ## A walking state's backward and forward clips (blend positions -1 and +1).
@@ -28,9 +29,14 @@ const BACK_FROM: float = deg_to_rad(115.0)  ## travel this far off the aim switc
 const FORWARD_FROM: float = deg_to_rad(85.0)  ## ...and back under this (no flicker in between)
 const TWIST_RATE: float = 10.0  ## 1/s the hips follow the travel
 const LOOP_CLIPS: PackedStringArray = ["idle", "walk_f", "walk_b", "run", "crouch_idle", "crouch_f", "crouch_b",
-	"prone_idle", "crawl", "downed", "downed_aim", "aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_shell"]
+	"prone_idle", "crawl", "downed", "downed_aim", "aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_shell",
+	"stroll", "sleep", "sit", "read", "chat", "work_kneel", "work_stand", "exercise", "watch"]
+## Daily life in the base (1.7, kit_survivor.py): whole-body loops with empty hands, played by live().
+const LIFE_CLIPS: PackedStringArray = ["stroll", "sleep", "sit", "read", "chat", "work_kneel", "work_stand", "exercise",
+	"watch"]
 const FULL_BODY: PackedStringArray = ["roll", "prone_idle", "crawl", "downed", "downed_aim", "death", "go_prone",
-	"crouch_to_prone", "prone_to_stand", "prone_to_crouch", "prone_roll_l", "prone_roll_r"]  ## the arms follow the legs' clip
+	"crouch_to_prone", "prone_to_stand", "prone_to_crouch", "prone_roll_l", "prone_roll_r", "stroll", "sleep", "sit", "read",
+	"chat", "work_kneel", "work_stand", "exercise", "watch"]  ## the arms follow the legs' clip
 ## Getting down and up (J bugs 11, 12): [from, to] stance → the clip played once on the change.
 const STANCE_SHIFTS: Dictionary[String, StringName] = {
 	"0>2": &"go_prone", "1>2": &"crouch_to_prone", "2>0": &"prone_to_stand", "2>1": &"prone_to_crouch",
@@ -40,14 +46,16 @@ const ACTIONS: PackedStringArray = ["switch", "slash_light", "slash_heavy"]  ## 
 ## The melee weapon in the right hand: the blade along the hand (its -Y), the edge to the hand's +Z.
 const MELEE_GRIP: Transform3D = Transform3D(Basis(Vector3.BACK, PI), Vector3(0.0, -0.05, 0.0))
 ## m/s each moving clip's stride matches at 1× (kit_survivor.py); faster or slower movement scales the clip
-const CLIP_SPEED: Dictionary[StringName, float] = {&"walk": 4.5, &"run": 6.0, &"crouch_walk": 1.7, &"crawl": 0.85}
+const CLIP_SPEED: Dictionary[StringName, float] = {&"walk": 4.5, &"run": 6.0, &"crouch_walk": 1.7, &"crawl": 0.85,
+	&"stroll": 1.4}
 const MOVING_SPEED: float = 0.25  ## m/s: slower than this stands still
 const XFADE_SEC: float = 0.15
 const GRIP_BLEND: float = 12.0  ## 1/s: how fast the gun turns to a new clip's hold
 const TURN_RATE: float = 12.0  ## 1/s: the body turns toward a sprint or roll this fast, and back to the aim
 const IK_FADE: float = 6.0  ## 1/s: the left hand leaves / returns to the gun this fast
 const LEFT_HAND_BUSY: PackedStringArray = ["roll", "downed", "downed_aim", "death", "go_prone", "crouch_to_prone",
-	"prone_to_stand", "prone_to_crouch", "prone_roll_l", "prone_roll_r"]
+	"prone_to_stand", "prone_to_crouch", "prone_roll_l", "prone_roll_r", "stroll", "sleep", "sit", "read", "chat",
+	"work_kneel", "work_stand", "exercise", "watch"]
 ## Where the gun points in each clip that sets its own hold, in the body's space (+Z ahead, +Y up, +X left).
 ## Other clips keep the aim hold and the gun simply follows the hand (reloads).
 const HOLD_DIR: Dictionary[StringName, Vector3] = {
@@ -365,6 +373,15 @@ func drive(velocity: Vector2, facing: Vector2, gun: Gun, is_downed: bool) -> voi
 	elif sprinting and low == &"run":
 		up = &"carry_high" if up == &"aim_pistol" else &"carry_port"
 	animate(low, low_speed, up, up_speed, 0.0 if String(low) in FULL_BODY else 1.0)
+
+
+## Daily life (1.7): `clip` from LIFE_CLIPS on the whole body; `speed` m/s scales a moving clip (stroll) to its
+## stride. Call set_gun(null) first: these clips have empty hands.
+func live(clip: StringName, speed: float = 0.0) -> void:
+	_twist_target = 0.0
+	_target_yaw = 0.0
+	var rate: float = speed / CLIP_SPEED[clip] if CLIP_SPEED.has(clip) and speed > 0.0 else 1.0
+	animate(clip, rate, &"aim_rifle", 1.0, 0.0)
 
 
 ## A prone log roll goes to the body's left (+X) when the travel has a leftward part.
