@@ -10,6 +10,9 @@ var survivors: Array[Survivor] = []
 var stock: Dictionary[String, float] = {}
 var game_seed: int = 0
 var next_survivor_id: int = 1
+var influence: float = 0.0  ## the base pool (GDD §11): trade, recruiting, outposts (StatusRules)
+var leader_id: int = 0  ## 0 = no leader; one at a time (StatusRules)
+var leader_type: String = ""  ## status.json leaders id
 
 
 static func new_game(rules: SimRules, p_seed: int) -> SimState:
@@ -25,6 +28,7 @@ static func new_game(rules: SimRules, p_seed: int) -> SimState:
 	for s: Survivor in state.survivors:
 		SkillRules.setup(s, SkillRules.roll_background(build_rng, cat), cat)
 		s.traits = TraitRules.roll(build_rng)
+		s.status = str(StatusRules.data()["starting_status"])  # the founders are members
 	for res: String in RESOURCES:
 		state.stock[res] = rules.starting_stock.get(res, 0.0)
 	return state
@@ -109,6 +113,7 @@ func _morning(rules: SimRules) -> void:
 			if short:
 				s.change_morale(-rules.shortage_morale_loss)
 	_medicate(people)
+	StatusRules.tick_day(self)
 
 
 ## Medicine for heavy injuries, then the sick (a day more off); sickness spreads and runs its course; an antiviral
@@ -166,6 +171,9 @@ func to_dict() -> Dictionary:
 		"next_survivor_id": next_survivor_id,
 		"survivors": people,
 		"stock": stock.duplicate(),
+		"influence": influence,
+		"leader_id": leader_id,
+		"leader_type": leader_type,
 	}
 
 
@@ -174,6 +182,9 @@ static func from_dict(d: Dictionary) -> SimState:
 	state.clock = GameClock.new(int(d["day"]), int(d["hour"]))
 	state.game_seed = int(d["seed"])
 	state.next_survivor_id = int(d["next_survivor_id"])
+	state.influence = float(d["influence"])
+	state.leader_id = int(d["leader_id"])
+	state.leader_type = str(d["leader_type"])
 	for sd: Variant in d["survivors"]:
 		state.survivors.append(Survivor.from_dict(sd as Dictionary))
 	var stock_d: Dictionary = d["stock"]
