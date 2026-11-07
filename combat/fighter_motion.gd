@@ -6,6 +6,7 @@ extends RefCounted
 enum Stance { STAND, CROUCH, PRONE }
 
 var config: MovementConfig
+var build: FighterBuild = FighterBuild.new()  ## the survivor's stamina and noise (apply_build)
 var stance: Stance = Stance.STAND
 var stamina: float
 var sprinting: bool = false
@@ -40,7 +41,7 @@ func toggle_prone() -> void:
 func try_roll(dir: Vector2, aim: Vector2 = Vector2.ZERO) -> bool:
 	if is_rolling() or _cooldown > 0.0 or dir == Vector2.ZERO:
 		return false
-	var cost: float = config.roll_stamina
+	var cost: float = build.roll_cost(config.roll_stamina)
 	var along: Vector2 = dir.normalized()
 	roll_sec = config.roll_sec
 	roll_distance_m = config.roll_distance_m
@@ -50,7 +51,7 @@ func try_roll(dir: Vector2, aim: Vector2 = Vector2.ZERO) -> bool:
 		if aim == Vector2.ZERO or absf(lean) < 0.3:
 			return false
 		along = side * signf(lean)
-		cost = config.prone_roll_stamina
+		cost = build.roll_cost(config.prone_roll_stamina)
 		roll_sec = config.prone_roll_sec
 		roll_distance_m = config.prone_roll_distance_m
 	if stamina < cost:
@@ -80,12 +81,12 @@ func step(delta: float, want_sprint: bool, is_moving: bool, firing: bool = false
 	elif not can or stamina <= 0.0:
 		sprinting = false
 	if sprinting:
-		stamina = maxf(stamina - config.sprint_stamina_per_sec * delta, 0.0)
+		stamina = maxf(stamina - build.sprint_cost(config.sprint_stamina_per_sec) * delta, 0.0)
 		_regen_wait = config.stamina_regen_delay_sec
 	elif _regen_wait > 0.0:
 		_regen_wait -= delta
 	elif not is_rolling():
-		stamina = minf(stamina + config.stamina_regen_per_sec * delta, config.stamina_max)
+		stamina = minf(stamina + build.stamina_regen(config.stamina_regen_per_sec) * delta, stamina_max())
 
 
 func is_rolling() -> bool:
@@ -115,7 +116,7 @@ func spread_mul() -> float:
 
 
 func step_noise_m() -> float:
-	return config.sprint_step_noise_m if sprinting else config.step_noise_m[stance]
+	return build.step_noise(config.sprint_step_noise_m if sprinting else config.step_noise_m[stance])
 
 
 func step_m() -> float:
@@ -131,4 +132,14 @@ func body_height_m() -> float:
 
 
 func stamina_fraction() -> float:
-	return stamina / config.stamina_max if config.stamina_max > 0.0 else 0.0
+	return stamina / stamina_max() if stamina_max() > 0.0 else 0.0
+
+
+func stamina_max() -> float:
+	return build.stamina_max(config.stamina_max)
+
+
+## A survivor's build on this fighter; starts with a full bar.
+func apply_build(b: FighterBuild) -> void:
+	build = b
+	stamina = stamina_max()

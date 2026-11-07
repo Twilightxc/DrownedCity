@@ -12,6 +12,8 @@ signal state_changed(state: State)
 var config: FighterConfig
 var wearing: Array[ArmorConfig] = []
 var hp: int
+var max_hp: int  ## the config's, with the survivor's build on (apply_build)
+var build: FighterBuild = FighterBuild.new()
 var state: State = State.ALIVE
 var downed_left: float = 0.0
 var bites: int = 0  ## hits that broke the skin; SimCore turns them into infection (1.6)
@@ -28,7 +30,8 @@ func _init(cfg: FighterConfig, worn: Array[ArmorConfig] = []) -> void:
 		if not used.has(piece.slot):
 			used[piece.slot] = true
 			wearing.append(piece)
-	hp = cfg.max_hp
+	max_hp = cfg.max_hp
+	hp = max_hp
 
 
 func is_alive() -> bool:
@@ -36,7 +39,14 @@ func is_alive() -> bool:
 
 
 func hp_frac() -> float:
-	return float(hp) / float(maxi(config.max_hp, 1))
+	return float(hp) / float(maxi(max_hp, 1))
+
+
+## A survivor's build on this fighter: max HP and what hurts it how much. Starts at full health.
+func apply_build(b: FighterBuild) -> void:
+	build = b
+	max_hp = b.hp(config.max_hp)
+	hp = max_hp
 
 
 ## Product of one multiplier over every worn piece ("melee_mul", "gas_mul", ...).
@@ -64,19 +74,19 @@ func take_hit(damage: int, rng: RandomNumberGenerator) -> void:
 		return
 	if rng.randf() < config.bite_chance * mul(&"bite_mul"):
 		bites += 1
-	_lose(roundi(damage * mul(&"melee_mul")), &"melee")
+	_lose(roundi(damage * mul(&"melee_mul") * build.melee_taken()), &"melee")
 
 
 func take_blast(damage: int, own: bool) -> void:
 	if is_alive() and not dodging:
-		_lose(roundi(damage * mul(&"blast_mul") * (config.self_blast_mul if own else 1.0)), &"blast")
+		_lose(roundi(damage * mul(&"blast_mul") * (config.self_blast_mul * build.self_blast() if own else 1.0)), &"blast")
 
 
 ## Damage over time (gas, fire): `dps` × delta, fractions carried so low rates still add up.
 func take_dot(dps: float, delta: float, kind: StringName) -> void:
 	if not is_alive() or dps <= 0.0:
 		return
-	var m: float = mul(&"gas_mul") if kind == &"gas" else mul(&"fire_mul") if kind == &"fire" else 1.0
+	var m: float = mul(&"gas_mul") * build.gas_taken() if kind == &"gas" else mul(&"fire_mul") if kind == &"fire" else 1.0
 	_partial += dps * m * delta
 	var whole: int = floori(_partial)
 	if whole > 0:
@@ -95,7 +105,7 @@ func step(delta: float) -> void:
 ## A teammate's help (or a debug key): back up with a quarter of max HP.
 func revive() -> void:
 	if state == State.DOWNED:
-		hp = maxi(config.max_hp / 4, 1)
+		hp = maxi(max_hp / 4, 1)
 		_set_state(State.ALIVE)
 
 

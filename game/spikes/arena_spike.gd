@@ -22,7 +22,14 @@ const BARRICADE_PIECES: Array = [
 ## AI teammates (1.5+ A5): one per loadout, named in order, on the leader's left then right.
 @export var teammate_loadouts: Array[LoadoutConfig] = [preload("res://data/weapons/teammate_ar_loadout.tres"),
 	preload("res://data/weapons/teammate_shotgun_loadout.tres")]
-@export var teammate_names: PackedStringArray = PackedStringArray(["Marco", "Jess"])
+@export var teammate_names: PackedStringArray = PackedStringArray(["Marco", "Jess"])  ## only without a community
+## The community behind the squad (1.6): the player is its first survivor, the teammates the next ones; each
+## fights with their build. Kept for the session, so XP, influence and traits carry over from night to night.
+## `?community=0` plays plain fighters as before.
+static var community: SimState
+## A founder without a class gets the one that fits their first gun (CITIZENS_1_6 §7) until a UI lets the player pick.
+const CLASS_FOR_GUN: Dictionary[String, String] = {"ar": "rifleman", "rifle": "marksman", "dmr": "marksman",
+	"sniper": "marksman", "shotgun": "breacher", "pistol": "medic", "smg": "medic", "gl": "grenadier"}
 
 var _director: WaveDirector
 var _barricades: Barricades
@@ -73,6 +80,7 @@ func _ready() -> void:
 			_grenade_kills += killed)
 	_build_arena_ui()
 	_spawn_teammates()
+	_assign_survivors()
 
 
 ## `?mates=N` (desktop `--mates=N`) fields fewer teammates, 0 for none: compare the fight with and without them.
@@ -97,6 +105,70 @@ func _spawn_teammates() -> void:
 			spot = _player.ground_position()
 		m.position = Vector3(spot.x, GROUND_Y, spot.y)
 		add_teammate(m)
+
+
+## The community's living survivors take the fighters, in order (the player first).
+func _assign_survivors() -> void:
+	if SpikeLauncher.arg("community", "1") == "0":
+		return
+	if community == null:
+		community = SimState.new_game(preload("res://data/sim/base_economy.tres"), _rng.randi())
+	var fighters: Array[SpikePlayer] = [_player]
+	fighters.append_array(_mates)
+	var people: Array[Survivor] = community.living()
+	for i: int in mini(fighters.size(), people.size()):
+		var s: Survivor = people[i]
+		var f: SpikePlayer = fighters[i]
+		if CommunityRules.needs_class(s) and not f.guns.is_empty():
+			CommunityRules.pick_class(s, CLASS_FOR_GUN.get(f.guns[0].config.weapon_class, "rifleman"))
+		f.set_survivor(s)
+	_show_build()
+
+
+## F3: who each fighter is and what their build does to them.
+func _show_build() -> void:
+	var fighters: Array[SpikePlayer] = [_player]
+	fighters.append_array(_mates)
+	for i: int in fighters.size():
+		var f: SpikePlayer = fighters[i]
+		if f.survivor == null:
+			continue
+		var s: Survivor = f.survivor
+		var g: Gun = f.guns[0] if not f.guns.is_empty() else null
+		DebugOverlay.set_stat("squad_%d" % i, "%s · %s · %s · %s · %s · HP %d · stamina %d%s" % [s.name, s.background,
+			s.combat_class, s.status, ", ".join(s.traits), f.health.max_hp, roundi(f.motion.stamina_max()),
+			(" · spread ×%.2f reload ×%.2f" % [g.spread_deg / maxf(g.config.spread_deg, 0.001),
+				g.reload_sec / maxf(g.config.reload_sec, 0.001)]) if g != null else ""])
+
+
+## The night is over: what it left on each survivor (NightRules), as summary lines.
+func _report_night(won: bool) -> PackedStringArray:
+	var lines: PackedStringArray = PackedStringArray()
+	if community == null:
+		return lines
+	var fighters: Array[SpikePlayer] = [_player]
+	fighters.append_array(_mates)
+	for f: SpikePlayer in fighters:
+		if f.survivor == null:
+			continue
+		var shots: int = 0
+		var kills: int = 0
+		for g: Gun in f.guns:
+			shots += g.shots_fired
+		for k: int in f.kills_by_gun.values():
+			kills += k
+		var got: Dictionary = NightRules.apply(community, f.survivor, {"shots": shots, "kills": kills,
+			"bites": f.health.bites, "won": won and f.health.state != FighterHealth.State.DEAD}, _rng)
+		var parts: PackedStringArray = PackedStringArray([tr("+%d influence") % roundi(float(got["influence"]))])
+		for skill: String in got["levels"]:
+			parts.append(tr("%s level %d") % [skill.capitalize(), int(got["levels"][skill])])
+		for t: String in got["traits"]:
+			parts.append(tr("now %s") % str(TraitRules.defs()[t]["name"]))
+		if bool(got["infected"]):
+			parts.append(tr("INFECTED"))
+		lines.append("%s (%s): %s" % [f.survivor.name, tr(f.survivor.status.capitalize()), " · ".join(parts)])
+	_show_build()
+	return lines
 
 
 func _process(delta: float) -> void:
@@ -388,6 +460,7 @@ func _end_run() -> void:
 	for m: Teammate in _mates:
 		alive += 1 if m.health.state != FighterHealth.State.DEAD else 0
 	lines.append(tr("Teammates alive: %d / %d") % [alive, _mates.size()])
+	lines.append_array(_report_night(won))
 	run["teammates_alive"] = alive
 	_summary.text = "\n".join(lines)
 	_again.text = tr("Play again  (X)") if _player.using_pad else tr("Play again  (R)")

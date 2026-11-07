@@ -20,15 +20,15 @@ var shot_sfx: StringName:  ## the gun's shot, or an attachment's (silencer)
 				return a.shot_sfx
 		return config.shot_sfx
 var spread_deg: float:
-	get: return config.spread_deg * _mul.spread_mul
+	get: return config.spread_deg * _mul.spread_mul * _build.spread(config.weapon_class)
 var recoil_deg: float:
-	get: return config.recoil_deg * _mul.recoil_mul
+	get: return config.recoil_deg * _mul.recoil_mul * _build.recoil(config.weapon_class)
 var mag_size: int:
 	get: return maxi(roundi(config.mag * _mul.mag_mul), 1)
 var reload_sec: float:
-	get: return config.reload_sec * _mul.reload_mul
+	get: return config.reload_sec * _mul.reload_mul * _build.reload_time(config.weapon_class)
 var wear_per_shot: float:
-	get: return config.wear_per_shot * _mul.wear_mul
+	get: return config.wear_per_shot * _mul.wear_mul * _build.wear(config.weapon_class)
 var weight_kg: float:
 	get: return config.weight_kg + _mul.weight_kg
 var flashlight: bool:
@@ -48,6 +48,7 @@ var reload_sounds: int = 0
 var dry_fires: int = 0
 
 var _mul: AttachmentConfig = AttachmentConfig.new()  ## every attachment folded into one set of multipliers
+var _build: FighterBuild = FighterBuild.new()  ## the shooter's skills and traits (apply_build)
 var _clearing_jam: bool = false
 var _cooldown: float = 0.0
 var _burst_left: int = 0
@@ -73,6 +74,11 @@ func _init(cfg: WeaponConfig, atts: Array[AttachmentConfig] = [], p_pouch: AmmoP
 		_mul.weight_kg += a.weight_kg
 		_mul.flashlight = _mul.flashlight or a.flashlight
 	ammo = mag_size
+
+
+## The shooter's build: spread (and sway), recoil, reload time, wear and fire rate for this gun's class.
+func apply_build(b: FighterBuild) -> void:
+	_build = b
 
 
 func mode() -> WeaponConfig.FireMode:
@@ -164,7 +170,7 @@ func step(delta: float, trigger: bool, rng: RandomNumberGenerator) -> int:
 		if not start_reload() and pressed and reload_left <= 0.0:
 			dry_fires += 1
 		return 0
-	_cooldown += 60.0 / config.rpm  # carry the remainder so the rate doesn't depend on FPS
+	_cooldown += 60.0 / (config.rpm * _build.rpm(config.weapon_class))  # carry the remainder so the rate doesn't depend on FPS
 	if _burst_left > 0:
 		_burst_left -= 1
 		if _burst_left == 0:
