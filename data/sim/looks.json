@@ -1,0 +1,62 @@
+{
+	"_doc": "How survivors look (GDD §3 'sex and build', §7 outfits, §13; PHASE1 1.8, J 2026-11-07: skinned bodies per the GDD, 5 outfit sets x 4 slots with colour + pattern). Looks only: no effect on stats. Rolled once from the survivor's appearance_seed (LookRules), so a save shows the same person. Colours are sRGB hex; the game tints the meshes with them. Every number here is Claude's unless a note says GDD.",
+	"sex_chance_female": 0.5,
+	"names": {"Mara": "female", "Elias": "male", "Rosa": "female", "Ana": "female", "Viktor": "male", "Joe": "male", "note": "known names keep their sex; others roll"},
+	"builds": {"slim": 0.3, "average": 0.4, "muscular": 0.15, "heavy": 0.15, "note": "GDD: slim / average / muscular / heavy, weights Claude's"},
+	"height_m": {"male": [1.65, 1.92], "female": [1.52, 1.78], "note": "GDD: men taller on average; rolled as the mean of two draws so the middle is commoner"},
+	"skin": ["#f1c9a8", "#e6b48c", "#d39b72", "#bf835a", "#a46a45", "#8a5434", "#6e4029", "#4f2d1d"],
+	"skin_note": "GDD: a palette of 6-8 tones, shared with human enemies",
+	"hair_styles": {
+		"male": {"buzz": 0.25, "short": 0.3, "messy": 0.2, "long": 0.05, "ponytail": 0.05, "bald": 0.15},
+		"female": {"short": 0.15, "messy": 0.1, "long": 0.3, "ponytail": 0.25, "bun": 0.15, "buzz": 0.05}
+	},
+	"hair_colours": {"#1c1715": 0.3, "#3b2a1e": 0.3, "#6b4a2f": 0.15, "#8a4a26": 0.08, "#c9a35e": 0.07, "#8f8b86": 0.1},
+	"facial_hair": {"chance_male": 0.45, "styles": {"stubble": 0.5, "beard": 0.3, "moustache": 0.2}},
+	"slots": ["head", "torso", "legs", "back"],
+	"patterns": ["plain", "stripe", "plaid", "camo"],
+	"outfits": {
+		"civilian": {
+			"head": {"none": 0.6, "cap": 0.2, "beanie": 0.2},
+			"torso": {"hoodie": 0.4, "jacket": 0.35, "tshirt": 0.25},
+			"legs": {"jeans": 0.6, "cargo": 0.4},
+			"back": {"backpack": 0.6, "sling_bag": 0.4},
+			"colours": ["#c9652e", "#b0363d", "#c99a2e", "#4f6178", "#5d7a4a", "#7a5a8a", "#d6cbb2", "#3a3d44"],
+			"patterns": {"plain": 0.6, "stripe": 0.2, "plaid": 0.2}
+		},
+		"worker": {
+			"head": {"none": 0.4, "cap": 0.3, "hard_hat": 0.3},
+			"torso": {"work_jacket": 0.5, "overalls": 0.3, "tshirt": 0.2},
+			"legs": {"cargo": 0.6, "jeans": 0.4},
+			"back": {"tool_bag": 0.6, "backpack": 0.4},
+			"colours": ["#c99a2e", "#d97a2b", "#4f6178", "#6a5038", "#3c3a2e", "#9a3a30"],
+			"patterns": {"plain": 0.7, "plaid": 0.3}
+		},
+		"medic": {
+			"head": {"none": 0.6, "headband": 0.2, "beanie": 0.2},
+			"torso": {"scrubs": 0.5, "lab_coat": 0.3, "jacket": 0.2},
+			"legs": {"scrub_pants": 0.6, "jeans": 0.4},
+			"back": {"medical_bag": 0.8, "backpack": 0.2},
+			"colours": ["#5e9a9a", "#4f7fa8", "#e4e0d4", "#7aa07a", "#b0363d"],
+			"patterns": {"plain": 0.9, "stripe": 0.1}
+		},
+		"soldier": {
+			"head": {"helmet": 0.4, "beanie": 0.3, "none": 0.3},
+			"torso": {"fatigues": 0.5, "vest": 0.5},
+			"legs": {"fatigue_pants": 0.7, "cargo": 0.3},
+			"back": {"rucksack": 0.8, "backpack": 0.2},
+			"colours": ["#5d6b3c", "#6c6a52", "#4b5532", "#7a7058", "#3c3a2e"],
+			"patterns": {"camo": 0.6, "plain": 0.4}
+		},
+		"fisher": {
+			"head": {"bucket_hat": 0.4, "beanie": 0.3, "none": 0.3},
+			"torso": {"raincoat": 0.5, "sweater": 0.3, "vest": 0.2},
+			"legs": {"waders": 0.5, "cargo": 0.5},
+			"back": {"sling_bag": 0.6, "backpack": 0.4},
+			"colours": ["#d9a62b", "#c9652e", "#3a5266", "#2e4a5e", "#6a7a5a", "#b0363d"],
+			"patterns": {"plain": 0.6, "stripe": 0.4}
+		}
+	},
+	"background_outfit": {"ex_soldier": "soldier", "fisherman": "fisher", "doctor": "medic", "researcher": "medic", "construction_worker": "worker", "farmer": "worker", "teacher": "civilian", "programmer": "civilian", "boxer": "civilian"},
+	"mix_chance": 0.25,
+	"mix_note": "each slot takes a piece from another set at this chance, so two survivors of one background still differ; the colour comes from the set the piece came from"
+}

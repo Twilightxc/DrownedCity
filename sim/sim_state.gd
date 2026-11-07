@@ -33,6 +33,7 @@ static func new_game(rules: SimRules, p_seed: int) -> SimState:
 		s.status = str(StatusRules.data()["starting_status"])  # the founders are members
 	for s: Survivor in state.survivors:  # after every trait roll, so those stay as before
 		CommunityRules.roll_born(s, build_rng)
+		LookRules.dress(s)  # its own stream from the appearance seed
 	for res: String in RESOURCES:
 		state.stock[res] = rules.starting_stock.get(res, 0.0)
 	BaseRules.init(state)
