@@ -60,6 +60,8 @@ var kills_by_gun: Dictionary[String, int] = {}  ## for the arena's run summary a
 var display_name: String = "You"
 var reviver: SpikePlayer  ## downed: who is helping it up, null when nobody is
 var revive_left: float = 0.0
+var survivor: Survivor  ## SimCore's person behind this fighter (1.6); null = a plain fighter
+var build: FighterBuild = FighterBuild.new()  ## that survivor's build as fighter numbers
 
 var _hitscan: Hitscan
 var _assist: AimAssist
@@ -121,6 +123,24 @@ func _arm() -> void:
 		worn = loadout.wearing
 	health = FighterHealth.new(fighter, worn)
 	health.state_changed.connect(_on_health_state)
+	_apply_build()
+
+
+## Puts `s` behind this fighter (1.6): their name, and their build (skills, traits, class, needs) on the HP,
+## stamina, noise and guns. Call after setup(); it starts the fighter fresh.
+func set_survivor(s: Survivor) -> void:
+	survivor = s
+	display_name = s.name
+	build = FighterBuild.new(BuildRules.mods(s))
+	_apply_build()
+	grenade_count += build.extra_grenades()  # Grenadier
+
+
+func _apply_build() -> void:
+	health.apply_build(build)
+	motion.apply_build(build)
+	for g: Gun in guns:
+		g.apply_build(build)
 
 
 ## Pistols and SMGs: what a downed fighter can still shoot one-handed.
@@ -266,7 +286,7 @@ func start_reload() -> void:
 ## Supply crate: grenades back to full, loose rounds topped up to the loadout's amounts.
 func restock() -> void:
 	if throwable != null:
-		grenade_count = throwable.carry
+		grenade_count = maxi(grenade_count, throwable.carry + build.extra_grenades())
 	if loadout != null:
 		for caliber: String in loadout.ammo:
 			pouch.add(caliber, maxi(loadout.ammo[caliber] - pouch.count(caliber), 0))
@@ -406,7 +426,7 @@ func _update_revive(delta: float) -> void:
 	if not reviver.health.is_alive() or not near:
 		reviver = null  # walked off or went down: start again next time
 		return
-	revive_left -= delta
+	revive_left -= delta * reviver.build.revive_rate()  # a Medic is twice as quick
 	if revive_left <= 0.0:
 		reviver = null
 		health.revive()
