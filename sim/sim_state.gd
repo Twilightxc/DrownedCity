@@ -24,6 +24,7 @@ static func new_game(rules: SimRules, p_seed: int) -> SimState:
 	var cat: SkillCatalog = SkillCatalog.load_default()
 	for s: Survivor in state.survivors:
 		SkillRules.setup(s, SkillRules.roll_background(build_rng, cat), cat)
+		s.traits = TraitRules.roll(build_rng)
 	for res: String in RESOURCES:
 		state.stock[res] = rules.starting_stock.get(res, 0.0)
 	return state
@@ -52,7 +53,17 @@ func add_stock(amounts: Dictionary[String, float]) -> void:
 ## Morning upkeep (GDD §11), then the clock moves to the next morning.
 func advance_day(rules: SimRules) -> void:
 	var people: Array[Survivor] = living()
-	var short_food: bool = _consume("food", rules.food_per_survivor * people.size())
+	var food: float = 0.0
+	var community_morale: float = 0.0
+	for s: Survivor in people:
+		var m: StatMods = BuildRules.mods(s)
+		food += m.apply(&"food_use", rules.food_per_survivor)  # Big Eater ×1.5
+		community_morale += m.add.get(&"community_morale", 0.0)  # Optimist / Grumpy
+		s.change_morale(m.add.get(&"morale_per_day", 0.0))  # Survivor's Guilt
+		TraitRules.tick_day(s)
+	for s: Survivor in people:
+		s.change_morale(community_morale)
+	var short_food: bool = _consume("food", food)
 	var short_water: bool = _consume("water", rules.water_per_survivor * people.size())
 	var short_materials: bool = _consume("materials", rules.materials_per_day)
 	for s: Survivor in people:
