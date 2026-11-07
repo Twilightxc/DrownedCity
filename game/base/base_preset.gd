@@ -1,9 +1,10 @@
 class_name BasePreset
 extends RefCounted
 ## Test bases for the base scene until the build UI (1.7 step 4): a community with rooms already standing and jobs
-## queued, so daily life has something to do. `?rooms=start|tier1|tier2` (F5 cycles), `?people=3..6`.
+## queued, so daily life has something to do; "new" is a fresh base to build from the panel (1.7 step 4).
+## `?rooms=new|start|tier1|tier2` (F5 cycles), `?people=3..6`.
 
-const KINDS: PackedStringArray = ["start", "tier1", "tier2"]
+const KINDS: PackedStringArray = ["new", "start", "tier1", "tier2"]  ## new = the real start: tents + rain barrels
 const RULES: SimRules = preload("res://data/sim/base_economy.tres")
 const EXTRA_NAMES: PackedStringArray = ["Ana", "Viktor", "Joe"]
 ## Slot order (BaseRules.init: large first): sleeping, farm, infirmary | water, kitchen, watchtower.
@@ -36,6 +37,8 @@ static func apply(state: SimState, kind: String) -> void:
 	BaseRules.init(state)
 	for s: Survivor in state.survivors:
 		s.assignment = -1
+	if kind == "new":
+		return
 	for i: int in ROOMS.size():
 		var r: RoomState = state.rooms[i]
 		r.room = ROOMS[i]
