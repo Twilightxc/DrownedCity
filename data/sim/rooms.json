@@ -1,6 +1,6 @@
 {
 	"_doc": "The rooftop base (GDD §4). Demo rooms (J 2026-11-07, 'survival set'): sleeping, farm, infirmary (large); water, kitchen, watchtower (small); tiers 1-2. A room is built (or upgraded) by survivors working its slot for build_hours; producing rooms run a queue of 1-3 jobs that only moves while someone works there. Recipes: inputs are taken when a unit starts, outputs land when its work_hours are done. All numbers Claude's.",
-	"slots": {"large": 3, "small": 3, "note": "GDD says 2 large + 4 small, but the demo set has 3 large rooms: 3 + 3 until expanding downstairs (1.9) adds slots. One line to change back"},
+	"slots": {"large": 3, "small": 3, "note": "J 2026-11-07: 3 large + 3 small (the GDD said 2 + 4; the demo set has 3 large rooms). Expanding downstairs (1.9) adds slots"},
 	"starting_rooms": [{"room": "sleeping", "tier": 1}, {"room": "water", "tier": 1}],
 	"rooms": {
 		"sleeping": {

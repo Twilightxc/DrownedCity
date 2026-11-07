@@ -11,7 +11,7 @@
 
 ## Done
 - `data/sim/rooms.json`: 6 rooms × 2 tiers (build cost, build hours, beds, queue size, work speed, per-day output,
-  skill needed), 6 recipes, meal morale, no-bed sleep. Slots 3 large + 3 small (GDD said 2 + 4: flag for J).
+  skill needed), 6 recipes, meal morale, no-bed sleep. Slots 3 large + 3 small (J kept it over the GDD's 2 + 4).
   Start: tents + rain barrels standing. All numbers Claude's.
 - `sim/room_state.gd`, `sim/base_rules.gd`: build / upgrade (materials now, work hours from whoever works the slot;
   the clinic needs a Medicine survivor), demolish, queue / cancel (inputs back), assign, `work_hour`, per-day
@@ -27,4 +27,4 @@
 - Community-skill room bonuses (Gardening food_output etc.) are not applied to production yet.
 
 ## J must test
-Nothing to play (SimCore). Read `data/sim/rooms.json`; decide 3 + 3 slots vs the GDD's 2 + 4.
+Nothing to play (SimCore). Read `data/sim/rooms.json`.
