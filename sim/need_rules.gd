@@ -16,17 +16,16 @@ static func data() -> Dictionary:
 	return _data
 
 
-## What the survivor does this hour: the game's override, else the schedule (sleep at night, work by day; hurt
-## or sick, rest). The utility AI replaces the schedule (1.7 step 2).
+## What the survivor does this hour: the game's override, else what daily life chose (LifeRules.decide), else
+## (nothing decided yet, a NeedRules-only test) sleep at night, rest hurt or sick, work by day.
 static func activity(s: Survivor, hour: int) -> String:
 	if not s.needs.activity.is_empty():
 		return s.needs.activity
-	var awake_hurt: bool = heavily_injured(s) or s.needs.sick_days > 0  # rest instead of work (the infirmary)
-	var sch: Dictionary = data()["schedule"]
-	var from: int = int(sch["sleep_from"])
-	var to: int = int(sch["sleep_to"])
-	var asleep: bool = hour >= from or hour < to if from > to else (hour >= from and hour < to)
-	return "sleep" if asleep else "rest" if awake_hurt else "work"
+	if not s.needs.doing.is_empty():
+		return s.needs.doing
+	if LifeRules.is_night(s, hour):
+		return "sleep"
+	return "rest" if heavily_injured(s) or s.needs.sick_days > 0 else "work"
 
 
 ## One in-game hour. Returns what happened that the community feels: "turned" when a quarantined survivor's time

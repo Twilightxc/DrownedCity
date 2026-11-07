@@ -35,6 +35,7 @@ func test_advance_day_consumes_upkeep_and_moves_clock() -> void:
 func test_a_shortage_lowers_morale_at_once_and_starves_later() -> void:
 	var state: SimState = SimState.new_game(_rules, 1)
 	state.stock["food"] = 1.0
+	state.survivors[0].needs.activity = "idle"  # no daily life: only the morning moves morale
 	state.advance_day(_rules)
 	assert_eq(state.stock["food"], 0.0)
 	assert_eq(state.survivors[0].morale, Survivor.MAX_STAT - _rules.shortage_morale_loss)

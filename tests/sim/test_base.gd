@@ -92,12 +92,13 @@ func test_building_takes_materials_and_work_hours() -> void:
 func test_nobody_working_means_nothing_moves() -> void:
 	var i: int = _empty("small")
 	BaseRules.build(_state, i, "kitchen")
+	BaseRules.assign(_state, _s, _slot("water"))  # pinned to a room with nothing to do
 	for d: int in 2:
 		_state.advance_day(_rules)
-	assert_eq(_state.rooms[i].tier, 0, "no one assigned")
+	assert_eq(_state.rooms[i].tier, 0, "no one works there")
 
 
-func test_the_schedule_sends_an_assigned_survivor_to_work() -> void:
+func test_an_assigned_survivor_works_there() -> void:
 	var i: int = _empty("small")
 	BaseRules.build(_state, i, "kitchen")
 	BaseRules.assign(_state, _s, i)
@@ -197,6 +198,7 @@ func test_the_hurt_rest_in_the_infirmary_and_heal_faster() -> void:
 
 func test_a_cooked_meal_feeds_and_cheers() -> void:
 	_s.morale = 50.0
+	_s.needs.activity = "idle"  # no daily life: only the morning moves morale
 	_s.needs.hunger = 40.0
 	_state.stock["meals"] = 1.0
 	var food: float = _state.stock["food"]

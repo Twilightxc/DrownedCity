@@ -136,6 +136,7 @@ func test_a_leadership_citizen_lifts_everyones_morale() -> void:
 	var boss: Survivor = _state.add_survivor("Ana", 8)
 	_outstanding(boss, "leadership")
 	_s.morale = 50.0
+	_s.needs.activity = "idle"  # no daily life: only the morning moves morale
 	_state.advance_day(_rules)
 	assert_almost_eq(_s.morale, 50.5, 0.001)
 
