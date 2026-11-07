@@ -42,7 +42,7 @@ func test_rejects_garbage_and_other_files() -> void:
 
 
 func test_rejects_save_from_newer_build() -> void:
-	var text: String = SaveCodec.encode(_played_state()).replace('"schema": 1', '"schema": 99')
+	var text: String = SaveCodec.encode(_played_state()).replace('"schema": %d' % SaveCodec.SCHEMA_VERSION, '"schema": 99')
 	var result: SaveCodec.Result = SaveCodec.decode(text)
 	assert_null(result.state)
 	assert_string_contains(result.error, "newer build")
@@ -54,24 +54,40 @@ func test_rejects_damaged_state() -> void:
 
 
 func test_migrations_run_in_order_up_to_current() -> void:
-	# A pretend schema 2 that renamed "stock" to "stockpile"; schema 3 reads it back as "stock".
-	var to_v2: Callable = func(d: Dictionary) -> Dictionary:
+	# A pretend schema 3 that renamed "stock" to "stockpile"; schema 4 reads it back as "stock".
+	var to_v3: Callable = func(d: Dictionary) -> Dictionary:
 		d["stockpile"] = d["stock"]
 		d.erase("stock")
 		return d
-	var to_v3: Callable = func(d: Dictionary) -> Dictionary:
+	var to_v4: Callable = func(d: Dictionary) -> Dictionary:
 		d["stock"] = d["stockpile"]
 		d.erase("stockpile")
 		return d
-	var migrations: Dictionary[int, Callable] = {1: to_v2, 2: to_v3}
+	var steps: Dictionary[int, Callable] = {2: to_v3, 3: to_v4}
 	var state: SimState = _played_state()
-	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(state), migrations, 3)
+	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(state), steps, 4)
 	assert_eq(result.error, "")
-	assert_eq(result.migrated_from, 1)
+	assert_eq(result.migrated_from, 2)
 	assert_eq(result.state.to_dict(), state.to_dict())
 
 
+func test_a_schema_1_save_gets_skills_at_0_and_no_background() -> void:
+	var state: SimState = _played_state()
+	var envelope: Dictionary = JSON.parse_string(SaveCodec.encode(state))
+	envelope["schema"] = 1
+	for sd: Dictionary in envelope["state"]["survivors"]:
+		sd.erase("background")
+		sd.erase("skills")
+	var result: SaveCodec.Result = SaveCodec.decode(JSON.stringify(envelope))
+	assert_eq(result.error, "")
+	assert_eq(result.migrated_from, 1)
+	var s: Survivor = result.state.survivors[0]
+	assert_eq(s.background, "")
+	assert_eq(s.skills.size(), SkillCatalog.load_default().skill_ids().size())
+	assert_eq(s.skills["shooting"].level, 0)
+
+
 func test_missing_migration_is_an_error() -> void:
-	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(_played_state()), {}, 2)
+	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(_played_state()), {}, 3)
 	assert_null(result.state)
-	assert_string_contains(result.error, "no migration from schema 1")
+	assert_string_contains(result.error, "no migration from schema 2")

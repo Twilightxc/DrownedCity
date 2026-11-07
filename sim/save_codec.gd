@@ -5,10 +5,25 @@ extends RefCounted
 ## version that rewrites the old "state" dictionary into the new shape.
 
 const GAME_ID: String = "drowned_city"
-const SCHEMA_VERSION: int = 1
+const SCHEMA_VERSION: int = 2
 
 ## from_version -> Callable(state: Dictionary) -> Dictionary, producing from_version + 1.
-const MIGRATIONS: Dictionary[int, Callable] = {}
+static func migrations() -> Dictionary[int, Callable]:
+	return {1: _v1_to_v2}
+
+
+## Schema 2 (1.6): survivors gain a background and the core skills. An old survivor has no background and every
+## skill at 0 (the community played before 1.6 existed).
+static func _v1_to_v2(d: Dictionary) -> Dictionary:
+	var skill_ids: PackedStringArray = SkillCatalog.load_default().skill_ids()
+	for sd: Variant in d.get("survivors", []):
+		var s: Dictionary = sd
+		s["background"] = ""
+		var skills: Dictionary = {}
+		for id: String in skill_ids:
+			skills[id] = SurvivorSkill.new().to_array()
+		s["skills"] = skills
+	return d
 
 
 class Result:
@@ -29,8 +44,9 @@ static func encode(state: SimState, build: String = "dev") -> String:
 	return JSON.stringify(envelope, "\t")
 
 
-static func decode(text: String, migrations: Dictionary[int, Callable] = MIGRATIONS,
-		current_version: int = SCHEMA_VERSION) -> Result:
+## `steps` replaces migrations() (tests); null = the real ones.
+static func decode(text: String, steps: Variant = null, current_version: int = SCHEMA_VERSION) -> Result:
+	var migrations_by_version: Dictionary = migrations() if steps == null else steps
 	var result: Result = Result.new()
 	var json: JSON = JSON.new()
 	if json.parse(text) != OK:
@@ -55,10 +71,10 @@ static func decode(text: String, migrations: Dictionary[int, Callable] = MIGRATI
 	if version < current_version:
 		result.migrated_from = version
 	while version < current_version:
-		if not migrations.has(version):
+		if not migrations_by_version.has(version):
 			result.error = "no migration from schema %d" % version
 			return result
-		state_d = migrations[version].call(state_d)
+		state_d = (migrations_by_version[version] as Callable).call(state_d)
 		version += 1
 	var missing: String = _missing_key(state_d)
 	if not missing.is_empty():

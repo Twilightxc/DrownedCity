@@ -1,6 +1,6 @@
 class_name Survivor
 extends RefCounted
-## One named community member (GDD §3). Spike D carries only what the save needs to prove itself.
+## One named community member (GDD §3). 1.6 adds the build (CITIZENS_1_6 §1): background and core skills so far.
 
 const MAX_STAT: float = 100.0
 
@@ -9,6 +9,8 @@ var name: String = ""
 var appearance_seed: int = 0  ## the look is rebuilt from this, so it never changes between loads
 var health: float = MAX_STAT
 var morale: float = MAX_STAT
+var background: String = ""  ## skills.json backgrounds id; "" = none (a save from before 1.6)
+var skills: Dictionary[String, SurvivorSkill] = {}  ## core skill id -> state (SkillRules)
 
 
 func _init(p_id: int = 0, p_name: String = "", p_seed: int = 0) -> void:
@@ -30,11 +32,19 @@ func change_morale(amount: float) -> void:
 
 
 func to_dict() -> Dictionary:
-	return {"id": id, "name": name, "appearance_seed": appearance_seed, "health": health, "morale": morale}
+	var skill_d: Dictionary = {}
+	for k: String in skills:
+		skill_d[k] = skills[k].to_array()
+	return {"id": id, "name": name, "appearance_seed": appearance_seed, "health": health, "morale": morale,
+		"background": background, "skills": skill_d}
 
 
 static func from_dict(d: Dictionary) -> Survivor:
 	var s: Survivor = Survivor.new(int(d["id"]), str(d["name"]), int(d["appearance_seed"]))
 	s.health = float(d["health"])
 	s.morale = float(d["morale"])
+	s.background = str(d["background"])
+	var skill_d: Dictionary = d["skills"]
+	for k: Variant in skill_d:
+		s.skills[str(k)] = SurvivorSkill.from_array(skill_d[k] as Array)
 	return s
