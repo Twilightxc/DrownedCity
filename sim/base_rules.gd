@@ -140,12 +140,38 @@ static func assign(state: SimState, s: Survivor, i: int) -> bool:
 	return true
 
 
-## One hour of `s` working in their slot: building comes first, then the queue's first job. Returns what happened:
-## "built", "made", "stalled" (inputs missing or a perk needed), "idle" (nothing to do) or "" for progress.
-static func work_hour(state: SimState, s: Survivor) -> String:
-	if s.assignment < 0 or s.assignment >= state.rooms.size():
+## What `s` could do in slot `i` now, without changing anything: "build" (building or upgrading), "job" (the
+## queue's first job can run), "watch" (a guard post) or "" (nothing). The daily-life AI scores rooms by it.
+static func work_kind(state: SimState, i: int, s: Survivor) -> String:
+	if i < 0 or i >= state.rooms.size():
+		return ""
+	var r: RoomState = state.rooms[i]
+	if r.building > 0:
+		return "build"
+	var t: Dictionary = tier_def(r)
+	if t.is_empty():
+		return ""
+	if int(t.get("guards", 0)) > 0:
+		return "watch"
+	if r.queue.is_empty():
+		return ""
+	var rec: Dictionary = recipe(r.queue[0]["recipe"])
+	if rec.has("needs_perk") and not CommunityRules.room_mods(s).has_perk(StringName(rec["needs_perk"])):
+		return ""
+	if not r.started and not _has(state, rec.get("inputs", {})):
+		return ""
+	return "job"
+
+
+## One hour of `s` working in slot `i` (default: their assignment): building comes first, then the queue's first
+## job. Returns what happened: "built", "made", "stalled" (inputs missing or a perk needed), "idle" (nothing to do)
+## or "" for progress.
+static func work_hour(state: SimState, s: Survivor, i: int = -2) -> String:
+	if i == -2:
+		i = s.assignment
+	if i < 0 or i >= state.rooms.size():
 		return "idle"
-	var r: RoomState = state.rooms[s.assignment]
+	var r: RoomState = state.rooms[i]
 	var m: StatMods = BuildRules.base_mods(s)
 	if r.building > 0:
 		r.build_left -= m.apply(&"build_speed", 1.0)
@@ -217,7 +243,8 @@ static func best(state: SimState, room: String, key: String, fallback: float) ->
 
 
 ## This hour's room effects for each living survivor doing `activity_of[s.id]`: a bed (or not) for sleepers, an
-## infirmary bed for those resting hurt or sick. Beds go to survivors in id order.
+## infirmary bed for those resting hurt or sick, and for them asleep too (a bed, and they heal faster). Beds go to
+## survivors in id order.
 static func hour_mods(state: SimState, activity_of: Dictionary) -> Dictionary:
 	var out: Dictionary = {}  # survivor id -> StatMods
 	var sleep_beds: int = beds(state, "sleeping")
@@ -226,9 +253,13 @@ static func hour_mods(state: SimState, activity_of: Dictionary) -> Dictionary:
 	var heal: float = best(state, "infirmary", "heal_rate", 0.0)
 	for s: Survivor in state.living():
 		var m: StatMods = StatMods.new()
+		var hurt: bool = NeedRules.heavily_injured(s) or s.needs.sick_days > 0
 		match str(activity_of.get(s.id, "")):
 			"sleep":
-				if sleep_beds > 0:
+				if hurt and sick_beds > 0:
+					sick_beds -= 1
+					m.push(&"heal_rate", "mul", heal)
+				elif sleep_beds > 0:
 					sleep_beds -= 1
 					m.push(&"sleep_quality", "mul", quality)
 				else:

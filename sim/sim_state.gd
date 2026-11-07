@@ -69,6 +69,7 @@ func advance_day(rules: SimRules) -> void:
 ## One in-game hour: every living survivor's needs move (NeedRules). Fast-forward = many of these.
 func advance_hour() -> void:
 	var base: StatMods = CommunityRules.base_wide(self)  # outstanding citizens' skills at half strength
+	LifeRules.decide(self)  # daily life: everyone picks this hour's activity
 	var acts: Dictionary = {}
 	for s: Survivor in living():
 		acts[s.id] = NeedRules.activity(s, clock.hour)
@@ -77,8 +78,7 @@ func advance_hour() -> void:
 		var m: StatMods = BuildRules.base_mods(s)
 		m.absorb(base)
 		m.absorb(room[s.id])
-		if acts[s.id] == "work":
-			BaseRules.work_hour(self, s)
+		LifeRules.act_hour(self, s, acts[s.id])
 		for event: String in NeedRules.tick_hour(s, clock.hour, m, rng_for(s.id)):
 			if event == "turned":
 				for o: Survivor in living():
@@ -100,6 +100,7 @@ func _morning(rules: SimRules) -> void:
 	var community_morale: float = CommunityRules.base_wide(self).add.get(&"community_morale", 0.0)  # Leadership
 	var food_need: Dictionary[int, float] = {}
 	for s: Survivor in people:
+		s.needs.worked_today = 0.0  # a new shift
 		var m: StatMods = BuildRules.base_mods(s)
 		food_need[s.id] = m.apply(&"food_use", rules.food_per_survivor)  # Big Eater ×1.5
 		community_morale += m.add.get(&"community_morale", 0.0)  # Optimist / Grumpy

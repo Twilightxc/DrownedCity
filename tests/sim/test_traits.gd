@@ -75,6 +75,7 @@ func test_survivors_guilt_lasts_five_days_and_lowers_morale() -> void:
 	TraitRules.on_event(_s, "close_friend_died")
 	assert_true("survivors_guilt" in _s.traits)
 	_s.morale = 50.0
+	_s.needs.activity = "idle"  # no daily life: only the morning moves morale
 	state.advance_day(rules)
 	assert_almost_eq(_s.morale, 45.0, 0.001)
 	for i: int in 4:
@@ -104,5 +105,6 @@ func test_an_optimist_lifts_everyone() -> void:
 	state.stock["meals"] = 0.0  # rations, not cooked meals
 	TraitRules.give(_s, "optimist")
 	other.morale = 50.0
+	other.needs.activity = "idle"  # no daily life: only the morning moves morale
 	state.advance_day(rules)
 	assert_almost_eq(other.morale, 52.0, 0.001)

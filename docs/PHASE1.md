@@ -177,9 +177,9 @@ Part A (combat, 1.1–1.5) ≈ 80 h, so the total is ≈ 750 h.
 ### 1.7 base (J, 2026-11-07; GDD §4)
 Rooms (J: "survival set"): sleeping, farm, infirmary (large); water, kitchen, watchtower (small); tiers 1–2.
 Starts with 3 large + 3 small slots (J kept 3 + 3 over the GDD's 2 + 4: three rooms are large), tents and rain barrels standing.
-- [ ] Step 1, SimCore: slots, build / upgrade by work hours, production queues, assignments, beds, meals
-      (`phase1-7/base-sim`)
-- [ ] Step 2, SimCore: utility AI daily life replaces the sleep 22–06 schedule
+- [x] Step 1, SimCore: slots, build / upgrade by work hours, production queues, assignments, beds, meals
+      (PR #79)
+- [ ] Step 2, SimCore: utility AI daily life replaces the sleep 22–06 schedule (`phase1-7/life-ai`)
 - [ ] Step 3, the base scene on the arena roof: rooms by tier (Blender kit, desktop), survivors walking to their
       activity, time speed-up
 - [ ] Step 4, UI: build / upgrade / queue / assign, gamepad
