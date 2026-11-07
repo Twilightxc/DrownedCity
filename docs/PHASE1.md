@@ -184,7 +184,20 @@ Starts with 3 large + 3 small slots (J kept 3 + 3 over the GDD's 2 + 4: three ro
       activity, time speed-up (`phase1-7/base-scene`: `?spike=base`, J: its own scene, day + night, no horde;
       new daily-life clips; PR #81)
 - [x] Step 4, UI: build / upgrade / queue / assign, gamepad (PR #82: the slot panel)
-- [ ] Step 5, Observer mode (`phase1-7/observer`: O / pad Back; survivor card with a short log)
+- [x] Step 5, Observer mode (PR #83: O / pad Back; survivor card with a short log)
+
+### 1.8 survivors on screen (J, 2026-11-07; GDD §3, §7, §13)
+J chose: **skinned bodies per the GDD** (male / female, head 1:6, ~3–5k tris, build shape keys, height by bone scale,
+modular hair, skin and hair colour per survivor); **hand-keyed clips now, Mixamo later** (same skeleton and bone names,
+so every current clip keeps working); **5 outfit sets × 4 slots** (head, torso, legs, back) with colour + pattern
+(plain / stripe / plaid / camo); wear and wet later.
+- [ ] Step 1, SimCore: each survivor's look rolled from the appearance seed and background, saved
+      (`phase1-8/looks-sim`)
+- [ ] Step 2, Blender: the two skinned bodies, 4 builds as shape keys, heads, 6 hair styles + facial hair
+- [ ] Step 3, Blender: outfit pieces for the 5 sets × 4 slots, skinned to the same rig; colour / pattern shader
+- [ ] Step 4, SurvivorView builds a survivor from its look (pieces, shape keys, bone scale, tints) in the arena and
+      the base; a `?spike=looks` gallery
+- [ ] Step 5, Mixamo: J downloads the clip list; retarget onto the rig (when J has time)
 
 ## J's bug list after 1.G (2026-11-05)
 

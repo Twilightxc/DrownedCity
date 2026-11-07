@@ -22,6 +22,7 @@ static func make(kind: String, people: int, game_seed: int, hour: int) -> SimSta
 		s.traits = TraitRules.roll(rng)
 		s.status = "member"
 		CommunityRules.roll_born(s, rng)
+		LookRules.dress(s)
 	for res: String in SimState.RESOURCES:
 		state.stock[res] = 30.0
 	state.stock["meals"] = 0.0
