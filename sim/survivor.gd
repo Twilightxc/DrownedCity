@@ -1,7 +1,7 @@
 class_name Survivor
 extends RefCounted
 ## One named community member (GDD §3). 1.6 adds the build (CITIZENS_1_6 §1): background, core skills, traits;
-## the body's needs; and status in the community (StatusRules).
+## the body's needs; status in the community (StatusRules); community skill, books and class (CommunityRules).
 
 const MAX_STAT: float = 100.0
 
@@ -18,6 +18,12 @@ var counters: Dictionary[String, int] = {}  ## toward earned traits: horde_night
 var needs: SurvivorNeeds = SurvivorNeeds.new()  ## fatigue, hunger, thirst, injuries, sickness, infection (NeedRules)
 var status: String = "stranger"  ## status.json ladder id; only ever goes up
 var rank_points: float = 0.0  ## influence this survivor earned; spending the base pool never lowers it
+var community_skill: String = ""  ## community.json skills id; "" = an empty slot (a book fills it)
+var community_specs: PackedStringArray = PackedStringArray()  ## specializations of that skill, from books
+var leader_paths: PackedStringArray = PackedStringArray()  ## leader types added by leader books
+var reading: String = ""  ## the book being read ("skill:<id>", "spec:<skill>:<spec>", "leader:<type>")
+var read_days: int = 0  ## days left on it
+var combat_class: String = ""  ## community.json classes id; "" until picked as a member
 
 
 func _init(p_id: int = 0, p_name: String = "", p_seed: int = 0) -> void:
@@ -45,7 +51,9 @@ func to_dict() -> Dictionary:
 	return {"id": id, "name": name, "appearance_seed": appearance_seed, "health": health, "morale": morale,
 		"background": background, "skills": skill_d, "traits": Array(traits), "trait_days": trait_days.duplicate(),
 		"counters": counters.duplicate(), "needs": needs.to_dict(),
-		"status": status, "rank_points": rank_points}
+		"status": status, "rank_points": rank_points,
+		"community_skill": community_skill, "community_specs": Array(community_specs),
+		"leader_paths": Array(leader_paths), "reading": reading, "read_days": read_days, "combat_class": combat_class}
 
 
 static func from_dict(d: Dictionary) -> Survivor:
@@ -66,4 +74,10 @@ static func from_dict(d: Dictionary) -> Survivor:
 	s.needs = SurvivorNeeds.from_dict(d["needs"])
 	s.status = str(d["status"])
 	s.rank_points = float(d["rank_points"])
+	s.community_skill = str(d["community_skill"])
+	s.community_specs = PackedStringArray(d["community_specs"])
+	s.leader_paths = PackedStringArray(d["leader_paths"])
+	s.reading = str(d["reading"])
+	s.read_days = int(d["read_days"])
+	s.combat_class = str(d["combat_class"])
 	return s

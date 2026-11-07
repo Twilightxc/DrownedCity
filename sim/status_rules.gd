@@ -72,12 +72,12 @@ static func is_outstanding(s: Survivor) -> bool:
 
 
 ## Makes `s` the leader of `leader_type` (status.json leaders). Only an outstanding citizen, alive; one leader at a
-## time, so a sitting leader steps down first. Which types a survivor may take comes from their community skill
-## (CITIZENS_1_6 §6), checked once community skills exist.
+## time, so appointing a new one replaces the old (who stays outstanding). The type must be one the survivor's
+## community skill or a leader book allows (CommunityRules.leader_types).
 static func appoint(state: SimState, s: Survivor, leader_type: String) -> bool:
 	if not s.is_alive() or not is_outstanding(s) or not (data()["leaders"] as Dictionary).has(leader_type):
 		return false
-	if not s in state.survivors:
+	if not s in state.survivors or not leader_type in CommunityRules.leader_types(s):
 		return false
 	state.leader_id = s.id
 	state.leader_type = leader_type

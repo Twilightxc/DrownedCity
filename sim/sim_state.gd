@@ -13,6 +13,7 @@ var next_survivor_id: int = 1
 var influence: float = 0.0  ## the base pool (GDD §11): trade, recruiting, outposts (StatusRules)
 var leader_id: int = 0  ## 0 = no leader; one at a time (StatusRules)
 var leader_type: String = ""  ## status.json leaders id
+var books: Dictionary[String, int] = {}  ## found books on the base's shelf -> copies (CommunityRules)
 
 
 static func new_game(rules: SimRules, p_seed: int) -> SimState:
@@ -29,6 +30,8 @@ static func new_game(rules: SimRules, p_seed: int) -> SimState:
 		SkillRules.setup(s, SkillRules.roll_background(build_rng, cat), cat)
 		s.traits = TraitRules.roll(build_rng)
 		s.status = str(StatusRules.data()["starting_status"])  # the founders are members
+	for s: Survivor in state.survivors:  # after every trait roll, so those stay as before
+		CommunityRules.roll_born(s, build_rng)
 	for res: String in RESOURCES:
 		state.stock[res] = rules.starting_stock.get(res, 0.0)
 	return state
@@ -63,8 +66,11 @@ func advance_day(rules: SimRules) -> void:
 
 ## One in-game hour: every living survivor's needs move (NeedRules). Fast-forward = many of these.
 func advance_hour() -> void:
+	var base: StatMods = CommunityRules.base_wide(self)  # outstanding citizens' skills at half strength
 	for s: Survivor in living():
-		for event: String in NeedRules.tick_hour(s, clock.hour, BuildRules.base_mods(s), rng_for(s.id)):
+		var m: StatMods = BuildRules.base_mods(s)
+		m.absorb(base)
+		for event: String in NeedRules.tick_hour(s, clock.hour, m, rng_for(s.id)):
 			if event == "turned":
 				for o: Survivor in living():
 					o.change_morale(float(NeedRules.data()["infection"]["community_morale"]["turned"]))
@@ -81,7 +87,7 @@ func rng_for(salt: int) -> RandomNumberGenerator:
 
 func _morning(rules: SimRules) -> void:
 	var people: Array[Survivor] = living()
-	var community_morale: float = 0.0
+	var community_morale: float = CommunityRules.base_wide(self).add.get(&"community_morale", 0.0)  # Leadership
 	var food_need: Dictionary[int, float] = {}
 	for s: Survivor in people:
 		var m: StatMods = BuildRules.base_mods(s)
@@ -114,6 +120,7 @@ func _morning(rules: SimRules) -> void:
 				s.change_morale(-rules.shortage_morale_loss)
 	_medicate(people)
 	StatusRules.tick_day(self)
+	CommunityRules.tick_day(self)
 
 
 ## Medicine for heavy injuries, then the sick (a day more off); sickness spreads and runs its course; an antiviral
@@ -174,6 +181,7 @@ func to_dict() -> Dictionary:
 		"influence": influence,
 		"leader_id": leader_id,
 		"leader_type": leader_type,
+		"books": books.duplicate(),
 	}
 
 
@@ -185,6 +193,9 @@ static func from_dict(d: Dictionary) -> SimState:
 	state.influence = float(d["influence"])
 	state.leader_id = int(d["leader_id"])
 	state.leader_type = str(d["leader_type"])
+	var books_d: Dictionary = d["books"]
+	for b: Variant in books_d:
+		state.books[str(b)] = int(books_d[b])
 	for sd: Variant in d["survivors"]:
 		state.survivors.append(Survivor.from_dict(sd as Dictionary))
 	var stock_d: Dictionary = d["stock"]
