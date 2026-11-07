@@ -17,7 +17,8 @@ downed. Moving sideways the game turns the hips to the travel and twists the tor
 the legs only ever walk forward or backward.
 Upper body (spine, head, arms, hands): aim_pistol, aim_rifle, carry_high (pistol / SMG sprint: high ready,
 muzzle up), carry_port (long gun sprint: port arms, across the chest), reload_pistol, reload_rifle,
-reload_shell. The gun hangs on hand_r; the game keeps it level in the aim pose (it measures the hand there).
+reload_shell. Daily life in the base (1.7, whole body, empty hands): stroll, sleep, sit, read, chat,
+work_kneel, work_stand, exercise, watch, till, water, warm_hands. The gun hangs on hand_r; the game keeps it level in the aim pose (it measures the hand there).
 Loop clips start and end on the same pose; the game sets their loop mode (LOOP_CLIPS below).
 survivor.glb.import keeps generate_lods and create_shadow_meshes off: with them on, the Compatibility renderer
 drew no shadow at all for the skinned body.
@@ -592,6 +593,189 @@ def slash_heavy(u):
     return p, (0, 0, 0)
 
 
+# ---- daily life in the base (1.7 step 3): whole-body loops with nothing in the hands ------------------
+# The base scene (game/base) plays these on the legs layer at weight 0, so the arms follow them too.
+SEAT_HIP = 0.5   # sitting on a 0.45 m crate, log or cot edge
+LIE_HIP = 0.13   # lying on the back; a bed or cot adds its height in the game
+STROLL_SPEED = 1.4
+
+
+def _relaxed(p):
+    """Standing at ease (not the shooting stance): feet under the hips, knees soft."""
+    p["thigh_l"] = (-0.04, -0.04, 0.05)
+    p["thigh_r"] = (0.02, 0.04, -0.05)
+    p["shin_l"] = (0.08, 0.0, 0.0)
+    p["shin_r"] = (0.05, 0.0, 0.0)
+
+
+def _seated(p, t=0.0):
+    """On a seat at SEAT_HIP: thighs level, shins down, a slow breath in the back."""
+    p["pelvis"] = (0.0, 0.0, 0.0)
+    p["torso"] = (0.12 + 0.015 * math.sin(t), 0.0, 0.0)
+    p["thigh_l"] = (-1.45, -0.08, 0.0)
+    p["thigh_r"] = (-1.45, 0.08, 0.0)
+    p["shin_l"] = (1.35, 0.0, 0.0)
+    p["shin_r"] = (1.4, 0.0, 0.0)
+
+
+def stroll(u):
+    """A relaxed walk about the base (STROLL_SPEED): short strides, arms swinging loose."""
+    t = u * math.tau
+    p = {"pelvis": (0.02, 0.0, 0.06 * math.sin(t)), "torso": (0.03, 0.0, -0.06 * math.sin(t)), "head": (0.05, 0.0, 0.0)}
+    _legs(p, t, 0.38, 0.7)
+    _arms_down(p, 0.22 * math.sin(t))
+    return p, (0, 0, -0.01 + 0.012 * abs(math.cos(t)))
+
+
+def sleep(u):
+    """Asleep on the back, slow breaths, head turned aside: the head toward the body's back (+Y), feet ahead (-Y).
+    Also the hurt resting in an infirmary bed."""
+    t = u * math.tau
+    b = math.sin(t)
+    p = {"pelvis": (-1.52, 0.0, 0.0), "torso": (0.02 * b, 0.0, 0.0), "head": (0.12, 0.0, 0.45)}
+    p["thigh_l"] = (0.0, -0.08, 0.0)
+    p["shin_l"] = (0.06, 0.0, 0.0)
+    p["thigh_r"] = (-0.3, 0.1, 0.0)  # one knee up
+    p["shin_r"] = (0.6, 0.0, 0.0)
+    p["arm_l"] = (0.05, -0.15, 0.0)
+    p["fore_l"] = (-0.2, 0.0, 0.0)
+    p["arm_r"] = (-0.35 + 0.03 * b, 0.0, 0.25)  # a hand on the chest rises with the breath
+    p["fore_r"] = (-1.6, 0.0, 0.0)
+    return p, (0, 0, LIE_HIP - HIP_HEIGHT + 0.006 * b)
+
+
+def sit(u):
+    """Sitting by the fire or on a crate: forearms on the knees, looking about."""
+    t = u * math.tau
+    p = {"head": (0.1, 0.0, 0.3 * math.sin(t))}
+    _seated(p, t)
+    p["arm_l"] = (-0.5, -0.05, 0.0)
+    p["arm_r"] = (-0.5, 0.05, 0.0)
+    p["fore_l"] = (-0.9, 0.0, 0.0)
+    p["fore_r"] = (-0.9 - 0.15 * max(0.0, math.sin(2 * t)), 0.0, 0.0)
+    return p, (0, 0, SEAT_HIP - HIP_HEIGHT)
+
+
+def read(u):
+    """Seated, a book held in both hands at the chest, head down; a page turns near the end of the loop."""
+    t = u * math.tau
+    turn = _keys([(0.0, 0.0), (0.78, 0.0), (0.86, 1.0), (0.94, 0.0), (1.0, 0.0)], u)
+    p = {"head": (0.45, 0.0, 0.05 * math.sin(t))}
+    _seated(p, t)
+    p["torso"] = (0.2, 0.0, 0.0)
+    p["arm_l"] = (-0.3, 0.25, 0.0)  # elbows by the ribs, the book low at the chest
+    p["arm_r"] = (-0.3 - 0.15 * turn, -0.25, 0.0)
+    p["fore_l"] = (-1.85, 0.0, 0.35)
+    p["fore_r"] = (-1.85, 0.0, -0.35 + 0.6 * turn)
+    return p, (0, 0, SEAT_HIP - HIP_HEIGHT)
+
+
+def chat(u):
+    """Standing and talking: weight shifts, the head turns to the others, the right hand makes a point twice."""
+    t = u * math.tau
+    g = max(0.0, math.sin(2 * t))
+    p = {"torso": (0.03, 0.0, 0.08 * math.sin(t)), "head": (0.05 * math.sin(2 * t), 0.0, 0.3 * math.sin(t + 0.6))}
+    _relaxed(p)
+    _arms_down(p)
+    p["arm_r"] = (-0.4 - 0.4 * g, 0.0, 0.1 + 0.2 * g)
+    p["fore_r"] = (-1.0 - 0.5 * g, 0.0, 0.0)
+    p["arm_l"] = (-0.1, -0.05, 0.0)
+    p["fore_l"] = (-0.6, 0.0, 0.0)
+    return p, (0, 0, -0.01)
+
+
+def work_kneel(u):
+    """On both knees at a planter, a bed or a site: leaning in, the hands digging, weeding or nailing in turn."""
+    t = u * math.tau
+    s = math.sin(2 * t)
+    p, root = _kneel_both()
+    p["torso"] = (0.75 + 0.06 * s, 0.0, 0.1 * math.sin(t))
+    p["head"] = (0.1, 0.0, 0.0)
+    p["arm_r"] = (-1.05 - 0.3 * s, 0.0, 0.1)
+    p["fore_r"] = (-0.35 - 0.4 * max(0.0, s), 0.0, 0.0)
+    p["arm_l"] = (-1.05 + 0.3 * s, 0.0, -0.1)
+    p["fore_l"] = (-0.35 - 0.4 * max(0.0, -s), 0.0, 0.0)
+    return p, root
+
+
+def work_stand(u):
+    """At a table, stove, barrel or tool rack: the left hand steadies, the right one stirs, chops or hammers."""
+    t = u * math.tau
+    hit = max(0.0, math.sin(2 * t))
+    p = {"torso": (0.22, 0.0, 0.05 * math.sin(t)), "head": (0.3, 0.0, 0.0)}
+    _relaxed(p)
+    p["arm_l"] = (-0.8, 0.15, 0.0)
+    p["fore_l"] = (-0.7, 0.0, 0.2)
+    p["arm_r"] = (-0.75 - 0.4 * hit, -0.1, 0.12 * math.cos(t))
+    p["fore_r"] = (-0.7 + 0.35 * hit, 0.0, 0.0)
+    return p, (0, 0, -0.02)
+
+
+def exercise(u):
+    """Squats on the roof: hips back and down, arms out ahead for balance, up again."""
+    t = u * math.tau
+    k = 0.5 - 0.5 * math.cos(t)
+    p = {"pelvis": (0.35 * k, 0.0, 0.0), "torso": (0.15 * k, 0.0, 0.0), "head": (-0.35 * k, 0.0, 0.0)}
+    for sd, side in (("l", -1.0), ("r", 1.0)):
+        p[f"thigh_{sd}"] = (-1.65 * k, 0.08 * side, 0.0)
+        p[f"shin_{sd}"] = (1.8 * k, 0.0, 0.0)
+        p[f"arm_{sd}"] = (-1.9 * k, 0.0, 0.0)
+        p[f"fore_{sd}"] = (-0.1, 0.0, 0.0)
+    return p, (0, 0.2 * k, -0.36 * k)
+
+
+def watch(u):
+    """On guard: standing, a hand shading the eyes, the head sweeping the water slowly."""
+    t = u * math.tau
+    p = {"torso": (0.02, 0.0, 0.25 * math.sin(t)), "head": (-0.05, 0.0, 0.35 * math.sin(t))}
+    _relaxed(p)
+    _arms_down(p)
+    p["arm_r"] = (-1.35, -0.45, 0.0)  # elbow out ahead, the hand back at the brow
+    p["fore_r"] = (-2.3, 0.0, -0.2)
+    return p, (0, 0, -0.01)
+
+
+def till(u):
+    """Hoeing a bed: both hands on the haft (the hoe hangs on hand_r), raised over the right shoulder, chopped down
+    into the soil ahead, pulled back, again."""
+    lift = _keys([(0.0, 0.0), (0.35, 1.0), (0.5, -0.35), (0.75, -0.15), (1.0, 0.0)], u)  # +1 up, -1 struck
+    p = {"torso": (0.2 + 0.25 * max(0.0, -lift), 0.0, -0.15 * max(0.0, lift)), "head": (0.25, 0.0, 0.0)}
+    _relaxed(p)
+    p["thigh_l"] = (-0.25, -0.05, 0.05)
+    p["shin_l"] = (0.2, 0.0, 0.0)
+    for sd, side in (("r", 1.0), ("l", -1.0)):
+        p[f"arm_{sd}"] = (-0.9 - 1.0 * max(0.0, lift) + 0.25 * max(0.0, -lift), 0.0, 0.25 * side - 0.2 * max(0.0, lift))
+        p[f"fore_{sd}"] = (-0.8 + 0.45 * max(0.0, -lift), 0.0, 0.3 * side)
+    return p, (0, 0, -0.03)
+
+
+def water(u):
+    """Watering a bed: the can held out low in the right hand, tipped to pour, swept slowly along the row."""
+    t = u * math.tau
+    p = {"torso": (0.25, 0.0, 0.18 * math.sin(t)), "head": (0.35, 0.0, 0.15 * math.sin(t))}
+    _relaxed(p)
+    _arms_down(p)
+    p["arm_r"] = (-1.15, 0.0, 0.1 + 0.15 * math.sin(t))  # the can held out ahead over the bed
+    p["fore_r"] = (-0.2, 0.0, 0.0)
+    p["hand_r"] = (-0.45, 0.0, 0.0)  # tips the spout down
+    p["arm_l"] = (-0.2, -0.1, 0.0)
+    p["fore_l"] = (-0.9, 0.0, 0.0)
+    return p, (0, 0, -0.02)
+
+
+def warm_hands(u):
+    """At a fire barrel at night: hands held out over the flames, rubbed together now and then, shoulders hunched."""
+    t = u * math.tau
+    rub = max(0.0, math.sin(2 * t)) ** 2
+    p = {"torso": (0.15, 0.0, 0.05 * math.sin(t)), "head": (0.25, 0.0, 0.2 * math.sin(t + 1.0))}
+    _relaxed(p)
+    p["arm_l"] = (-0.75, 0.25 + 0.1 * rub, 0.0)
+    p["arm_r"] = (-0.75, -0.25 - 0.1 * rub, 0.0)
+    p["fore_l"] = (-0.65 - 0.2 * rub, 0.0, 0.25 + 0.15 * math.sin(6 * t) * rub)
+    p["fore_r"] = (-0.65 - 0.2 * rub, 0.0, -0.25 - 0.15 * math.sin(6 * t) * rub)
+    return p, (0, 0, -0.02)
+
+
 # name: (function, frames, loop)
 CLIPS = {
     "idle": (idle, 48, True), "walk_f": (walk, 18, True), "walk_b": (walk_b, 18, True), "run": (run, 16, True),
@@ -606,6 +790,10 @@ CLIPS = {
     "reload_pistol": (reload_pistol, 29, False), "reload_rifle": (reload_rifle, 58, False),
     "reload_shell": (reload_shell, 12, True),
     "switch": (switch, 12, False), "slash_light": (slash_light, 12, False), "slash_heavy": (slash_heavy, 20, False),
+    "stroll": (stroll, 24, True), "sleep": (sleep, 72, True), "sit": (sit, 96, True), "read": (read, 120, True),
+    "chat": (chat, 72, True), "work_kneel": (work_kneel, 48, True), "work_stand": (work_stand, 48, True),
+    "exercise": (exercise, 48, True), "watch": (watch, 120, True),
+    "till": (till, 40, True), "water": (water, 96, True), "warm_hands": (warm_hands, 96, True),
 }
 LOOP_CLIPS = [n for n, (_, _, loop) in CLIPS.items() if loop]
 # m/s each moving clip matches at 1× (survivor_view.gd CLIP_SPEED agrees and scales the clip by speed)

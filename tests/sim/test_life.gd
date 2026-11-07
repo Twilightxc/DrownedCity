@@ -97,7 +97,7 @@ func test_the_heavily_hurt_rest_by_day_and_sleep_in_the_infirmary_at_night() -> 
 
 
 func test_two_survivors_spread_over_two_jobs() -> void:
-	var other: Survivor = _state.add_survivor("Mali", 8)
+	var other: Survivor = _state.add_survivor("Mara", 8)
 	var a: int = _empty("small")
 	BaseRules.build(_state, a, "kitchen")
 	var b: int = _empty("small")
@@ -171,7 +171,7 @@ func test_a_medic_prefers_the_infirmary() -> void:
 
 
 func test_the_watchtower_takes_as_many_guards_as_posts() -> void:
-	var other: Survivor = _state.add_survivor("Mali", 8)
+	var other: Survivor = _state.add_survivor("Mara", 8)
 	var tower: int = _room("watchtower")
 	_at(12)
 	LifeRules.decide(_state)
@@ -220,7 +220,7 @@ func test_a_reader_reads_in_the_evening_and_grows_wits() -> void:
 
 
 func test_the_same_save_lives_the_same_day() -> void:
-	_state.add_survivor("Mali", 8)
+	_state.add_survivor("Mara", 8)
 	_state.add_survivor("Ana", 9)
 	BaseRules.build(_state, _empty("large"), "farm")
 	var twin: SimState = SimState.from_dict(_state.to_dict())

@@ -61,9 +61,15 @@ func add_stock(amounts: Dictionary[String, float]) -> void:
 
 ## Morning upkeep (GDD §11), then 24 hourly ticks to the next morning.
 func advance_day(rules: SimRules) -> void:
-	_morning(rules)
+	start_day(rules)
 	for h: int in GameClock.HOURS_PER_DAY:
 		advance_hour()
+
+
+## The morning upkeep alone: a scene that ticks hour by hour (the base, 1.7) calls it when the clock reaches the
+## morning, then advance_hour() as time passes.
+func start_day(rules: SimRules) -> void:
+	_morning(rules)
 
 
 ## One in-game hour: every living survivor's needs move (NeedRules). Fast-forward = many of these.

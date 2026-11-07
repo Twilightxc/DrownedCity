@@ -98,7 +98,7 @@ func test_a_big_eater_eats_half_again() -> void:
 func test_an_optimist_lifts_everyone() -> void:
 	var rules: SimRules = SimRules.new()
 	var state: SimState = SimState.new()
-	var other: Survivor = Survivor.new(2, "Mali", 3)
+	var other: Survivor = Survivor.new(2, "Mara", 3)
 	state.survivors.append_array([_s, other])
 	for res: String in SimState.RESOURCES:
 		state.stock[res] = 100.0

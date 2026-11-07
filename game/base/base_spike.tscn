@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/base/base_spike.gd" id="1_spike"]
+[ext_resource type="Script" path="res://game/iso_camera_rig.gd" id="2_rig"]
+
+[node name="BaseSpike" type="Node3D"]
+script = ExtResource("1_spike")
+
+[node name="IsoCameraRig" type="Node3D" parent="."]
+script = ExtResource("2_rig")
+distance = 60.0
+ortho_size = 30.0
+zoom_factors = PackedFloat32Array(0.3, 0.5, 0.7, 1.0)
+zoom_index = 2
+
+[node name="Camera3D" type="Camera3D" parent="IsoCameraRig"]
+current = true
+far = 300.0
