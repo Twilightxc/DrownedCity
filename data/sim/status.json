@@ -1,0 +1,26 @@
+{
+	"_doc": "Influence, rank points, the status ladder and leaders (GDD §3 'outstanding citizen', §11, §12; docs/CITIZENS_1_6.md §2). Influence a survivor earns goes to the base pool AND to their own rank points; spending from the pool never lowers anyone's rank, and status is never lost. Rates and thresholds are Claude's.",
+	"influence": {
+		"day_in_base": 5.0,
+		"high_morale_day": 3.0,
+		"high_morale_at": 70.0,
+		"mission_done": 20.0,
+		"zombie_kill": 0.5,
+		"horde_night": 10.0,
+		"note": "GDD: every action gives influence (days in the base, missions done, morale, zombie kills; kill-chain score after a horde night). Well Liked (influence) scales it"
+	},
+	"ladder": [
+		{"id": "stranger", "at": 0.0, "perks": ["stranger"], "note": "GDD: not under the player's control, may steal"},
+		{"id": "member", "at": 50.0, "note": "picks a combat class (CITIZENS_1_6 §7)"},
+		{"id": "outstanding", "at": 600.0, "perks": ["outstanding_citizen"], "note": "community skill works base-wide at half strength (CITIZENS_1_6 §6); can be made leader"}
+	],
+	"starting_status": "member",
+	"leaders": {
+		"warlord": {"name": "Warlord"},
+		"sheriff": {"name": "Sheriff"},
+		"builder": {"name": "Builder"},
+		"trader": {"name": "Trader"},
+		"researcher": {"name": "Researcher"},
+		"programmer": {"name": "Programmer"}
+	}
+}
