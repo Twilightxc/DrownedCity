@@ -5,11 +5,13 @@ extends Node3D
 ## through their stages as the farm works (FarmLook) and their tenders hoe, sow, water, weed and harvest. The kitchen
 ## fire burns while someone cooks and through the evening; at dusk someone lights the oil drums, and at night people
 ## warm their hands round them.
-## Time: 1 game hour = layout seconds_per_hour at 1×; 1 / 2 / 3 (pad LB / RB) = 1× / 3× / 10×, Space (pad Y) pauses.
-## F5 cycles the test rooms (start / tier 1 / tier 2), F3 shows who does what. Q / E turn the camera, the wheel zooms
-## (4 steps, the closest for the details), WASD / left stick pans.
-## Options: ?rooms=start|tier1|tier2 &people=3..6 &hour=0..23 &seed=N &zoom=0..3 &turn=0..3 (90° steps) &speed=1..3
-## &focus=x,z (camera over that roof point)
+## Time: 1 game hour = layout seconds_per_hour at 1×; 1 / 2 / 3 (pad LT / RT) = 1× / 3× / 10×, Space / P (pad Y)
+## pauses. The slot panel (1.7 step 4, BasePanel): click a slot, or Tab / Shift+Tab (pad RB / LB) to step through them;
+## build, upgrade, queue, pin people; Esc / pad B closes. F5 cycles the test bases (new / start / tier 1 / tier 2),
+## F3 shows who does what. Q / E turn the camera, the wheel zooms (4 steps, the closest for the details), WASD / the
+## right stick pans (the left stick too while the panel is shut).
+## Options: ?rooms=new|start|tier1|tier2 &people=3..6 &hour=0..23 &seed=N &zoom=0..3 &turn=0..3 (90° steps) &speed=1..3
+## &focus=x,z (camera over that roof point) &slot=1..6 (the panel open on that slot)
 
 const LEVEL: PackedScene = preload("res://game/level/style15_level.tscn")
 const PAN_SPEED: float = 12.0  ## m/s
@@ -37,6 +39,9 @@ var _crops_root: Node3D
 var _crop_sig: PackedStringArray = PackedStringArray()
 var _kitchen_fires: Array[Array] = []  ## [slot, BaseFire]
 var _barrels: Array[Dictionary] = []  ## {"pos": Vector3, "fire": BaseFire, "pending": bool}
+var _panel: BasePanel
+var _frame: Node3D  ## the selected slot's outline on the roof
+var _trigger_down: Array[bool] = [false, false]  ## LT, RT held (they are axes: act on the press only)
 
 
 func _ready() -> void:
@@ -78,6 +83,14 @@ func _ready() -> void:
 		_barrels.append({"pos": pos, "fire": fire, "pending": false})
 	_barrels_now()
 	_build_ui()
+	_panel = BasePanel.new()
+	_panel.state = state
+	add_child(_panel)
+	_panel.changed.connect(_on_player_changed)
+	_panel.closed.connect(func() -> void: _frame.visible = false)
+	_frame = Node3D.new()
+	_frame.visible = false
+	add_child(_frame)
 	_refresh_rooms()
 	for s: Survivor in state.survivors:
 		var r: Resident = Resident.new()
@@ -92,6 +105,9 @@ func _ready() -> void:
 			b["pending"] = false
 	_hour_left = _sec_per_hour()
 	_set_speed(SpikeLauncher.arg("speed", "1").to_int() - 1)
+	var open_slot: int = SpikeLauncher.arg("slot", "0").to_int()
+	if open_slot > 0 and open_slot <= state.rooms.size():
+		_select(open_slot - 1)
 
 
 func _exit_tree() -> void:
@@ -100,26 +116,102 @@ func _exit_tree() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		match (event as InputEventKey).physical_keycode:
+		var key: InputEventKey = event as InputEventKey
+		match key.physical_keycode:
 			KEY_1, KEY_2, KEY_3:
-				_set_speed((event as InputEventKey).physical_keycode - KEY_1)
-			KEY_SPACE:
+				_set_speed(key.physical_keycode - KEY_1)
+			KEY_SPACE, KEY_P:
 				_paused = not _paused
+			KEY_TAB:
+				_step_slot(-1 if key.shift_pressed else 1)
+				get_viewport().set_input_as_handled()
 			KEY_F5:
 				_kind_i = (_kind_i + 1) % BasePreset.KINDS.size()
 				BasePreset.apply(state, BasePreset.KINDS[_kind_i])
-				LifeRules.decide(state)
-				_refresh_rooms()
+				_on_player_changed()
 				_place(true)
-				_fires_now()
 	elif event is InputEventJoypadButton and event.pressed:
 		match (event as InputEventJoypadButton).button_index:
 			JOY_BUTTON_LEFT_SHOULDER:
-				_set_speed(_speed_i - 1)
+				_step_slot(-1)
 			JOY_BUTTON_RIGHT_SHOULDER:
-				_set_speed(_speed_i + 1)
+				_step_slot(1)
 			JOY_BUTTON_Y:
 				_paused = not _paused
+	elif event is InputEventJoypadMotion:
+		var m: InputEventJoypadMotion = event as InputEventJoypadMotion
+		var which: int = 0 if m.axis == JOY_AXIS_TRIGGER_LEFT else 1 if m.axis == JOY_AXIS_TRIGGER_RIGHT else -1
+		if which >= 0:
+			var down: bool = m.axis_value > 0.6
+			if down and not _trigger_down[which]:
+				_set_speed(_speed_i + (-1 if which == 0 else 1))
+			_trigger_down[which] = down
+	elif event is InputEventMouseButton and event.pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var i: int = _slot_at((event as InputEventMouseButton).position)
+		if i >= 0:
+			_select(i)
+
+
+## A slot under the mouse: the camera ray meets the roof (y = 0) inside the slot's footprint.
+func _slot_at(screen: Vector2) -> int:
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	var from: Vector3 = cam.project_ray_origin(screen)
+	var dir: Vector3 = cam.project_ray_normal(screen)
+	if absf(dir.y) < 0.001:
+		return -1
+	var hit: Vector3 = from + dir * (-from.y / dir.y)
+	for i: int in state.rooms.size():
+		if _slot_rect(i).has_point(Vector2(hit.x, hit.z)):
+			return i
+	return -1
+
+
+func _slot_rect(i: int) -> Rect2:
+	var size: Vector2 = Vector2(6.0, 4.5) if state.rooms[i].size == "large" else Vector2(3.0, 3.0)
+	var c: Vector3 = kit.slot_transform(i).origin
+	return Rect2(Vector2(c.x, c.z) - size * 0.5, size)
+
+
+func _step_slot(dir: int) -> void:
+	var n: int = state.rooms.size()
+	_select(posmod((_panel.slot if _panel.slot >= 0 else (-1 if dir > 0 else 0)) + dir, n))
+
+
+## Opens the panel on slot `i`, outlines it on the roof and swings the camera over it.
+func _select(i: int) -> void:
+	_panel.open(i)
+	for c: Node in _frame.get_children():
+		c.queue_free()
+	var rect: Rect2 = _slot_rect(i)
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.8, 0.4)
+	var w: float = 0.08
+	for side: Array in [[Vector2(rect.size.x, w), Vector2(0.0, -rect.size.y * 0.5)],
+			[Vector2(rect.size.x, w), Vector2(0.0, rect.size.y * 0.5)],
+			[Vector2(w, rect.size.y), Vector2(-rect.size.x * 0.5, 0.0)],
+			[Vector2(w, rect.size.y), Vector2(rect.size.x * 0.5, 0.0)]]:
+		var box: BoxMesh = BoxMesh.new()
+		box.size = Vector3((side[0] as Vector2).x, 0.04, (side[0] as Vector2).y)
+		box.material = mat
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.mesh = box
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var c: Vector2 = rect.get_center() + (side[1] as Vector2)
+		mi.position = Vector3(c.x, 0.03, c.y)
+		_frame.add_child(mi)
+	_frame.visible = true
+	var to: Vector3 = Vector3(rect.get_center().x, 0.0, rect.get_center().y)
+	create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT).tween_property(_rig, "position", to, 0.35)
+
+
+## The player changed SimCore (built, queued, pinned, F5): daily life looks again now, the roof redraws.
+func _on_player_changed() -> void:
+	LifeRules.decide(state)
+	_refresh_rooms()
+	_place(false)
+	_fires_now()
 
 
 func _process(delta: float) -> void:
@@ -155,7 +247,13 @@ func _pan() -> void:
 	var now: int = Time.get_ticks_msec()
 	var dt: float = minf((now - _last_ms) / 1000.0, 0.1)
 	_last_ms = now
-	var v: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var v: Vector2 = Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
+	if not _panel.is_open():  # the left stick moves the panel's focus while it is open
+		v += Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	elif Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_A) \
+			or Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_D):
+		v += Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	v = v.limit_length(1.0)
 	if v == Vector2.ZERO:
 		return
 	var move: Vector3 = (_rig.basis * Vector3(v.x, 0.0, v.y))
@@ -188,6 +286,7 @@ func _tick_hour() -> void:
 	_place(false)
 	_fires_now()
 	_barrels_now()
+	_panel.refresh()
 
 
 ## The kitchen fire burns while someone cooks or sits by it, and from 17:00 to 23:00 anyway.
@@ -347,8 +446,10 @@ func _build_ui() -> void:
 	_clock_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	box.add_child(_clock_label)
 	var help: Label = Label.new()
-	help.text = "1 / 2 / 3 (LB / RB) speed · Space (Y) pause · WASD pan · wheel zoom · Q / E turn · F5 rooms · F3 who does what"
+	help.text = "Click a slot / Tab (RB / LB) to manage it · 1 / 2 / 3 (LT / RT) speed · Space (Y) pause · WASD pan · wheel zoom · Q / E turn · F5 test bases · F3 who does what"
 	help.add_theme_font_size_override("font_size", 14)
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD
+	help.custom_minimum_size.x = 640.0  # clear of the slot panel on the right
 	help.add_theme_constant_override("outline_size", 4)
 	help.add_theme_color_override("font_outline_color", Color.BLACK)
 	box.add_child(help)

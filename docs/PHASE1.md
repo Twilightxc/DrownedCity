@@ -180,10 +180,10 @@ Starts with 3 large + 3 small slots (J kept 3 + 3 over the GDD's 2 + 4: three ro
 - [x] Step 1, SimCore: slots, build / upgrade by work hours, production queues, assignments, beds, meals
       (PR #79)
 - [x] Step 2, SimCore: utility AI daily life replaces the sleep 22–06 schedule (PR #80)
-- [ ] Step 3, the base scene on the arena roof: rooms by tier (Blender kit, desktop), survivors walking to their
+- [x] Step 3, the base scene on the arena roof: rooms by tier (Blender kit, desktop), survivors walking to their
       activity, time speed-up (`phase1-7/base-scene`: `?spike=base`, J: its own scene, day + night, no horde;
-      new daily-life clips)
-- [ ] Step 4, UI: build / upgrade / queue / assign, gamepad
+      new daily-life clips; PR #81)
+- [ ] Step 4, UI: build / upgrade / queue / assign, gamepad (`phase1-7/base-ui`: the slot panel)
 - [ ] Step 5, Observer mode
 
 ## J's bug list after 1.G (2026-11-05)
