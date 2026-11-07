@@ -25,4 +25,5 @@
 2. Wire live stats to fighters; kills / bites / horde nights from the arena into SimCore.
 
 ## J must test
-Nothing to play (SimCore). Read `data/sim/status.json`: is ~a week to member and ~a month to outstanding right?
+Nothing to play (SimCore). Read `data/sim/status.json`: ~a week to member; outstanding is 75 days from days alone, less with missions and
+kills. Right pace?
