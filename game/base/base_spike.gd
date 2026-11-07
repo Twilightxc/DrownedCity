@@ -8,10 +8,12 @@ extends Node3D
 ## Time: 1 game hour = layout seconds_per_hour at 1×; 1 / 2 / 3 (pad LT / RT) = 1× / 3× / 10×, Space / P (pad Y)
 ## pauses. The slot panel (1.7 step 4, BasePanel): click a slot, or Tab / Shift+Tab (pad RB / LB) to step through them;
 ## build, upgrade, queue, pin people; Esc / pad B closes. F5 cycles the test bases (new / start / tier 1 / tier 2),
-## F3 shows who does what. Q / E turn the camera, the wheel zooms (4 steps, the closest for the details), WASD / the
+## F3 shows who does what. Click a survivor (pad X steps through them) for their card: what they're doing in words,
+## body and mind, skills and a short log of the day. O (pad Back) is Observer mode (1.7 step 5): the HUD hides and the
+## camera drifts from one interesting thing to the next (ObserverDirector); with a card open it follows that person. Q / E turn the camera, the wheel zooms (4 steps, the closest for the details), WASD / the
 ## right stick pans (the left stick too while the panel is shut).
 ## Options: ?rooms=new|start|tier1|tier2 &people=3..6 &hour=0..23 &seed=N &zoom=0..3 &turn=0..3 (90° steps) &speed=1..3
-## &focus=x,z (camera over that roof point) &slot=1..6 (the panel open on that slot)
+## &focus=x,z (camera over that roof point) &slot=1..6 (the panel open on that slot) &observe=1 &card=<survivor id>
 
 const LEVEL: PackedScene = preload("res://game/level/style15_level.tscn")
 const PAN_SPEED: float = 12.0  ## m/s
@@ -42,6 +44,17 @@ var _barrels: Array[Dictionary] = []  ## {"pos": Vector3, "fire": BaseFire, "pen
 var _panel: BasePanel
 var _frame: Node3D  ## the selected slot's outline on the roof
 var _trigger_down: Array[bool] = [false, false]  ## LT, RT held (they are axes: act on the press only)
+var _hud: CanvasLayer  ## clock, help, event line: hidden in Observer mode
+var _card: SurvivorCard
+var _spots: Dictionary = {}  ## this hour's LifeSpots, for the card's words
+var _diary: Dictionary = {}  ## survivor id -> ["HH:00  what they started", ...] (the card's short log)
+var _diary_key: Dictionary = {}  ## survivor id -> LifeStory.log_key last written
+var _observing: bool = false
+var _director: ObserverDirector
+var _shot_left: float = 0.0  ## real seconds to the next shot
+var _shot_id: int = -1
+var _drift: Vector3 = Vector3.ZERO
+var _zoom_before: int = 2
 
 
 func _ready() -> void:
@@ -83,10 +96,14 @@ func _ready() -> void:
 		_barrels.append({"pos": pos, "fire": fire, "pending": false})
 	_barrels_now()
 	_build_ui()
+	_card = SurvivorCard.new()
+	add_child(_card)
+	_director = ObserverDirector.new(kit.layout["observer"])
 	_panel = BasePanel.new()
 	_panel.state = state
 	add_child(_panel)
 	_panel.changed.connect(_on_player_changed)
+	_panel.refresh()  # the stock bar from the first frame
 	_panel.closed.connect(func() -> void: _frame.visible = false)
 	_frame = Node3D.new()
 	_frame.visible = false
@@ -105,6 +122,11 @@ func _ready() -> void:
 			b["pending"] = false
 	_hour_left = _sec_per_hour()
 	_set_speed(SpikeLauncher.arg("speed", "1").to_int() - 1)
+	if SpikeLauncher.arg("observe", "0") == "1":
+		_set_observing(true)
+	var who: int = SpikeLauncher.arg("card", "0").to_int()
+	if who > 0:
+		_card.open(who)
 	var open_slot: int = SpikeLauncher.arg("slot", "0").to_int()
 	if open_slot > 0 and open_slot <= state.rooms.size():
 		_select(open_slot - 1)
@@ -125,6 +147,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_TAB:
 				_step_slot(-1 if key.shift_pressed else 1)
 				get_viewport().set_input_as_handled()
+			KEY_O:
+				_set_observing(not _observing)
 			KEY_F5:
 				_kind_i = (_kind_i + 1) % BasePreset.KINDS.size()
 				BasePreset.apply(state, BasePreset.KINDS[_kind_i])
@@ -138,6 +162,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				_step_slot(1)
 			JOY_BUTTON_Y:
 				_paused = not _paused
+			JOY_BUTTON_X:
+				_step_person()
+			JOY_BUTTON_BACK:
+				_set_observing(not _observing)
 	elif event is InputEventJoypadMotion:
 		var m: InputEventJoypadMotion = event as InputEventJoypadMotion
 		var which: int = 0 if m.axis == JOY_AXIS_TRIGGER_LEFT else 1 if m.axis == JOY_AXIS_TRIGGER_RIGHT else -1
@@ -148,9 +176,124 @@ func _unhandled_input(event: InputEvent) -> void:
 			_trigger_down[which] = down
 	elif event is InputEventMouseButton and event.pressed \
 			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-		var i: int = _slot_at((event as InputEventMouseButton).position)
-		if i >= 0:
+		var at: Vector2 = (event as InputEventMouseButton).position
+		var who: int = _person_at(at)
+		if who >= 0:
+			_card.open(who)
+			return
+		var i: int = _slot_at(at)
+		if i >= 0 and not _observing:
 			_select(i)
+
+
+## The survivor drawn nearest the mouse (their chest within 45 px), or -1.
+func _person_at(screen: Vector2) -> int:
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	var best: int = -1
+	var best_d: float = 45.0
+	for id: int in _residents:
+		var r: Resident = _residents[id]
+		if not r.visible or cam.is_position_behind(r.global_position):
+			continue
+		var d: float = cam.unproject_position(r.global_position + Vector3(0.0, 1.0, 0.0)).distance_to(screen)
+		if d < best_d:
+			best_d = d
+			best = id
+	return best
+
+
+## Pad X: the card on the next living survivor.
+func _step_person() -> void:
+	var people: Array[Survivor] = state.living()
+	if people.is_empty():
+		return
+	var k: int = 0
+	for j: int in people.size():
+		if people[j].id == _card.survivor_id:
+			k = j + 1
+	_card.open(people[k % people.size()].id)
+
+
+## Observer mode: the HUD, the slot panel and the name tags hide; the camera comes in a step and starts directing.
+func _set_observing(on: bool) -> void:
+	_observing = on
+	_hud.visible = not on
+	_panel.visible = not on
+	if on:
+		_panel.close()
+		_frame.visible = false
+		_zoom_before = _rig.get("zoom_index")
+		_rig.call("zoom_step", 1 - _zoom_before)
+		_shot_left = 0.0
+	else:
+		_rig.call("zoom_step", _zoom_before - int(_rig.get("zoom_index")))
+	for r: Resident in _residents.values():
+		r.tag.visible = not on
+
+
+## Each frame in Observer mode: follow the card's survivor, else hold the shot and drift, cut to an errand, and pick
+## the next shot every shot_sec real seconds.
+func _direct(dt: float) -> void:
+	if _card.is_open() and _residents.has(_card.survivor_id):
+		var target: Vector3 = _residents[_card.survivor_id].position
+		target.y = 0.0
+		_rig.position = _rig.position.lerp(target, clampf(dt * 2.0, 0.0, 1.0))
+		return
+	var cands: Array[Dictionary] = _candidates()
+	var cut: Dictionary = _director.errand_cut(cands, _shot_id)
+	_shot_left -= dt
+	if cut.is_empty() and _shot_left > 0.0:
+		_rig.position += _drift * dt
+		return
+	var shot: Dictionary = cut if not cut.is_empty() else _director.pick(cands)
+	_shot_left = float(_director.cfg["shot_sec"])
+	if shot.is_empty():
+		return
+	_shot_id = shot["id"]
+	var a: float = randf() * TAU
+	_drift = Vector3(cos(a), 0.0, sin(a)) * float(_director.cfg["drift_mps"])
+	create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT).tween_property(_rig, "position",
+		shot["pos"] - _drift * float(_director.cfg["shot_sec"]) * 0.5, 2.5)
+
+
+## What each visible survivor is up to, for the director.
+func _candidates() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for s: Survivor in state.living():
+		var r: Resident = _residents.get(s.id)
+		if r == null or not r.visible:
+			continue
+		var act: String = NeedRules.activity(s, state.clock.hour)
+		var tending: bool = act == "work" and s.needs.doing_slot >= 0 \
+				and (state.rooms[s.needs.doing_slot].room == "farm" or state.rooms[s.needs.doing_slot].building > 0)
+		out.append({"id": s.id, "act": act, "pos": Vector3(r.position.x, 0.0, r.position.z), "errand": r.busy(),
+			"tending": tending})
+	return out
+
+
+## The short log: a line whenever someone starts something new.
+func _write_diary() -> void:
+	for s: Survivor in state.living():
+		var key: String = LifeStory.log_key(state, s)
+		if _diary_key.get(s.id, "") == key:
+			continue
+		_diary_key[s.id] = key
+		var lines: Array = _diary.get(s.id, [])
+		lines.append("%02d:00  %s" % [state.clock.hour, LifeStory.describe(state, s, _spots.get(s.id, {}),
+			kit.layout["farm"])])
+		_diary[s.id] = lines.slice(-SurvivorCard.LOG_LINES)
+
+
+func _update_card() -> void:
+	if not _card.is_open():
+		return
+	for s: Survivor in state.survivors:
+		if s.id == _card.survivor_id:
+			if not s.is_alive():
+				_card.close()
+				return
+			_card.show_lines(s.name, LifeStory.describe(state, s, _spots.get(s.id, {}), kit.layout["farm"]),
+				LifeStory.card(state, s), _diary.get(s.id, []))
 
 
 ## A slot under the mouse: the camera ray meets the roof (y = 0) inside the slot's footprint.
@@ -215,7 +358,11 @@ func _on_player_changed() -> void:
 
 
 func _process(delta: float) -> void:
+	var real_dt: float = minf((Time.get_ticks_msec() - _last_ms) / 1000.0, 0.1)
 	_pan()
+	if _observing:
+		_direct(real_dt)
+	_update_card()
 	Engine.time_scale = 0.0 if _paused else float((kit.layout["speeds"] as Array)[_speed_i])
 	_hour_left -= delta
 	if _hour_left <= 0.0:
@@ -422,6 +569,8 @@ func _add_model(key: String, xf: Transform3D) -> void:
 ## Sends everyone to this hour's spot; `snap` puts them there at once.
 func _place(snap: bool) -> void:
 	var spots: Dictionary = LifeSpots.assign(state, kit, _lit_barrels())
+	_spots = spots
+	_write_diary()
 	for s: Survivor in state.survivors:
 		var r: Resident = _residents.get(s.id)
 		if r == null:
@@ -436,6 +585,7 @@ func _place(snap: bool) -> void:
 
 func _build_ui() -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
+	_hud = layer
 	add_child(layer)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.position = Vector2(16, 12)
@@ -446,7 +596,7 @@ func _build_ui() -> void:
 	_clock_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	box.add_child(_clock_label)
 	var help: Label = Label.new()
-	help.text = "Click a slot / Tab (RB / LB) to manage it · 1 / 2 / 3 (LT / RT) speed · Space (Y) pause · WASD pan · wheel zoom · Q / E turn · F5 test bases · F3 who does what"
+	help.text = "Click a slot / Tab (RB / LB) to manage it · click a survivor (X) for their card · O (Back) Observer · 1 / 2 / 3 (LT / RT) speed · Space (Y) pause · WASD pan · wheel zoom · Q / E turn · F5 test bases · F3 who does what"
 	help.add_theme_font_size_override("font_size", 14)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD
 	help.custom_minimum_size.x = 640.0  # clear of the slot panel on the right
