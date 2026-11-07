@@ -3,7 +3,7 @@ extends Resource
 ## SimCore tunables for the base economy. Instances live in data/sim/*.tres.
 
 @export_group("New game")
-@export var starting_survivors: PackedStringArray = PackedStringArray(["Mali", "Somchai", "Rosa"])
+@export var starting_survivors: PackedStringArray = PackedStringArray(["Mara", "Elias", "Rosa"])
 @export var starting_stock: Dictionary[String, float] = {"food": 8.0, "water": 12.0, "materials": 6.0, "ammo": 30.0, "medicine": 2.0}
 
 @export_group("Daily upkeep (GDD §11)")

@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_rules")
-starting_survivors = PackedStringArray("Mali", "Somchai", "Rosa")
+starting_survivors = PackedStringArray("Mara", "Elias", "Rosa")
 starting_stock = Dictionary[String, float]({
 "ammo": 30.0,
 "food": 8.0,

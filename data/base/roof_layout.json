@@ -18,5 +18,14 @@
 	"floor_beds": [[-4.0, 2.0, 0.0], [-3.1, 2.0, 0.0], [-2.2, 2.0, 0.0], [-4.0, 4.4, 0.0], [-3.1, 4.4, 0.0], [-2.2, 4.4, 0.0]],
 	"stroll": [[-3.5, 2.5], [-3.0, -1.0], [-1.5, -5.0], [5.5, -5.5], [9.0, -5.0], [6.5, 0.0], [6.0, 6.0], [-2.0, 7.5], [-4.0, 5.0]],
 	"chat_ring": 2.1,
+	"fire_barrels": [[6.2, 2.9], [-3.2, -0.6]],
+	"fire_barrel_note": "oil drums lit at dusk (18:00 on) by whoever is up, out at 07:00; people warm their hands round them at night",
+	"farm": {
+		"cycle_hours": 12.0,
+		"food_crops": ["tomato", "cabbage", "corn", "beans"],
+		"herb_crop": "herbs",
+		"tasks": [["till", "hoe"], ["work_kneel", ""], ["water", "can"], ["work_kneel", ""], ["work_kneel", ""]],
+		"note": "each planter grows through 5 stages (tilled, sprouts, young, grown, ripe) every cycle_hours of farm work (RoomState.worked), staggered so the beds are never all alike; a ripe bed is harvested and tilled again. Tasks per stage [clip, item in hand]: hoe the bare bed, sow and feed it, water it, weed it, harvest it. Crops: food crops in turn; herbs in the last bed while grow_herbs is queued"
+	},
 	"exit": [-8.8, -8.4]
 }

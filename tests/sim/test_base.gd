@@ -208,6 +208,20 @@ func test_a_cooked_meal_feeds_and_cheers() -> void:
 	assert_almost_eq(_s.morale, 53.0, 0.001)
 
 
+func test_production_work_adds_up_and_survives_a_schema_8_save() -> void:
+	var i: int = _built("farm")
+	BaseRules.queue_job(_state, i, "grow_food")
+	_work(_s, 3)
+	assert_almost_eq(_state.rooms[i].worked, 3.0, 0.001, "the farm's crops grow with it (FarmLook)")
+	var envelope: Dictionary = JSON.parse_string(SaveCodec.encode(_state))
+	envelope["schema"] = 8
+	for rd: Dictionary in envelope["state"]["rooms"]:
+		rd.erase("worked")
+	var old: SaveCodec.Result = SaveCodec.decode(JSON.stringify(envelope))
+	assert_eq(old.error, "")
+	assert_eq(old.state.rooms[i].worked, 0.0)
+
+
 func test_the_watchtower_trains_shooting() -> void:
 	SkillRules.setup(_s, "farmer", SkillCatalog.load_default())
 	_built("watchtower")

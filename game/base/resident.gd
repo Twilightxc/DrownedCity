@@ -1,12 +1,17 @@
 class_name Resident
 extends Node3D
 ## One survivor living in the base scene (1.7 step 3): walks (stroll clip) along a BaseNav path to this hour's
-## spot (LifeSpots), then settles there: height (a bed, the tower deck), facing and the activity's clip. Idle
-## survivors wander between the layout's stroll points. A name tag floats above the head.
+## spot (LifeSpots), then settles there: height (a bed, the tower deck), facing, the activity's clip and the item in
+## hand (a hoe, a watering can, a book). Idle survivors wander between the layout's stroll points. An errand (lighting
+## a fire drum) comes first. A name tag floats above the head.
 
 const WALK_SPEED: float = 1.4  ## m/s, the stroll clip's stride (kit_survivor.py STROLL_SPEED)
 const ARRIVE_M: float = 0.08
 const TURN_RATE: float = 8.0  ## 1/s
+const ITEMS: Dictionary[String, PackedScene] = {
+	"hoe": preload("res://assets/models/hand_hoe.glb"), "can": preload("res://assets/models/hand_can.glb"),
+	"book": preload("res://assets/models/hand_book.glb"),
+}
 
 var survivor_id: int = 0
 var view: SurvivorView
@@ -17,6 +22,10 @@ var _path: PackedVector2Array = PackedVector2Array()
 var _wander: PackedVector2Array = PackedVector2Array()
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _settled: bool = false
+## A job on the way (lighting a fire drum): {"pos": Vector3, "yaw": float, "sec": float, "done": Callable}. They
+## walk there first, kneel for `sec`, call `done`, then go on to their spot.
+var _errand: Dictionary = {}
+var _errand_left: float = 0.0
 
 
 func setup(s: Survivor, nav: BaseNav, wander_points: PackedVector2Array) -> void:
@@ -41,19 +50,32 @@ func setup(s: Survivor, nav: BaseNav, wander_points: PackedVector2Array) -> void
 	add_child(tag)
 
 
-## This hour's spot. A new place means a new walk; the same one (asleep all night) leaves them be.
+## This hour's spot. A new place means a new walk; the same place with a new task (a planter's next stage) changes
+## the clip in place; the same everything (asleep all night) leaves them be.
 func go_to(new_spot: Dictionary) -> void:
-	var same: bool = not spot.is_empty() and (spot["pos"] as Vector3).is_equal_approx(new_spot["pos"]) \
-			and spot.get("wander", false) == new_spot.get("wander", false)
+	var same: bool = not spot.is_empty() and (spot["pos"] as Vector3).is_equal_approx(new_spot["pos"]) 			and spot.get("wander", false) == new_spot.get("wander", false)
 	spot = new_spot
+	if not _errand.is_empty():
+		return  # the errand first; they head for the new spot after it
 	if same and (_settled or spot.get("wander", false)):
+		if _settled:
+			_settle()
 		return
+	_head_for_spot()
+
+
+## Walk to `pos` first, kneel there for `sec` (scaled game time), call `done`, then carry on.
+func errand(pos: Vector3, yaw: float, sec: float, done: Callable) -> void:
+	_errand = {"pos": pos, "yaw": yaw, "sec": sec, "done": done}
+	_errand_left = -1.0
 	_settled = false
 	visible = true
-	if spot.get("wander", false):
-		_next_wander()
-	else:
-		_walk_to(spot["pos"])
+	view.hold(null)
+	_walk_to(pos)
+
+
+func busy() -> bool:
+	return not _errand.is_empty()
 
 
 ## Puts them at their spot at once (the scene's first frame, a skipped day).
@@ -67,8 +89,22 @@ func snap() -> void:
 func _process(delta: float) -> void:
 	if view == null or _settled:
 		return
+	if _errand_left > 0.0:  # kneeling at the errand
+		_errand_left -= delta
+		if _errand_left <= 0.0:
+			var done: Callable = _errand["done"]
+			_errand = {}
+			if done.is_valid():
+				done.call()
+			_head_for_spot()
+		return
 	if _path.is_empty():
-		if spot.get("wander", false):
+		if not _errand.is_empty():
+			position = _errand["pos"]
+			rotation.y = float(_errand["yaw"])
+			view.live(&"work_kneel")
+			_errand_left = float(_errand["sec"])
+		elif spot.get("wander", false):
 			_next_wander()
 		else:
 			_settle()
@@ -86,6 +122,16 @@ func _process(delta: float) -> void:
 	position.y = 0.0
 	rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.y), clampf(delta * TURN_RATE, 0.0, 1.0))
 	view.live(&"stroll", WALK_SPEED)
+
+
+func _head_for_spot() -> void:
+	_settled = false
+	visible = true
+	view.hold(null)  # tools come out at the spot
+	if spot.is_empty() or spot.get("wander", false):
+		_next_wander()
+	else:
+		_walk_to(spot["pos"])
 
 
 func _walk_to(p: Vector3) -> void:
@@ -112,4 +158,5 @@ func _settle() -> void:
 	position = p
 	rotation.y = float(spot["yaw"])
 	view.live(spot["clip"])
+	view.hold(ITEMS.get(str(spot.get("item", ""))))
 	visible = not spot.get("away", false)

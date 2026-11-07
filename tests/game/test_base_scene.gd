@@ -112,7 +112,7 @@ func test_workers_in_one_room_stand_apart_and_guards_take_the_posts() -> void:
 	state.survivors[2].needs.doing_slot = 5
 	var spots: Dictionary = LifeSpots.assign(state, _kit)
 	assert_ne(spots[state.survivors[0].id]["pos"], spots[state.survivors[1].id]["pos"])
-	assert_eq(spots[state.survivors[0].id]["clip"], &"work_kneel", "at the planters")
+	assert_true(spots[state.survivors[0].id]["clip"] in [&"till", &"work_kneel", &"water"], "tending a planter")
 	assert_eq(spots[state.survivors[2].id]["clip"], &"watch")
 	assert_gt((spots[state.survivors[2].id]["pos"] as Vector3).y, 2.0, "up on the tower deck")
 
@@ -166,3 +166,67 @@ func _nav(state: SimState) -> BaseNav:
 			nav.block(rect.position, rect.size)
 	nav.commit()
 	return nav
+
+
+func test_every_crop_the_farm_can_show_has_a_model() -> void:
+	var farm: Dictionary = _kit.layout["farm"]
+	var r: RoomState = RoomState.new("large")
+	r.room = "farm"
+	r.tier = 1
+	r.queue = [{"recipe": "grow_food", "count": -1}, {"recipe": "grow_herbs", "count": -1}]
+	for slot: int in 3:
+		for w: int in 24:
+			r.worked = w
+			for k: int in 3:
+				var key: String = FarmLook.model_key(slot, r, k, 3, farm)
+				assert_true(_kit.kit.has(key), key)
+	assert_eq(FarmLook.crop(1, r, 2, 3, farm), "herbs", "the last bed grows herbs while herbs are queued")
+	r.queue = [{"recipe": "grow_food", "count": -1}]
+	assert_ne(FarmLook.crop(1, r, 2, 3, farm), "herbs")
+
+
+func test_planters_grow_staggered_and_start_again_after_the_harvest() -> void:
+	var r: RoomState = RoomState.new("large")
+	var cycle: float = float(_kit.layout["farm"]["cycle_hours"])
+	assert_eq([FarmLook.stage(r, 0, 3, cycle), FarmLook.stage(r, 1, 3, cycle), FarmLook.stage(r, 2, 3, cycle)], [0, 1, 3],
+		"never all alike")
+	r.worked = cycle * 0.99
+	assert_eq(FarmLook.stage(r, 0, 3, cycle), 4, "ripe")
+	r.worked = cycle
+	assert_eq(FarmLook.stage(r, 0, 3, cycle), 0, "harvested, tilled again")
+
+
+func test_a_farm_hand_does_what_the_bed_needs_with_the_right_tool() -> void:
+	var state: SimState = _state("tier1", 1)
+	var s: Survivor = state.survivors[0]
+	s.needs.doing = "work"
+	s.needs.doing_slot = 1
+	var cycle: float = float(_kit.layout["farm"]["cycle_hours"])
+	var plot: int = int(_kit.room_spots(1, state.rooms[1], "work")[0]["plot"])
+	var seen: Dictionary = {}
+	for k: int in 5:
+		state.rooms[1].worked = cycle * (float(k) / 5.0 + 0.01) - cycle * float(plot) / 3.0 + cycle
+		var spot: Dictionary = LifeSpots.assign(state, _kit)[s.id]
+		seen[FarmLook.stage(state.rooms[1], plot, 3, cycle)] = [spot["clip"], spot.get("item", "")]
+	assert_eq(seen[0], [&"till", "hoe"])
+	assert_eq(seen[2], [&"water", "can"])
+	assert_eq(seen[4], [&"work_kneel", ""], "harvest by hand")
+
+
+func test_at_night_company_warms_its_hands_round_the_lit_drums() -> void:
+	var state: SimState = _state("tier1", 6, 22)
+	for s: Survivor in state.survivors:
+		s.needs.doing = "socialise"
+		s.needs.doing_slot = -1
+	var drums: Array[Vector3] = _kit.barrels()
+	var spots: Dictionary = LifeSpots.assign(state, _kit, drums)
+	var clips: Array = state.survivors.map(func(s: Survivor) -> StringName: return spots[s.id]["clip"])
+	assert_eq(clips, [&"sit", &"sit", &"sit", &"warm_hands", &"warm_hands", &"warm_hands"], "logs first, then the drums")
+	var p: Vector3 = spots[state.survivors[3].id]["pos"]
+	assert_almost_eq(Vector2(p.x, p.z).distance_to(Vector2(drums[0].x, drums[0].z)), 0.75, 0.01)
+
+
+func test_readers_hold_a_book() -> void:
+	var state: SimState = _state("tier1", 1)
+	state.survivors[0].needs.doing = "read"
+	assert_eq(LifeSpots.assign(state, _kit)[state.survivors[0].id]["item"], "book")

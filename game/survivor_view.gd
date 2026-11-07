@@ -16,7 +16,7 @@ const UPPER_BONES: PackedStringArray = ["torso", "head", "arm_l", "fore_l", "han
 const LOWER_CLIPS: PackedStringArray = ["idle", "walk", "run", "crouch_idle", "crouch_walk", "prone_idle", "crawl",
 	"roll", "downed", "downed_aim", "death", "go_prone", "crouch_to_prone", "prone_to_stand", "prone_to_crouch",
 	"prone_roll_l", "prone_roll_r", "stroll", "sleep", "sit", "read", "chat", "work_kneel", "work_stand", "exercise",
-	"watch"]  ## states; "walk" and "crouch_walk" are WALK_SETS
+	"watch", "till", "water", "warm_hands"]  ## states; "walk" and "crouch_walk" are WALK_SETS
 const UPPER_CLIPS: PackedStringArray = ["aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_pistol",
 	"reload_rifle", "reload_shell", "switch", "slash_light", "slash_heavy"]
 ## A walking state's backward and forward clips (blend positions -1 and +1).
@@ -30,13 +30,13 @@ const FORWARD_FROM: float = deg_to_rad(85.0)  ## ...and back under this (no flic
 const TWIST_RATE: float = 10.0  ## 1/s the hips follow the travel
 const LOOP_CLIPS: PackedStringArray = ["idle", "walk_f", "walk_b", "run", "crouch_idle", "crouch_f", "crouch_b",
 	"prone_idle", "crawl", "downed", "downed_aim", "aim_pistol", "aim_rifle", "carry_high", "carry_port", "reload_shell",
-	"stroll", "sleep", "sit", "read", "chat", "work_kneel", "work_stand", "exercise", "watch"]
+	"stroll", "sleep", "sit", "read", "chat", "work_kneel", "work_stand", "exercise", "watch", "till", "water", "warm_hands"]
 ## Daily life in the base (1.7, kit_survivor.py): whole-body loops with empty hands, played by live().
 const LIFE_CLIPS: PackedStringArray = ["stroll", "sleep", "sit", "read", "chat", "work_kneel", "work_stand", "exercise",
-	"watch"]
+	"watch", "till", "water", "warm_hands"]
 const FULL_BODY: PackedStringArray = ["roll", "prone_idle", "crawl", "downed", "downed_aim", "death", "go_prone",
 	"crouch_to_prone", "prone_to_stand", "prone_to_crouch", "prone_roll_l", "prone_roll_r", "stroll", "sleep", "sit", "read",
-	"chat", "work_kneel", "work_stand", "exercise", "watch"]  ## the arms follow the legs' clip
+	"chat", "work_kneel", "work_stand", "exercise", "watch", "till", "water", "warm_hands"]  ## the arms follow the legs' clip
 ## Getting down and up (J bugs 11, 12): [from, to] stance → the clip played once on the change.
 const STANCE_SHIFTS: Dictionary[String, StringName] = {
 	"0>2": &"go_prone", "1>2": &"crouch_to_prone", "2>0": &"prone_to_stand", "2>1": &"prone_to_crouch",
@@ -55,7 +55,7 @@ const TURN_RATE: float = 12.0  ## 1/s: the body turns toward a sprint or roll th
 const IK_FADE: float = 6.0  ## 1/s: the left hand leaves / returns to the gun this fast
 const LEFT_HAND_BUSY: PackedStringArray = ["roll", "downed", "downed_aim", "death", "go_prone", "crouch_to_prone",
 	"prone_to_stand", "prone_to_crouch", "prone_roll_l", "prone_roll_r", "stroll", "sleep", "sit", "read", "chat",
-	"work_kneel", "work_stand", "exercise", "watch"]
+	"work_kneel", "work_stand", "exercise", "watch", "till", "water", "warm_hands"]
 ## Where the gun points in each clip that sets its own hold, in the body's space (+Z ahead, +Y up, +X left).
 ## Other clips keep the aim hold and the gun simply follows the hand (reloads).
 const HOLD_DIR: Dictionary[StringName, Vector3] = {
@@ -142,6 +142,8 @@ var _switch_pending: bool = false
 var _melee_mount: Node3D
 var _melee_view: Node3D
 var _melee_cfg: MeleeConfig
+var _hold_mount: Node3D  ## a daily-life item in the right hand (hold): a hoe, a watering can, a book
+var _held: PackedScene
 
 
 func _ready() -> void:
@@ -164,6 +166,9 @@ func _ready() -> void:
 	_melee_mount.transform = MELEE_GRIP
 	_melee_mount.visible = false
 	hand.add_child(_melee_mount)
+	_hold_mount = Node3D.new()
+	_hold_mount.transform = MELEE_GRIP
+	hand.add_child(_hold_mount)
 	gun_view = GunView.new()
 	_mount.add_child(gun_view)
 	var hand_l: BoneAttachment3D = BoneAttachment3D.new()
@@ -382,6 +387,19 @@ func live(clip: StringName, speed: float = 0.0) -> void:
 	_target_yaw = 0.0
 	var rate: float = speed / CLIP_SPEED[clip] if CLIP_SPEED.has(clip) and speed > 0.0 else 1.0
 	animate(clip, rate, &"aim_rifle", 1.0, 0.0)
+
+
+## A daily-life item in the right hand (kit_base.py hand_*: grip at the origin, haft +Z), or null for empty hands.
+func hold(item: PackedScene) -> void:
+	if item == _held:
+		return
+	_held = item
+	for c: Node in _hold_mount.get_children():
+		c.queue_free()
+	if item != null:
+		var view: Node3D = item.instantiate() as Node3D
+		_hold_mount.add_child(view)
+		Style15Level.apply_materials(view, SURFACE_MATERIAL)
 
 
 ## A prone log roll goes to the body's left (+X) when the travel has a leftward part.

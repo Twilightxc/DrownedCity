@@ -10,6 +10,8 @@ script = ExtResource("1_spike")
 script = ExtResource("2_rig")
 distance = 60.0
 ortho_size = 30.0
+zoom_factors = PackedFloat32Array(0.3, 0.5, 0.7, 1.0)
+zoom_index = 2
 
 [node name="Camera3D" type="Camera3D" parent="IsoCameraRig"]
 current = true

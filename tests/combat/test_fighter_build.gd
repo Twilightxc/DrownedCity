@@ -84,12 +84,12 @@ func test_a_survivor_behind_a_fighter_brings_name_build_and_grenades() -> void:
 	p.loadout = preload("res://data/weapons/spike_loadout.tres")
 	_fighter(p, NavGrid.new(20, 20), cam)
 	var before: int = p.grenade_count
-	var s: Survivor = Survivor.new(1, "Mali", 3)
+	var s: Survivor = Survivor.new(1, "Mara", 3)
 	s.status = "member"
 	CommunityRules.pick_class(s, "grenadier")
 	TraitRules.give(s, "athlete")
 	p.set_survivor(s)
-	assert_eq(p.display_name, "Mali")
+	assert_eq(p.display_name, "Mara")
 	assert_eq(p.grenade_count, before + 2)
 	assert_almost_eq(p.motion.stamina_max(), 120.0, 0.001, "Athlete +20 %")
 	assert_eq(p.gun._build, p.build, "the guns too")
@@ -116,7 +116,7 @@ func test_a_medic_gets_a_downed_mate_up_twice_as_fast() -> void:
 
 func test_a_night_gives_xp_influence_and_counts_toward_hardened() -> void:
 	var state: SimState = SimState.new()
-	var s: Survivor = state.add_survivor("Mali", 3)  # no traits: Well Liked would change the influence
+	var s: Survivor = state.add_survivor("Mara", 3)  # no traits: Well Liked would change the influence
 	SkillRules.setup(s, "farmer", SkillCatalog.load_default())
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	var got: Dictionary = NightRules.apply(state, s, {"shots": 400, "kills": 30, "bites": 0, "won": true}, rng)

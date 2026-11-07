@@ -69,6 +69,42 @@ func room_solids(i: int, r: RoomState) -> Array[Rect2]:
 	return out
 
 
+## The planters' soil tops in slot `i` (farms), world space: where FarmLook's crops stand.
+func plots(i: int, r: RoomState) -> Array[Vector3]:
+	return _points(i, r, "plots")
+
+
+## Fire points in slot `i` (the kitchen's campfire or stove): [world position, flame size].
+func fires(i: int, r: RoomState) -> Array[Array]:
+	var out: Array[Array] = []
+	var key: String = model_key(r)
+	if key.is_empty() or not kit.has(key):
+		return out
+	var xf: Transform3D = slot_transform(i)
+	for f: Array in kit[key].get("fires", []):
+		out.append([xf * Vector3(float(f[0]), float(f[1]), float(f[2])), float(f[3])])
+	return out
+
+
+## The oil drums on the roof (layout fire_barrels), on the roof surface.
+func barrels() -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	for p: Array in layout["fire_barrels"]:
+		out.append(Vector3(float(p[0]), 0.0, float(p[1])))
+	return out
+
+
+func _points(i: int, r: RoomState, kind: String) -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	var key: String = model_key(r)
+	if key.is_empty() or not kit.has(key):
+		return out
+	var xf: Transform3D = slot_transform(i)
+	for p: Array in kit[key].get(kind, []):
+		out.append(xf * Vector3(float(p[0]), float(p[1]), float(p[2])))
+	return out
+
+
 ## A roof spot list from the layout ("read", "exercise", "gather", "floor_beds"), `clip` played there.
 func roof_spots(kind: String, clip: StringName) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
@@ -93,6 +129,9 @@ func _spots(model: Dictionary, kind: String, xf: Transform3D) -> Array[Dictionar
 	var out: Array[Dictionary] = []
 	var yaw0: float = xf.basis.get_euler().y
 	for s: Array in model.get(kind, []):
-		out.append({"pos": xf * Vector3(float(s[0]), float(s[1]), float(s[2])), "yaw": yaw0 + float(s[3]),
-			"clip": StringName(s[4])})
+		var spot: Dictionary = {"pos": xf * Vector3(float(s[0]), float(s[1]), float(s[2])), "yaw": yaw0 + float(s[3]),
+			"clip": StringName(s[4])}
+		if s.size() > 5:
+			spot["plot"] = int(s[5])  # a farm spot tends this planter (FarmLook)
+		out.append(spot)
 	return out

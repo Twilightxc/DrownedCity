@@ -3,17 +3,19 @@ extends RefCounted
 ## Where each survivor goes in the base scene this hour and what they play there (1.7 step 3), from what daily life
 ## chose (SurvivorNeeds.doing / doing_slot, LifeRules). Pure: the same state gives the same spots, so a test can
 ## check it. Beds go out like BaseRules.hour_mods: in id order, the hurt and sick to the infirmary first.
-## A spot: {"pos": Vector3, "yaw": float, "clip": StringName}, plus "wander": true (idle: stroll the roof) or
-## "away": true (on a mission: off the roof through the hut).
+## A spot: {"pos": Vector3, "yaw": float, "clip": StringName}, plus "wander": true (idle: stroll the roof),
+## "away": true (on a mission: off the roof through the hut) or "item": the hand_* model held there (hoe, can, book).
+## `lit_barrels`: oil drums burning now; company gathers round them to warm their hands.
 
 
-static func assign(state: SimState, kit: BaseKit) -> Dictionary:
+static func assign(state: SimState, kit: BaseKit, lit_barrels: Array[Vector3] = []) -> Dictionary:
 	var out: Dictionary = {}  # survivor id -> spot
 	var sleep_beds: Array[Dictionary] = _all(state, kit, "sleeping", "beds")
 	var sick_beds: Array[Dictionary] = _all(state, kit, "infirmary", "beds")
 	var floor_beds: Array[Dictionary] = kit.roof_spots("floor_beds", &"sleep")
 	var seats: Array[Dictionary] = _all(state, kit, "kitchen", "seats")
 	var chat: Array[Dictionary] = _chat_ring(state, kit)
+	var warm: Array[Dictionary] = _barrel_rings(lit_barrels)
 	var reads: Array[Dictionary] = kit.roof_spots("read", &"read")
 	var gyms: Array[Dictionary] = kit.roof_spots("exercise", &"exercise")
 	var at_work: Dictionary = {}  # slot -> workers placed so far
@@ -36,10 +38,13 @@ static func assign(state: SimState, kit: BaseKit) -> Dictionary:
 				at_work[s.needs.doing_slot] = int(at_work.get(s.needs.doing_slot, 0)) + 1
 			"read":
 				spot = _nth(reads, used, "read")
+				spot["item"] = "book"
 			"exercise":
 				spot = _nth(gyms, used, "gym")
 			"socialise":
-				spot = _take(seats) if not seats.is_empty() else _nth(chat, used, "chat")
+				spot = _take(seats)
+				if spot.is_empty():
+					spot = _take(warm) if not warm.is_empty() else _nth(chat, used, "chat")
 			"mission":
 				spot = {"pos": kit.exit_point(), "yaw": 0.0, "clip": &"stroll", "away": true}
 		if spot.is_empty():  # idle, or nowhere left to go
@@ -63,7 +68,22 @@ static func _work_spot(state: SimState, kit: BaseKit, i: int, k: int) -> Diction
 	var spot: Dictionary = spots[k % spots.size()].duplicate()
 	if k >= spots.size():
 		spot["pos"] = (spot["pos"] as Vector3) + Vector3(0.6 * (k / spots.size()), 0.0, 0.0)
+	if spot.has("plot") and r.room == "farm":  # tend the planter: the task its growth stage needs
+		var task: Array = FarmLook.task(r, spot["plot"], kit.plots(i, r).size(), kit.layout["farm"])
+		spot["clip"] = StringName(task[0])
+		spot["item"] = str(task[1])
 	return spot
+
+
+## Three places round each burning drum, facing it, hands out over the fire.
+static func _barrel_rings(barrels: Array[Vector3]) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for k: int in 3:
+		for c: Vector3 in barrels:
+			var a: float = PI * 0.25 + k * TAU / 3.0
+			var p: Vector3 = c + Vector3(sin(a), 0.0, cos(a)) * 0.75
+			out.append({"pos": p, "yaw": atan2(c.x - p.x, c.z - p.z), "clip": &"warm_hands"})
+	return out
 
 
 ## Every built room of this kind's `kind` spots, slot order.

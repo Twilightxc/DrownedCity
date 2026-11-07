@@ -37,10 +37,10 @@
 			"model": "res://assets/models/room_farm_1.glb",
 			"beds": [],
 			"work": [
-				[-1.0, 0.0, -0.9, -1.5708, "work_kneel"],
-				[1.0, 0.0, 0.4, 1.5708, "work_kneel"],
-				[-1.0, 0.0, 0.7, 1.5708, "work_kneel"],
-				[1.0, 0.0, -1.0, -1.5708, "work_kneel"]
+				[-1.0, 0.0, -0.9, -1.5708, "work_kneel", 0],
+				[1.0, 0.0, 0.4, 1.5708, "work_kneel", 2],
+				[-1.0, 0.0, 0.7, 1.5708, "work_kneel", 1],
+				[1.0, 0.0, -1.0, -1.5708, "work_kneel", 1]
 			],
 			"seats": [],
 			"guards": [],
@@ -48,16 +48,21 @@
 				[-2.0, -0.25, 0.95, 3.25],
 				[0.0, -0.25, 0.95, 3.25],
 				[2.0, -0.25, 0.95, 3.25]
+			],
+			"plots": [
+				[-2.0, 0.43, -0.25],
+				[0.0, 0.43, -0.25],
+				[2.0, 0.43, -0.25]
 			]
 		},
 		"farm_2": {
 			"model": "res://assets/models/room_farm_2.glb",
 			"beds": [],
 			"work": [
-				[-1.0, 0.0, -0.9, -1.5708, "work_kneel"],
-				[1.0, 0.0, 0.4, 1.5708, "work_kneel"],
-				[-1.0, 0.0, 0.7, 1.5708, "work_kneel"],
-				[1.0, 0.0, -1.0, -1.5708, "work_kneel"]
+				[-1.0, 0.0, -0.9, -1.5708, "work_kneel", 0],
+				[1.0, 0.0, 0.4, 1.5708, "work_kneel", 2],
+				[-1.0, 0.0, 0.7, 1.5708, "work_kneel", 1],
+				[1.0, 0.0, -1.0, -1.5708, "work_kneel", 1]
 			],
 			"seats": [],
 			"guards": [],
@@ -65,6 +70,11 @@
 				[-2.0, -0.25, 0.95, 3.25],
 				[0.0, -0.25, 0.95, 3.25],
 				[2.0, -0.25, 0.95, 3.25]
+			],
+			"plots": [
+				[-2.0, 0.43, -0.25],
+				[0.0, 0.43, -0.25],
+				[2.0, 0.43, -0.25]
 			]
 		},
 		"infirmary_1": {
@@ -141,6 +151,9 @@
 			"guards": [],
 			"solids": [
 				[0.0, -0.2, 1.1, 1.1]
+			],
+			"fires": [
+				[0.0, 0.12, -0.2, 1.0]
 			]
 		},
 		"kitchen_2": {
@@ -157,6 +170,9 @@
 			"solids": [
 				[0.2, -1.0, 1.15, 0.75],
 				[-0.75, 0.5, 0.85, 0.65]
+			],
+			"fires": [
+				[0.2, 0.22, -0.55, 0.45]
 			]
 		},
 		"watchtower_1": {
@@ -234,6 +250,179 @@
 			"seats": [
 				[0.0, 0.0, -0.0, 0.0, "sit"]
 			],
+			"guards": [],
+			"solids": []
+		},
+		"fire_barrel": {
+			"model": "res://assets/models/prop_fire_barrel.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": [
+				[0.0, -0.0, 0.65, 0.65]
+			],
+			"fires": [
+				[0.0, 0.86, -0.0, 0.8]
+			]
+		},
+		"crop_tilled": {
+			"model": "res://assets/models/crop_tilled.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_sprouts": {
+			"model": "res://assets/models/crop_sprouts.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"hand_hoe": {
+			"model": "res://assets/models/hand_hoe.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"hand_can": {
+			"model": "res://assets/models/hand_can.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"hand_book": {
+			"model": "res://assets/models/hand_book.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_tomato_2": {
+			"model": "res://assets/models/crop_tomato_2.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_tomato_3": {
+			"model": "res://assets/models/crop_tomato_3.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_tomato_4": {
+			"model": "res://assets/models/crop_tomato_4.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_cabbage_2": {
+			"model": "res://assets/models/crop_cabbage_2.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_cabbage_3": {
+			"model": "res://assets/models/crop_cabbage_3.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_cabbage_4": {
+			"model": "res://assets/models/crop_cabbage_4.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_corn_2": {
+			"model": "res://assets/models/crop_corn_2.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_corn_3": {
+			"model": "res://assets/models/crop_corn_3.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_corn_4": {
+			"model": "res://assets/models/crop_corn_4.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_beans_2": {
+			"model": "res://assets/models/crop_beans_2.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_beans_3": {
+			"model": "res://assets/models/crop_beans_3.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_beans_4": {
+			"model": "res://assets/models/crop_beans_4.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_herbs_2": {
+			"model": "res://assets/models/crop_herbs_2.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_herbs_3": {
+			"model": "res://assets/models/crop_herbs_3.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
+			"guards": [],
+			"solids": []
+		},
+		"crop_herbs_4": {
+			"model": "res://assets/models/crop_herbs_4.glb",
+			"beds": [],
+			"work": [],
+			"seats": [],
 			"guards": [],
 			"solids": []
 		}

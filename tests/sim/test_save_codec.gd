@@ -54,20 +54,20 @@ func test_rejects_damaged_state() -> void:
 
 
 func test_migrations_run_in_order_up_to_current() -> void:
-	# A pretend schema 9 that renamed "stock" to "stockpile"; schema 10 reads it back as "stock".
-	var to_v9: Callable = func(d: Dictionary) -> Dictionary:
+	# A pretend schema 10 that renamed "stock" to "stockpile"; schema 11 reads it back as "stock".
+	var to_v10: Callable = func(d: Dictionary) -> Dictionary:
 		d["stockpile"] = d["stock"]
 		d.erase("stock")
 		return d
-	var to_v10: Callable = func(d: Dictionary) -> Dictionary:
+	var to_v11: Callable = func(d: Dictionary) -> Dictionary:
 		d["stock"] = d["stockpile"]
 		d.erase("stockpile")
 		return d
-	var steps: Dictionary[int, Callable] = {8: to_v9, 9: to_v10}
+	var steps: Dictionary[int, Callable] = {9: to_v10, 10: to_v11}
 	var state: SimState = _played_state()
-	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(state), steps, 10)
+	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(state), steps, 11)
 	assert_eq(result.error, "")
-	assert_eq(result.migrated_from, 8)
+	assert_eq(result.migrated_from, 9)
 	assert_eq(result.state.to_dict(), state.to_dict())
 
 
@@ -88,6 +88,6 @@ func test_a_schema_1_save_gets_skills_at_0_and_no_background() -> void:
 
 
 func test_missing_migration_is_an_error() -> void:
-	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(_played_state()), {}, 9)
+	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(_played_state()), {}, 10)
 	assert_null(result.state)
-	assert_string_contains(result.error, "no migration from schema 8")
+	assert_string_contains(result.error, "no migration from schema 9")

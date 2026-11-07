@@ -200,6 +200,7 @@ static func work_hour(state: SimState, s: Survivor, i: int = -2) -> String:
 			state.stock[res] = state.stock.get(res, 0.0) - float(rec["inputs"][res])
 		r.started = true
 	r.progress += float(t.get("work_mul", 1.0))
+	r.worked += float(t.get("work_mul", 1.0))
 	if r.progress < float(rec["work_hours"]):
 		return ""
 	state.add_stock(_floats(rec.get("outputs", {})))

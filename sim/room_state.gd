@@ -11,6 +11,7 @@ var build_left: float = 0.0  ## work hours left on it
 var queue: Array[Dictionary] = []  ## {"recipe": id, "count": units left, -1 = keep going}
 var progress: float = 0.0  ## work hours into the current unit
 var started: bool = false  ## the current unit's inputs are taken
+var worked: float = 0.0  ## production work done here ever (work hours × tier speed): how far the farm's crops have grown
 
 
 func _init(p_size: String = "small") -> void:
@@ -22,7 +23,7 @@ func to_dict() -> Dictionary:
 	for j: Dictionary in queue:
 		q.append([j["recipe"], j["count"]])
 	return {"size": size, "room": room, "tier": tier, "building": building, "build_left": build_left, "queue": q,
-		"progress": progress, "started": started}
+		"progress": progress, "started": started, "worked": worked}
 
 
 static func from_dict(d: Dictionary) -> RoomState:
@@ -35,4 +36,5 @@ static func from_dict(d: Dictionary) -> RoomState:
 		r.queue.append({"recipe": str(j[0]), "count": int(j[1])})
 	r.progress = float(d["progress"])
 	r.started = bool(d["started"])
+	r.worked = float(d["worked"])
 	return r

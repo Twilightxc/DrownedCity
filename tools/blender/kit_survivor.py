@@ -18,7 +18,7 @@ the legs only ever walk forward or backward.
 Upper body (spine, head, arms, hands): aim_pistol, aim_rifle, carry_high (pistol / SMG sprint: high ready,
 muzzle up), carry_port (long gun sprint: port arms, across the chest), reload_pistol, reload_rifle,
 reload_shell. Daily life in the base (1.7, whole body, empty hands): stroll, sleep, sit, read, chat,
-work_kneel, work_stand, exercise, watch. The gun hangs on hand_r; the game keeps it level in the aim pose (it measures the hand there).
+work_kneel, work_stand, exercise, watch, till, water, warm_hands. The gun hangs on hand_r; the game keeps it level in the aim pose (it measures the hand there).
 Loop clips start and end on the same pose; the game sets their loop mode (LOOP_CLIPS below).
 survivor.glb.import keeps generate_lods and create_shadow_meshes off: with them on, the Compatibility renderer
 drew no shadow at all for the skinned body.
@@ -735,6 +735,47 @@ def watch(u):
     return p, (0, 0, -0.01)
 
 
+def till(u):
+    """Hoeing a bed: both hands on the haft (the hoe hangs on hand_r), raised over the right shoulder, chopped down
+    into the soil ahead, pulled back, again."""
+    lift = _keys([(0.0, 0.0), (0.35, 1.0), (0.5, -0.35), (0.75, -0.15), (1.0, 0.0)], u)  # +1 up, -1 struck
+    p = {"torso": (0.2 + 0.25 * max(0.0, -lift), 0.0, -0.15 * max(0.0, lift)), "head": (0.25, 0.0, 0.0)}
+    _relaxed(p)
+    p["thigh_l"] = (-0.25, -0.05, 0.05)
+    p["shin_l"] = (0.2, 0.0, 0.0)
+    for sd, side in (("r", 1.0), ("l", -1.0)):
+        p[f"arm_{sd}"] = (-0.9 - 1.0 * max(0.0, lift) + 0.25 * max(0.0, -lift), 0.0, 0.25 * side - 0.2 * max(0.0, lift))
+        p[f"fore_{sd}"] = (-0.8 + 0.45 * max(0.0, -lift), 0.0, 0.3 * side)
+    return p, (0, 0, -0.03)
+
+
+def water(u):
+    """Watering a bed: the can held out low in the right hand, tipped to pour, swept slowly along the row."""
+    t = u * math.tau
+    p = {"torso": (0.25, 0.0, 0.18 * math.sin(t)), "head": (0.35, 0.0, 0.15 * math.sin(t))}
+    _relaxed(p)
+    _arms_down(p)
+    p["arm_r"] = (-1.15, 0.0, 0.1 + 0.15 * math.sin(t))  # the can held out ahead over the bed
+    p["fore_r"] = (-0.2, 0.0, 0.0)
+    p["hand_r"] = (-0.45, 0.0, 0.0)  # tips the spout down
+    p["arm_l"] = (-0.2, -0.1, 0.0)
+    p["fore_l"] = (-0.9, 0.0, 0.0)
+    return p, (0, 0, -0.02)
+
+
+def warm_hands(u):
+    """At a fire barrel at night: hands held out over the flames, rubbed together now and then, shoulders hunched."""
+    t = u * math.tau
+    rub = max(0.0, math.sin(2 * t)) ** 2
+    p = {"torso": (0.15, 0.0, 0.05 * math.sin(t)), "head": (0.25, 0.0, 0.2 * math.sin(t + 1.0))}
+    _relaxed(p)
+    p["arm_l"] = (-0.75, 0.25 + 0.1 * rub, 0.0)
+    p["arm_r"] = (-0.75, -0.25 - 0.1 * rub, 0.0)
+    p["fore_l"] = (-0.65 - 0.2 * rub, 0.0, 0.25 + 0.15 * math.sin(6 * t) * rub)
+    p["fore_r"] = (-0.65 - 0.2 * rub, 0.0, -0.25 - 0.15 * math.sin(6 * t) * rub)
+    return p, (0, 0, -0.02)
+
+
 # name: (function, frames, loop)
 CLIPS = {
     "idle": (idle, 48, True), "walk_f": (walk, 18, True), "walk_b": (walk_b, 18, True), "run": (run, 16, True),
@@ -752,6 +793,7 @@ CLIPS = {
     "stroll": (stroll, 24, True), "sleep": (sleep, 72, True), "sit": (sit, 96, True), "read": (read, 120, True),
     "chat": (chat, 72, True), "work_kneel": (work_kneel, 48, True), "work_stand": (work_stand, 48, True),
     "exercise": (exercise, 48, True), "watch": (watch, 120, True),
+    "till": (till, 40, True), "water": (water, 96, True), "warm_hands": (warm_hands, 96, True),
 }
 LOOP_CLIPS = [n for n, (_, _, loop) in CLIPS.items() if loop]
 # m/s each moving clip matches at 1× (survivor_view.gd CLIP_SPEED agrees and scales the clip by speed)

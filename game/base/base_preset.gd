@@ -5,7 +5,7 @@ extends RefCounted
 
 const KINDS: PackedStringArray = ["start", "tier1", "tier2"]
 const RULES: SimRules = preload("res://data/sim/base_economy.tres")
-const EXTRA_NAMES: PackedStringArray = ["Ana", "Krit", "Joe"]
+const EXTRA_NAMES: PackedStringArray = ["Ana", "Viktor", "Joe"]
 ## Slot order (BaseRules.init: large first): sleeping, farm, infirmary | water, kitchen, watchtower.
 const ROOMS: PackedStringArray = ["sleeping", "farm", "infirmary", "water", "kitchen", "watchtower"]
 
@@ -42,6 +42,7 @@ static func apply(state: SimState, kind: String) -> void:
 		r.tier = 2 if kind == "tier2" else 1
 		r.building = 0
 		r.queue.clear()
+	state.rooms[1].worked = 5.0  # the farm has been going a while: its beds stand at different stages (FarmLook)
 	if kind == "start":  # the infirmary is still going up
 		state.rooms[2].tier = 0
 		state.rooms[2].building = 1

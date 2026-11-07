@@ -24,13 +24,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kit_common as K  # noqa: E402
 
 K.PALETTE.update({
-    "soil": "#5b4636", "soil_dark": "#47372b", "leaf": "#6f8f3a", "leaf_dark": "#55722c", "tomato": "#b8452f",
+    "soil": "#7a5c44", "soil_dark": "#5e4735", "leaf": "#86ab48", "leaf_dark": "#678a37", "tomato": "#b8452f",
     "bedroll": "#7a6a4a", "blanket": "#8a5a4a", "blanket_b": "#5a6a74", "pillow": "#d6cbb2", "cloth": "#d9d2c0",
     "sheet": "#e4e0d4", "red_cross": "#a83a32", "plastic": "#b9c6c1", "stone": "#8a8580", "stone_dark": "#6d6964",
     "ash": "#3a3634", "pot": "#3e4144", "plank": "#8f6a46", "plank_dark": "#6b4e34", "plank_pale": "#a98a64",
     "crate_olive": "#86934f", "rope": "#9a8660", "brick_stove": "#9a5a44", "pipe": "#5f6467", "canvas": "#a3987a", "tarp_light": "#7f97a0",
+    "soil_light": "#a07e5c", "compost": "#5c4632", "sack": "#b7a27a", "corn": "#d9b343", "tassel": "#c9a86a",
+    "bean_pod": "#7fa34a", "flower": "#a98ac9", "flower_white": "#e8e4d6", "cabbage": "#b8d68a",
+    "tomato_green": "#8fae4a", "stem": "#5c7a34", "can_green": "#4f6f52", "book_red": "#8c3b30", "paper": "#e8dfc8",
 })
-K.FRESH.update({"leaf", "leaf_dark", "tomato"})
+K.FRESH.update({"leaf", "leaf_dark", "tomato", "corn", "tassel", "bean_pod", "flower", "flower_white", "cabbage",
+                "tomato_green", "stem"})
 
 LARGE = (6.0, 4.5)
 SMALL = (3.0, 3.0)
@@ -42,16 +46,25 @@ class Spots:
     def __init__(self):
         self.d = {"beds": [], "work": [], "seats": [], "guards": [], "solids": []}
 
-    def _spot(self, kind, x, y, z, face, clip):
+    def _spot(self, kind, x, y, z, face, clip, extra=None):
         yaw = math.atan2(face[0], -face[1])  # Godot yaw: facing (sin, cos) on (x, z); Blender (fx, fy) -> (fx, -fy)
-        self.d[kind].append([round(x, 3), round(z, 3), round(-y, 3), round(yaw, 4), clip])
+        self.d[kind].append([round(x, 3), round(z, 3), round(-y, 3), round(yaw, 4), clip] + ([extra] if extra is not None else []))
+
+    def plot(self, x, y, z):
+        """A planter's soil top centre: the game puts the crop of its growth stage there (crop_*)."""
+        self.d.setdefault("plots", []).append([round(x, 3), round(z, 3), round(-y, 3)])
+
+    def fire(self, x, y, z, size):
+        """Where flames and their light go when the fire is lit; size scales the flames."""
+        self.d.setdefault("fires", []).append([round(x, 3), round(z, 3), round(-y, 3), size])
 
     def bed(self, x, y, h, face=(0, -1)):
         """The pelvis of someone lying on their back; the feet toward `face`."""
         self._spot("beds", x, y, h, face, "sleep")
 
-    def work(self, x, y, face, clip, z=0.0):
-        self._spot("work", x, y, z, face, clip)
+    def work(self, x, y, face, clip, z=0.0, plot=None):
+        """plot: the planter index this spot tends; the game picks the task by its growth stage."""
+        self._spot("work", x, y, z, face, clip, plot)
 
     def seat(self, x, y, face):
         self._spot("seats", x, y, 0.0, face, "sit")
@@ -106,22 +119,165 @@ def head_tarp(mb, x, y, col="tarp"):
     mb.box((x, y, 0.71), (0.04, 0.9, 0.04), "rope")
 
 
-def planter(mb, x, y, sx, sy, tall=False):
+PLANTER_TOP = 0.43
+
+
+def planter(mb, x, y, sx, sy):
+    """A raised bed of pallet wood filled with soil; the crop on it is its own model (crop_*, by growth stage)."""
     mb.box((x, y, 0.2), (sx, sy, 0.4), "plank_dark")
+    for k in (-1, 1):
+        mb.box((x + k * (sx / 2 - 0.02), y, 0.38), (0.05, sy + 0.04, 0.1), "plank")
     mb.box((x, y, 0.41), (sx - 0.1, sy - 0.1, 0.04), "soil")
-    rows = 2
-    n = int(sy / 0.42)
-    for r in range(rows):
-        px = x - sx / 4 + r * sx / 2
-        for i in range(n):
-            py = y - sy / 2 + 0.25 + i * (sy - 0.5) / max(1, n - 1)
-            h = random.uniform(0.18, 0.3) * (2.2 if tall else 1.0)
-            mb.cylinder((px, py, 0.43 + h / 2), random.uniform(0.09, 0.13), h,
-                        "leaf" if (i + r) % 3 else "leaf_dark", segments=5, radius_top=0.03)
-            if tall:
-                pole(mb, px + 0.08, py, 0.9, r=0.012, z=0.43)
-                if i % 2 == 0:
-                    mb.box((px, py - 0.08, 0.43 + h * 0.6), (0.06, 0.06, 0.06), "tomato")
+
+
+# ---- crops: one planter's worth (0.8 x 3.1 m of soil), origin at the soil top centre ------------------
+# Stage 0 tilled soil, 1 sprouts (shared), 2 young, 3 grown, 4 ripe. Two rows along Y.
+ROW_X = (-0.2, 0.2)
+
+
+def _row_points(n):
+    return [(rx, -1.3 + i * 2.6 / (n - 1)) for rx in ROW_X for i in range(n)]
+
+
+def crop_tilled(mb, s):
+    """Hoed furrows, fresh dark soil heaped in ridges, a few clods: ready to sow."""
+    for rx in ROW_X:
+        mb.box((rx, 0, 0.03), (0.2, 3.0, 0.06), "soil_light")
+        mb.box((rx, 0, 0.005), (0.12, 3.0, 0.02), "compost")
+    for _ in range(10):
+        mb.box((random.uniform(-0.35, 0.35), random.uniform(-1.4, 1.4), 0.03), (0.06, 0.05, 0.04), "soil_dark",
+               yaw=random.uniform(0, 3))
+
+
+def crop_sprouts(mb, s):
+    crop_tilled(mb, s)
+    for px, py in _row_points(9):
+        for k in (-1, 1):
+            with mb.transform((px, py, 0.1), (0.0, k * 0.6, random.uniform(0, 3))):
+                mb.box((0, 0, 0.0), (0.1, 0.06, 0.015), "leaf")
+        mb.box((px, py, 0.05), (0.016, 0.016, 0.1), "stem")
+
+
+def _tomato(mb, g, ripe):
+    for px, py in _row_points(6):
+        h = 0.25 + 0.55 * g
+        if g > 0.5:
+            pole(mb, px + 0.06, py, h + 0.25, "wood", 0.012)
+        mb.cylinder((px, py, h / 2), 0.02, h, "stem", segments=5)
+        for k in range(int(2 + 3 * g)):
+            with mb.transform((px, py, 0.12 + k * h / 4.5), (0.0, 0.0, k * 2.1)):
+                mb.box((0.07 + 0.05 * g, 0, 0), (0.14 + 0.08 * g, 0.1, 0.03), "leaf" if k % 2 else "leaf_dark")
+        if g >= 1.0:
+            for k in range(3):
+                mb.box((px + random.uniform(-0.08, 0.08), py + random.uniform(-0.08, 0.08), 0.25 + k * 0.17),
+                       (0.07, 0.07, 0.07), "tomato" if ripe else "tomato_green")
+
+
+def _cabbage(mb, g, ripe):
+    for px, py in _row_points(5):
+        r = 0.06 + 0.12 * g
+        for k in range(5):
+            with mb.transform((px, py, 0.03), (0.0, 0.0, k * 1.26)):
+                with mb.transform((r * 0.5, 0, 0.0), (0.0, -0.5, 0.0)):
+                    mb.box((0, 0, 0), (r, r * 0.9, 0.02), "leaf" if k % 2 else "leaf_dark")
+        if g >= 1.0:
+            mb.cylinder((px, py, 0.1), 0.11 if ripe else 0.08, 0.16 if ripe else 0.11, "cabbage", segments=8,
+                        radius_top=0.06)
+
+
+def _corn(mb, g, ripe):
+    for px, py in _row_points(5):
+        h = 0.3 + 1.2 * g
+        mb.cylinder((px, py, h / 2), 0.025, h, "stem", segments=5)
+        for k in range(int(2 + 4 * g)):
+            with mb.transform((px, py, 0.2 + k * h / 6.5), (0.0, 0.0, k * 2.4)):
+                with mb.transform((0.16, 0, 0.05), (0.0, 1.05, 0.0)):
+                    mb.box((0, 0, 0), (0.02, 0.13, 0.42), "leaf" if k % 2 else "leaf_dark")  # a broad blade
+        if g >= 1.0:
+            mb.box((px, py, h + 0.06), (0.03, 0.03, 0.14), "tassel")
+            if ripe:
+                with mb.transform((px + 0.05, py, h * 0.55), (0.0, 0.35, 0.0)):
+                    mb.cylinder((0, 0, 0), 0.035, 0.18, "corn", segments=6)
+
+
+def _beans(mb, g, ripe):
+    for rx in ROW_X:
+        for i in range(4):
+            py = -1.2 + i * 0.8
+            h = 0.3 + 1.0 * g
+            if g > 0.4:
+                for k in (-1, 1):  # a bamboo teepee per pair
+                    with mb.transform((rx, py + k * 0.12, 0.0), (k * -0.12, 0.0, 0.0)):
+                        mb.cylinder((0, 0, 0.75), 0.012, 1.5, "wood", segments=4)
+            for k in range(int(3 + 6 * g)):
+                z = 0.06 + k * h / (3 + 6 * g)
+                mb.box((rx + 0.03 * math.sin(k * 1.7), py + 0.1 * math.cos(k * 1.3), z), (0.09, 0.07, 0.025),
+                       "leaf" if k % 2 else "leaf_dark", yaw=k * 0.9)
+            if ripe:
+                for k in range(4):
+                    mb.box((rx + random.uniform(-0.06, 0.06), py + random.uniform(-0.12, 0.12), 0.35 + k * 0.22),
+                           (0.02, 0.02, 0.12), "bean_pod")
+
+
+def _herbs(mb, g, ripe):
+    for px, py in _row_points(7):
+        r = 0.05 + 0.1 * g
+        for k in range(4):
+            mb.cylinder((px + 0.05 * math.cos(k * 1.6), py + 0.05 * math.sin(k * 1.6), r * 0.7), r * 0.6, r * 1.4,
+                        "leaf" if k % 2 else "leaf_dark", segments=5, radius_top=r * 0.2)
+        if ripe:
+            for k in range(3):
+                mb.box((px + random.uniform(-0.06, 0.06), py + random.uniform(-0.06, 0.06), r * 1.5 + 0.03),
+                       (0.03, 0.03, 0.05), "flower" if (k + int(py * 10)) % 2 else "flower_white")
+
+
+CROPS = {"tomato": _tomato, "cabbage": _cabbage, "corn": _corn, "beans": _beans, "herbs": _herbs}
+
+
+def _crop(fn, stage):
+    def build(mb, s):
+        crop_tilled(mb, s)
+        fn(mb, {2: 0.45, 3: 1.0, 4: 1.0}[stage], stage == 4)
+    return build
+
+
+# ---- held in the hand (SurvivorView.hold): origin at the right hand's grip, the haft along +Z, the business end
+# toward -Y (like the melee weapons in kit_props.py)
+
+def hand_hoe(mb, s):
+    mb.cylinder((0, 0, 0.35), 0.018, 1.25, "wood", segments=6)
+    mb.box((0, -0.08, 0.96), (0.16, 0.14, 0.025), "metal", yaw=0.0)
+    mb.box((0, -0.01, 0.97), (0.03, 0.05, 0.05), "rust")
+
+
+def hand_can(mb, s):
+    """A watering can held by its top handle: the body hangs below the hand, the spout forward (-Y)."""
+    mb.cylinder((0, 0, -0.17), 0.1, 0.2, "can_green", segments=10)
+    mb.box((0, 0.0, -0.03), (0.03, 0.16, 0.03), "can_green")             # handle
+    with mb.transform((0, -0.12, -0.18), (-0.9, 0, 0)):
+        mb.cylinder((0, 0, 0.13), 0.015, 0.26, "can_green", segments=6)  # spout
+    mb.box((0, -0.27, -0.06), (0.05, 0.03, 0.05), "metal")              # rose
+
+
+def hand_book(mb, s):
+    """A paperback held open in the right hand (the left one meets it in the read clip)."""
+    mb.box((0, -0.05, 0.02), (0.16, 0.02, 0.22), "book_red")
+    mb.box((0, -0.065, 0.02), (0.15, 0.012, 0.2), "paper")
+
+
+def fire_barrel(mb, s):
+    """A rusty oil drum with holes punched round it, charred wood sticking out of the top: lit at night."""
+    mb.cylinder((0, 0, 0.42), 0.29, 0.84, "rust", segments=12)
+    mb.cylinder((0, 0, 0.84), 0.3, 0.04, "dark", segments=12)
+    for k in range(8):
+        a = k / 8 * math.tau
+        mb.box((0.29 * math.cos(a), 0.29 * math.sin(a), 0.25 + (k % 2) * 0.18), (0.06, 0.06, 0.05), "dark", yaw=a)
+    for k in range(3):
+        with mb.transform((0, 0, 0.82), (0.5, 0.0, k * 2.1)):
+            mb.box((0.06, 0, 0.06), (0.05, 0.05, 0.3), "bark")
+    mb.cylinder((0, 0, 0.83), 0.2, 0.03, "ash", segments=10)
+    s.fire(0.0, 0.0, 0.86, 0.8)
+    s.solid(0.0, 0.0, 0.65, 0.65)
 
 
 def sandbag_row(mb, x0, y0, x1, y1, rows=5):
@@ -212,26 +368,30 @@ def sleeping_2(mb, s):
 
 def _farm_beds(mb, s, tall):
     for x in (-2.0, 0.0, 2.0):
-        planter(mb, x, 0.25, 0.9, 3.2, tall)
+        planter(mb, x, 0.25, 0.9, 3.2)
         s.solid(x, 0.25, 0.95, 3.25)
-    s.work(-1.0, 0.9, (-1, 0), "work_kneel")
-    s.work(1.0, -0.4, (1, 0), "work_kneel")
-    s.work(-1.0, -0.7, (1, 0), "work_kneel")
-    s.work(1.0, 1.0, (-1, 0), "work_kneel")
+        s.plot(x, 0.25, PLANTER_TOP)
+    # one tender per side of each planter; the clip (hoe, can, hands) comes from that planter's stage
+    s.work(-1.0, 0.9, (-1, 0), "work_kneel", plot=0)
+    s.work(1.0, -0.4, (1, 0), "work_kneel", plot=2)
+    s.work(-1.0, -0.7, (1, 0), "work_kneel", plot=1)
+    s.work(1.0, 1.0, (-1, 0), "work_kneel", plot=1)
     mb.box((2.7, -1.75, 0.15), (0.3, 0.3, 0.3), "metal")  # bucket
-    with mb.transform((-2.75, -1.6, 0.6), (0.25, 0, 0)):
-        mb.box((0, 0, 0), (0.04, 0.04, 1.2), "wood")      # hoe
-        mb.box((0, -0.05, -0.58), (0.2, 0.12, 0.03), "metal")
+    # compost heap in a pallet box, sacks of soil and fertiliser
+    for k, (dx, dy) in enumerate(((-0.35, 0), (0.35, 0), (0, -0.3), (0, 0.3))):
+        mb.box((-2.6 + dx, -1.75 + dy, 0.25), (0.06 if dx else 0.7, 0.06 if dy else 0.6, 0.5), "board")
+    mb.box((-2.6, -1.75, 0.2), (0.62, 0.52, 0.4), "compost")
+    for k in range(3):
+        mb.box((1.6 + k * 0.42, -1.85, 0.12 + (0.2 if k == 1 else 0.0)), (0.4, 0.28, 0.2), "sack", yaw=0.1 * k)
 
 
 def farm_1(mb, s):
-    """Soil beds: three raised planters of pallet wood with rows of seedlings; bucket and hoe."""
+    """Soil beds: three raised planters of pallet wood; compost, sacks, a bucket."""
     _farm_beds(mb, s, False)
 
 
 def farm_2(mb, s):
-    """Greenhouse: taller staked crops, a frame of hoops (no roof panels, so the camera sees in), plastic on the back,
-    a rain barrel."""
+    """Greenhouse: a frame of hoops (no roof panels, so the camera sees in), plastic on the back, a rain barrel."""
     _farm_beds(mb, s, True)
     for x in (-2.9, -1.0, 1.0, 2.9):
         pole(mb, x, -2.05, 2.3, "metal", 0.03)
@@ -325,6 +485,7 @@ def kitchen_1(mb, s):
             with mb.transform((0.12, 0, 0.15), (0, -0.7, 0)):
                 mb.box((0, 0, 0), (0.06, 0.06, 0.36), "bark")
     mb.box((0, 0.2, 0.07), (0.16, 0.16, 0.08), "lit", mat=1)
+    s.fire(0.0, 0.2, 0.12, 1.0)
     for k in range(3):
         a = k / 3 * math.tau + 0.4
         with mb.transform((0.0, 0.2, 0.0), (0, 0, a)):
@@ -345,6 +506,7 @@ def kitchen_2(mb, s):
     """Stove: a brick stove with a chimney pipe and a pot, a table with crates to sit on."""
     mb.box((0.2, 1.0, 0.45), (1.1, 0.7, 0.9), "brick_stove")
     mb.box((0.2, 0.64, 0.3), (0.4, 0.03, 0.25), "lit", mat=1)
+    s.fire(0.2, 0.55, 0.22, 0.45)
     mb.box((0.2, 1.0, 0.92), (1.15, 0.75, 0.05), "metal")
     mb.cylinder((0.6, 1.2, 1.7), 0.08, 1.6, "pipe", segments=8)
     mb.cylinder((0.05, 0.95, 1.05), 0.17, 0.22, "pot", segments=10)
@@ -453,8 +615,10 @@ ROOMS = [
     ("infirmary_1", infirmary_1), ("infirmary_2", infirmary_2), ("water_1", water_1), ("water_2", water_2),
     ("kitchen_1", kitchen_1), ("kitchen_2", kitchen_2), ("watchtower_1", watchtower_1),
     ("watchtower_2", watchtower_2), ("site_large", site_large), ("site_small", site_small),
-    ("site_pile", site_pile), ("crate_seat", crate_seat),
-]
+    ("site_pile", site_pile), ("crate_seat", crate_seat), ("fire_barrel", fire_barrel),
+    ("crop_tilled", crop_tilled), ("crop_sprouts", crop_sprouts),
+    ("hand_hoe", hand_hoe), ("hand_can", hand_can), ("hand_book", hand_book),
+] + [("crop_%s_%d" % (c, st), _crop(fn, st)) for c, fn in CROPS.items() for st in (2, 3, 4)]
 
 
 if __name__ == "__main__":
@@ -472,8 +636,10 @@ if __name__ == "__main__":
         fn(mb, spots)
         obj = mb.to_object("room_" + name)
         K.bake_vertex_ao(obj, distance=0.5, samples=32)
-        K.export_glb(obj, out, "room_" + name)
-        kit["rooms"][name] = {"model": "res://assets/models/room_%s.glb" % name, **spots.d}
+        # crops and hand props keep their own names; the drum is a prop; the rest are rooms
+        fname = name if name.startswith(("crop_", "hand_")) else "prop_" + name if name == "fire_barrel" else "room_" + name
+        K.export_glb(obj, out, fname)
+        kit["rooms"][name] = {"model": "res://assets/models/%s.glb" % fname, **spots.d}
     os.makedirs(os.path.dirname(json_path), exist_ok=True)
     with open(json_path, "w", encoding="utf-8", newline="\n") as f:
         text = json.dumps(kit, indent="\t")

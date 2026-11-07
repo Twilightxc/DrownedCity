@@ -5,11 +5,11 @@ extends RefCounted
 ## version that rewrites the old "state" dictionary into the new shape.
 
 const GAME_ID: String = "drowned_city"
-const SCHEMA_VERSION: int = 8
+const SCHEMA_VERSION: int = 9
 
 ## from_version -> Callable(state: Dictionary) -> Dictionary, producing from_version + 1.
 static func migrations() -> Dictionary[int, Callable]:
-	return {1: _v1_to_v2, 2: _v2_to_v3, 3: _v3_to_v4, 4: _v4_to_v5, 5: _v5_to_v6, 6: _v6_to_v7, 7: _v7_to_v8}
+	return {1: _v1_to_v2, 2: _v2_to_v3, 3: _v3_to_v4, 4: _v4_to_v5, 5: _v5_to_v6, 6: _v6_to_v7, 7: _v7_to_v8, 8: _v8_to_v9}
 
 
 ## Schema 2 (1.6): survivors gain a background and the core skills. An old survivor has no background and every
@@ -94,6 +94,13 @@ static func _v7_to_v8(d: Dictionary) -> Dictionary:
 		n["doing"] = ""
 		n["doing_slot"] = -1
 		n["worked_today"] = 0.0
+	return d
+
+
+## Schema 9 (1.7 base scene): how much work each room has done, which grows the farm's crops on screen.
+static func _v8_to_v9(d: Dictionary) -> Dictionary:
+	for rd: Variant in d.get("rooms", []):
+		(rd as Dictionary)["worked"] = 0.0
 	return d
 
 
