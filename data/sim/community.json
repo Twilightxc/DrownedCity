@@ -1,0 +1,51 @@
+{
+	"_doc": "Community skills, books and combat classes (docs/CITIZENS_1_6.md §6–7, Claude design approved by J 2026-11-06). A modifier is [stat, add|mul, value(, [weapon classes])]; perks have no number. A community skill's mods are what its holder brings to its room (rooms: 1.7); an outstanding citizen's skill also works base-wide at half strength while they are in the base. Numbers are Claude's.",
+	"born": {
+		"chance": 0.5,
+		"from_background": {"ex_soldier": "combat_training", "fisherman": "fishing", "doctor": "medicine", "teacher": "teaching", "programmer": "computing", "researcher": "chemistry", "construction_worker": "engineering", "farmer": "gardening"},
+		"note": "some are born with a skill: the one their background suggests, at this chance; boxers and the unlucky start with an empty slot"
+	},
+	"books": {
+		"read_days": 3,
+		"library_mul": 0.5,
+		"note": "a book is a found item, kept in the base (SimState.books): 'skill:<id>' teaches a community skill to an empty slot, 'spec:<skill>:<spec>' adds a specialization to its holder, 'leader:<type>' adds a leader path. Reading takes read_days in the library corner (Library specialization: half)"
+	},
+	"skills": {
+		"medicine": {"name": "Medicine", "leader": "researcher", "mods": [["heal_rate", "mul", 0.25]], "perks": ["infirmary_t2"],
+			"specs": {"surgery": {"name": "Surgery", "perks": ["heavy_injury_half_time"]}, "pathology": {"name": "Pathology", "perks": ["craft_antiviral", "infection_research"]}}},
+		"chemistry": {"name": "Chemistry", "leader": "researcher", "perks": ["chemistry_bench"],
+			"specs": {"explosives": {"name": "Explosives", "mods": [["grenades_per_craft", "add", 1]], "perks": ["craft_mortar_shells"]}, "pharmacy": {"name": "Pharmacy", "perks": ["craft_medicine"]}}},
+		"computing": {"name": "Computing", "leader": "programmer", "mods": [["power_use", "mul", -0.15]], "perks": ["electronics_bench"],
+			"specs": {"programming": {"name": "Programming", "perks": ["automation", "turret_ai"]}, "networking": {"name": "Networking", "perks": ["radio_trade"]}}},
+		"electrics": {"name": "Electrics", "leader": "programmer", "mods": [["power_output", "mul", 0.2]], "perks": ["power_t2"],
+			"specs": {"solar": {"name": "Solar", "perks": ["solar_power"]}, "batteries": {"name": "Batteries", "perks": ["store_power"]}}},
+		"engineering": {"name": "Engineering", "leader": "builder", "mods": [["build_speed", "mul", 0.25], ["repair_speed", "mul", 0.25]], "perks": ["workshop_t2"],
+			"specs": {"fortification": {"name": "Fortification", "mods": [["barricade_hp", "mul", 0.3]]}, "plumbing": {"name": "Plumbing", "mods": [["water_output", "mul", 0.25]]}}},
+		"seamanship": {"name": "Seamanship", "leader": "builder", "mods": [["boat_repair_speed", "mul", 0.5]], "perks": ["boat_dock"],
+			"specs": {"shipwright": {"name": "Shipwright", "perks": ["big_boats", "boat_gun_mounts"]}, "navigation": {"name": "Navigation", "mods": [["boat_fuel_use", "mul", -0.2]], "perks": ["storm_warning_at_sea"]}}},
+		"gunsmithing": {"name": "Gunsmithing", "leader": "warlord", "mods": [["wear_per_shot", "mul", -0.2]], "perks": ["armoury"],
+			"specs": {"ammo_reloading": {"name": "Ammo reloading", "perks": ["craft_ammo"]}, "modding": {"name": "Modding", "perks": ["craft_attachments"]}}},
+		"combat_training": {"name": "Combat training", "leader": "warlord", "mods": [["melee_xp", "mul", 0.25], ["shooting_xp", "mul", 0.25]], "perks": ["training_corner"],
+			"specs": {"cqc_instruction": {"name": "CQC instruction", "mods": [["melee_xp", "mul", 0.25]]}, "marksmanship_instruction": {"name": "Marksmanship instruction", "mods": [["shooting_xp", "mul", 0.25]]}}},
+		"radio": {"name": "Radio", "leader": "sheriff", "perks": ["radio_room"],
+			"specs": {"signals": {"name": "Signals", "perks": ["warnings_ahead"]}, "negotiation": {"name": "Negotiation", "mods": [["deal_influence", "mul", 0.15]]}}},
+		"leadership": {"name": "Leadership", "leader": "sheriff", "mods": [["community_morale", "add", 1]], "perks": ["settles_fights"],
+			"specs": {"diplomacy": {"name": "Diplomacy", "mods": [["enclave_relations", "mul", 0.2]]}, "discipline": {"name": "Discipline", "mods": [["refuse_jobs", "mul", -0.5]]}}},
+		"gardening": {"name": "Gardening", "leader": "trader", "mods": [["food_output", "mul", 0.2]], "perks": ["rooftop_garden"],
+			"specs": {"hydroponics": {"name": "Hydroponics", "perks": ["food_on_water"]}, "herbalism": {"name": "Herbalism", "perks": ["craft_herb_medicine"]}}},
+		"cooking": {"name": "Cooking", "leader": "trader", "perks": ["kitchen", "meal_buffs"],
+			"specs": {"nutrition": {"name": "Nutrition", "mods": [["food_buff_time", "mul", 0.5]]}, "preserving": {"name": "Preserving", "mods": [["food_spoil", "mul", -0.5]]}}},
+		"fishing": {"name": "Fishing", "leader": "trader", "mods": [["food_output", "mul", 0.15]], "perks": ["fish_traps"],
+			"specs": {"net_fishing": {"name": "Net fishing", "mods": [["food_output", "mul", 0.15]]}, "bait_and_lures": {"name": "Bait & lures", "perks": ["rare_catches"]}}},
+		"teaching": {"name": "Teaching", "leader": "any", "mods": [["xp_rate", "mul", 0.15]],
+			"specs": {"library": {"name": "Library", "mods": [["read_time", "mul", -0.5]]}, "mentoring": {"name": "Mentoring", "perks": ["pass_on_spec"]}}}
+	},
+	"classes": {
+		"rifleman": {"name": "Rifleman", "weapons": ["ar", "dmr"], "mods": [["damage_beyond_15m", "mul", 0.1]], "active": {"id": "steady", "cooldown_sec": 40}},
+		"breacher": {"name": "Breacher", "weapons": ["shotgun", "melee"], "mods": [["melee_damage_taken", "mul", -0.2], ["melee_stamina", "mul", -0.15]], "active": {"id": "shove", "cooldown_sec": 25}},
+		"marksman": {"name": "Marksman", "weapons": ["dmr", "sniper"], "mods": [["fog_sight", "mul", 0.25]], "active": {"id": "mark", "cooldown_sec": 45}},
+		"medic": {"name": "Medic", "weapons": ["pistol", "smg"], "mods": [["revive_speed", "mul", 1.0], ["bandage_heal", "mul", 0.5]], "active": {"id": "field_kit", "cooldown_sec": 60}},
+		"engineer": {"name": "Engineer", "weapons": ["smg", "shotgun"], "mods": [["repair_speed", "mul", 1.0]], "active": {"id": "deploy", "cooldown_sec": 50}},
+		"grenadier": {"name": "Grenadier", "weapons": ["gl", "ar"], "mods": [["grenades_carried", "add", 2], ["self_blast_damage", "mul", -0.25]], "active": {"id": "barrage", "cooldown_sec": 60}}
+	}
+}

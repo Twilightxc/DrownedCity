@@ -16,6 +16,7 @@ func before_each() -> void:
 
 func _make_outstanding(s: Survivor) -> void:
 	s.rank_points = 0.0
+	s.community_skill = "teaching"  # a teacher may lead as any type
 	StatusRules.earn(_state, s, "mission_done", 30.0)
 
 

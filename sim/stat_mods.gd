@@ -50,6 +50,18 @@ func apply_for(stat: StringName, weapon_class: String, base: float) -> float:
 	return maxf((base + a) * (1.0 + m), 0.0)
 
 
+## Adds `other`'s modifiers, scaled (an outstanding citizen's skill works base-wide at 0.5). Perks come along only
+## at full strength.
+func absorb(other: StatMods, scale: float = 1.0) -> void:
+	for s: StringName in other.add:
+		add[s] = add.get(s, 0.0) + other.add[s] * scale
+	for s: StringName in other.mul:
+		mul[s] = mul.get(s, 0.0) + other.mul[s] * scale
+	if scale >= 1.0:
+		for p: StringName in other.perks:
+			perks[p] = true
+
+
 ## Every stat any modifier touches.
 func stats() -> Array[StringName]:
 	var out: Array[StringName] = []
