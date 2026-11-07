@@ -1,6 +1,7 @@
 class_name Survivor
 extends RefCounted
-## One named community member (GDD §3). 1.6 adds the build (CITIZENS_1_6 §1): background, core skills, traits.
+## One named community member (GDD §3). 1.6 adds the build (CITIZENS_1_6 §1): background, core skills, traits;
+## and the body's needs.
 
 const MAX_STAT: float = 100.0
 
@@ -14,6 +15,7 @@ var skills: Dictionary[String, SurvivorSkill] = {}  ## core skill id -> state (S
 var traits: PackedStringArray = PackedStringArray()  ## traits.json ids (TraitRules)
 var trait_days: Dictionary[String, int] = {}  ## timed traits (Survivor's Guilt) -> days left
 var counters: Dictionary[String, int] = {}  ## toward earned traits: horde_nights, dives
+var needs: SurvivorNeeds = SurvivorNeeds.new()  ## fatigue, hunger, thirst, injuries, sickness, infection (NeedRules)
 
 
 func _init(p_id: int = 0, p_name: String = "", p_seed: int = 0) -> void:
@@ -40,7 +42,7 @@ func to_dict() -> Dictionary:
 		skill_d[k] = skills[k].to_array()
 	return {"id": id, "name": name, "appearance_seed": appearance_seed, "health": health, "morale": morale,
 		"background": background, "skills": skill_d, "traits": Array(traits), "trait_days": trait_days.duplicate(),
-		"counters": counters.duplicate()}
+		"counters": counters.duplicate(), "needs": needs.to_dict()}
 
 
 static func from_dict(d: Dictionary) -> Survivor:
@@ -58,4 +60,5 @@ static func from_dict(d: Dictionary) -> Survivor:
 	var counts: Dictionary = d["counters"]
 	for k: Variant in counts:
 		s.counters[str(k)] = int(counts[k])
+	s.needs = SurvivorNeeds.from_dict(d["needs"])
 	return s

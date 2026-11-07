@@ -54,20 +54,20 @@ func test_rejects_damaged_state() -> void:
 
 
 func test_migrations_run_in_order_up_to_current() -> void:
-	# A pretend schema 4 that renamed "stock" to "stockpile"; schema 5 reads it back as "stock".
-	var to_v4: Callable = func(d: Dictionary) -> Dictionary:
+	# A pretend schema 5 that renamed "stock" to "stockpile"; schema 6 reads it back as "stock".
+	var to_v5: Callable = func(d: Dictionary) -> Dictionary:
 		d["stockpile"] = d["stock"]
 		d.erase("stock")
 		return d
-	var to_v5: Callable = func(d: Dictionary) -> Dictionary:
+	var to_v6: Callable = func(d: Dictionary) -> Dictionary:
 		d["stock"] = d["stockpile"]
 		d.erase("stockpile")
 		return d
-	var steps: Dictionary[int, Callable] = {3: to_v4, 4: to_v5}
+	var steps: Dictionary[int, Callable] = {4: to_v5, 5: to_v6}
 	var state: SimState = _played_state()
-	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(state), steps, 5)
+	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(state), steps, 6)
 	assert_eq(result.error, "")
-	assert_eq(result.migrated_from, 3)
+	assert_eq(result.migrated_from, 4)
 	assert_eq(result.state.to_dict(), state.to_dict())
 
 
@@ -76,7 +76,7 @@ func test_a_schema_1_save_gets_skills_at_0_and_no_background() -> void:
 	var envelope: Dictionary = JSON.parse_string(SaveCodec.encode(state))
 	envelope["schema"] = 1
 	for sd: Dictionary in envelope["state"]["survivors"]:
-		for key: String in ["background", "skills", "traits", "trait_days", "counters"]:
+		for key: String in ["background", "skills", "traits", "trait_days", "counters", "needs"]:
 			sd.erase(key)
 	var result: SaveCodec.Result = SaveCodec.decode(JSON.stringify(envelope))
 	assert_eq(result.error, "")
@@ -88,6 +88,6 @@ func test_a_schema_1_save_gets_skills_at_0_and_no_background() -> void:
 
 
 func test_missing_migration_is_an_error() -> void:
-	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(_played_state()), {}, 4)
+	var result: SaveCodec.Result = SaveCodec.decode(SaveCodec.encode(_played_state()), {}, 5)
 	assert_null(result.state)
-	assert_string_contains(result.error, "no migration from schema 3")
+	assert_string_contains(result.error, "no migration from schema 4")
